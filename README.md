@@ -1,7 +1,8 @@
 # assembly_pipeline
 Pipeline used for de novo genome assembly @CNAG
-[06/07 13:46] JESSICA GOMEZ GARRIDOSteps implemented in current version of the pipeline
-    1- Preprocessing:
+Steps implemented in current version of the pipeline
+
+1- Preprocessing:
 
 
 	
