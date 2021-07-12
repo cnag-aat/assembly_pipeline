@@ -1,5 +1,5 @@
 # assembly_pipeline
-Pipeline used for de novo genome assembly @CNAG
+Pipeline used for de novo genome assembly @CNAG.
 Steps implemented in current version of the pipeline
 
 1- Preprocessing:
