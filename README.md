@@ -1,9 +1,8 @@
 # assembly_pipeline
-Pipeline used for de novo genome assembly @CNAG.
-Steps implemented in current version of the pipeline
+ Pipeline used for de novo genome assembly @CNAG.
+ Steps implemented in current version of the pipeline
 
-1- Preprocessing:
-
+# 1- Preprocessing:
 
 	
 Read concatenation
@@ -18,18 +17,15 @@ Align ONT (Minimap2)
 	
 Align Illumina (BWA-MEM)
 
-2- Assembly
+# 2- Assembly
 
-
-	
 Flye (default)
 	
 Nextdenovo (if turned on)
 
-3- Polishing
+# 3- Polishing
 
 
-	
 Hypo (default)
 	
 Racon (if turned on)
@@ -43,9 +39,7 @@ Nextpolish ont (if turned on)
 Nextpolish illumina (if turned on)
 
 
-4- Evaluations
-
-
+# 4- Evaluations
 	
 Merqury
 	
@@ -53,17 +47,13 @@ Busco
 	
 Nseries
 
-Steps that will be included soon
-
-
+# Steps that will be included soon
 	
 Filtlong (pending)
 	
 Trim_galore (rule done, need to integrate it)
 
 
-
-	
 10X scaffolding (pending)
 	
 Shasta?
