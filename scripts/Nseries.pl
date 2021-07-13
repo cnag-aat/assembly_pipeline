@@ -1,0 +1,1 @@
+/home/devel/jgomez/assembly_pipeline/scripts/Nseries.pl
