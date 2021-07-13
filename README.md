@@ -55,8 +55,6 @@ Nseries
 
 # Steps that will be included soon
 	
-Filtlong (pending)
-	
 Trim_galore (rule done, need to integrate it)
 
 
