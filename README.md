@@ -13,7 +13,7 @@ bin/create_config_assembly.py -h
 
 # How to provide input data:
 
-1- ONT reads:
+1- ONT reads
 
 There are several ways of providing the ONT reads for assembly and polishing.
 
@@ -38,6 +38,10 @@ If you do so, it will consider that you already have all the reads in one file a
 -- Use the resulting file for assembly and/or polishing
 
 1.3 Using the option ```--ont-filtered {FILE}```. It will use this file as the output from filtlong and will skip the preprocessing steps and directly use it for assembly and/or polishing. 
+
+
+
+2- 10X data
 
 
 # List of steps currently implemented: 
