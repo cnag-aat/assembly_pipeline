@@ -13,9 +13,9 @@ bin/create_config_assembly.py -h
 
 # How to provide input data:
 
-1- ONT reads
+There are several ways of providing the reads for assembly and polishing.
 
-There are several ways of providing the ONT reads for assembly and polishing.
+1- ONT reads
 
 1.1 Using the option ``--ont-dir {DIR}`` in create_config_assembly.py:
 
@@ -37,12 +37,19 @@ If you do so, it will consider that you already have all the reads in one file a
 
 -- Use the resulting file for assembly and/or polishing
 
-1.3 Using the option ```--ont-filtered {FILE}```. It will use this file as the output from filtlong and will skip the preprocessing steps and directly use it for assembly and/or polishing. 
+1.3 Using the option ```--ont-filt {FILE}```. It will use this file as the output from filtlong and will skip the preprocessing steps and directly use it for assembly and/or polishing. 
 
 
 
 2- 10X data
 
+2.1 Using the  ```--raw-10X {DIR}``` and ``` --10X-list``` options:
+
+It will take each basename in the list to get the corresponding fastqs from the directory and run longranger on them. Afterwards, it will build meryldbs for each "barcoded" file. Finally, it will concatenate all the meryldbs and "barcoded" files. Resulting "barcoded" file will be used for polishing. 
+
+2.2 Using the ``--processed-10X {DIR}`` parameter. This directory can already be there or be produced by the pipeline as described in step 2.1. Once all the "barcoded" fastq files are there, meryldbs will be built for each "barcoded" file.  Finally, it will concatenate all the meryldbs and "barcoded" files. Resulting "barcoded" file will be used for polishing. 
+
+2.3 Using the ``--10X`` option. The argument would be the path to the concatenated ".barcoded" file that needs to be used for polishing. If the pre-concatenated files are not given, meryldbs will be directly generated with this file, but it may run out of memory. 
 
 # List of steps currently implemented: 
 
