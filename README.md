@@ -61,54 +61,60 @@ It will take each basename in the list to get the corresponding fastqs from the 
 
 3.2 Using the ``--pe1 {FILE} and --pe2 {FILE}`` options. That will consider that these are the paired files containing all the illumina reads to be used and will build meryldbs and polish with them.
 
-# List of steps currently implemented: 
+4- Input assemblies
+
+If you want to polish an already assembled assembly, you can give it to the pipeline by using the option ``--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]
+                        Dictionary with assemblies that need to be polished but not assembled and directory where they should
+                        be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...``
+			
+
+
+# Description of implemented rules
 
 1- Preprocessing:
+	
+- Read concatenation
+	
+- Longranger for 10X reads
 
+- Filtlong
 	
-Read concatenation
+- Build meryldb (with processed 10X reads or illumina reads)
 	
-Longranger for 10X reads
-
-Filtlong
+- Concat meryldbs
 	
-Build meryldb (with processed 10X reads or illumina reads)
+- Align ONT (Minimap2)
 	
-Concat meryldbs
-	
-Align ONT (Minimap2)
-	
-Align Illumina (BWA-MEM)
+- Align Illumina (BWA-MEM)
 
 2- Assembly
 
-Flye (default)
+- Flye (default)
 	
-Nextdenovo (if turned on)
+- Nextdenovo (if turned on)
 
 3- Polishing
 
-
-Hypo (default)
+- Hypo (default)
 	
-Racon (if turned on)
+- Racon (if turned on)
 	
-Medaka (if turned on)
+- Medaka (if turned on)
 	
-Pilon (if turned on)
+- Pilon (if turned on)
 	
-Nextpolish ont (if turned on)
+- Nextpolish ont (if turned on)
 	
-Nextpolish illumina (if turned on)
-
+- Nextpolish illumina (if turned on)
 
 4- Evaluations
 	
-Merqury
+- Merqury
 	
-Busco
+- Busco
 	
-Nseries
+- Nseries
+
 # Steps that will be included soon
 	
 Trim_galore (rule done, need to integrate it)
