@@ -1,6 +1,10 @@
 # assembly_pipeline
- Snakemake Pipeline used for de novo genome assembly @CNAG.
- Steps implemented in current version of the pipeline
+ Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed using Snakemake v6.0.5, which can be loaded in the cluster by doing:
+ ```bash
+ conda activate /home/devel/jgomez/conda_environments/snakemake
+ ```
+
+List of steps currently implemented: 
 
 # 1- Preprocessing:
 
@@ -8,6 +12,8 @@
 Read concatenation
 	
 Longranger for 10X reads
+
+Filtlong
 	
 Build meryldb (with processed 10X reads or illumina reads)
 	
