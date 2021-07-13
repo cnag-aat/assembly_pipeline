@@ -73,19 +73,33 @@ If you want to polish an already assembled assembly, you can give it to the pipe
 
 1- Preprocessing:
 	
-- Read concatenation
-	
-- Longranger for 10X reads
+- Read concatenation:
 
-- Filtlong
+``zcat {input.fastqs} | pigz -p {threads} -c  > {output.final_fastq}``
 	
-- Build meryldb (with processed 10X reads or illumina reads)
+- Longranger for 10X reads: it uses the Longranger version installed in the path specified in the configfile
+
+``longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads}``
+
+- Filtlong:  it uses the Filtlong version installed in the path specified in the configfile
+
+``filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {input.reads} | pigz -p {threads} -c > {output.outreads}``
 	
-- Concat meryldbs
+- Build meryldb (with processed 10X reads or illumina reads): with the merqury conda environment specified in the configfile
+
+``meryl k={params.kmer} count output {output.out_dir} {input.fastq}``
 	
-- Align ONT (Minimap2)
+- Concat meryldbs: with the merqury conda environment specified in the configfile
+
+``meryl union-sum output {output.meryl_all} {input.input_run}``
 	
-- Align Illumina (BWA-MEM)
+- Align ONT (Minimap2): it aligns the reads using minimap2 and outputs the alignment either in bam or in paf.gz formats. It uses the minimap2 conda environment specified in the configfile
+
+``minimap2 -{params.align_opts} -t {threads} {input.genome} {input.reads} ``
+
+- Align Illumina (BWA-MEM): it aligns the reads with BWA-mem and outputs a bam file
+
+``bwa mem -Y {params.options} -t {threads} {input.genome} {input.reads} | samtools view -Sb - | samtools sort -@ {threads} -o {output.mapping} -``
 
 2- Assembly
 
