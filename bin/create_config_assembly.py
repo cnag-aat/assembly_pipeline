@@ -34,6 +34,7 @@ class CreateConfigurationFile(object):
         self.base_name = None                                                                     #Base name for the project
         self.genome_size = None							                  #Estimated genome size
         self.preprocess_ont_step = "01.1"                                                         #Step directory for preprocessing ont
+        self.preprocess_10X_step = "01.2"
         self.flye_step = "02.1"                                                                   #Step direcotory for running flye
         self.nextdenovo_step = "02.2"                                                             #Step direcotory for running nextdenovo
         self.run_flye = True       
@@ -111,6 +112,7 @@ class CreateConfigurationFile(object):
         self.filtlong_minlen = "1000"
         self.filtlong_min_mean_q = "80"
         self.filtlong_path = "/scratch/project/devel/aateam/bin/filtlong"
+        self.filtlong_opts = None
 
         #FILTLONG SPEC PARAMETERS
         self.filtlong_qos = "normal"
@@ -330,6 +332,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--basename', dest="base_name", metavar="base_name", help='Base name for the project. Default %s' % self.base_name)
         general_group.add_argument('--keep-intermediate', dest="keepintermediate", action="store_true", help='Set this to True if you do not want intermediate files to be removed. Default %s' % self.keepintermediate)
         general_group.add_argument('--preprocess-lr-step', dest="preprocess_ont_step", default=self.preprocess_ont_step, help='Step for preprocessing long-reads. Default %s' % self.preprocess_ont_step)
+        general_group.add_argument('--preprocess-10X-step', dest="preprocess_10X_step", default=self.preprocess_10X_step, help='Step for preprocessing 10X reads. Default %s' % self.preprocess_10X_step)
         general_group.add_argument('--flye-step', dest="flye_step", default=self.flye_step, help='Step for running flye. Default %s' % self.flye_step)
         general_group.add_argument('--no-flye', dest="run_flye", action="store_false", help='Give this option if you do not want to run Flye.')
         general_group.add_argument('--nextdenovo-step', dest="nextdenovo_step", default=self.nextdenovo_step, help='Step for running nextdenovo. Default %s' % self.nextdenovo_step)
@@ -396,6 +399,7 @@ class CreateConfigurationFile(object):
         filtlong_group.add_argument('--filtlong-path', dest="filtlong_path", metavar="filtlong_path", default = self.filtlong_path, help='Path to the filtlong software. Default %s' % self.filtlong_path)
         filtlong_group.add_argument('--filtlong-minlen', dest="filtlong_minlen", metavar="filtlong_minlen", default=self.filtlong_minlen, type = int, help='Minimum read length to use with Filtlong. Default %s' % self.filtlong_minlen)
         filtlong_group.add_argument('--filtlong-min-mean-q', dest="filtlong_min_mean_q", metavar="filtlong_min_mean_q", default=self.filtlong_min_mean_q, type = int, help='Minimum mean quality to use with Filtlong. Default %s' % self.filtlong_min_mean_q)
+        filtlong_group.add_argument('--filtlong-opts', dest="filtlong_opts", metavar="filtlong_opts", default=self.filtlong_opts, help='Extra options to run Filtlong (eg. -t 4000000000)')
 
     def register_flye(self, parser):
         """Register all flye parameters with the given
@@ -780,10 +784,12 @@ class CreateConfigurationFile(object):
                 parser.print_help()
                 print (args.raw_10X + " not found")
                 sys.exit(-1)
-              elif args.r10X_wildcards == None and args.processed_10X == None:
+              elif args.r10X_wildcards == None:
                 parser.print_help()
                 print ('If you want to process the 10X reads, you need to provide the 10X basenames in r10X-wildcards.')
                 sys.exit(-1)    
+              if args.processed_10X == None:
+                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads/"
             if args.processed_10X != None:
               args.processed_10X = os.path.abspath(args.processed_10X) + "/"
               if args.r10X_wildcards == None:
@@ -899,15 +905,18 @@ class CreateConfigurationFile(object):
                 parser.print_help()
                 print ('If you want to process the 10X reads, you need to provide the 10X basenames in r10X-wildcards.')
                 sys.exit(-1)    
-            if args.processed_10X != None and args.r10X!=None:
+            if args.processed_10X != None:
               args.processed_10X = os.path.abspath(args.processed_10X) + "/"
-              if args.r10X_wildcards == None:
-                if not os.path.exists(args.processed_10X):
-                  parser.print_help()
-                  print (args.processed_10X + " not found")
-                  sys.exit(-1)
-                else:
-                  args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz')             
+            else:
+              args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads/"
+
+            if args.r10X_wildcards == None:
+              if not os.path.exists(args.processed_10X):
+                parser.print_help()
+                print (args.processed_10X + " not found")
+                sys.exit(-1)
+              else:
+                args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz')             
               
 
         args.assemblies={}
@@ -948,6 +957,7 @@ class CreateConfigurationFile(object):
         self.generalParameters["base_name"] = args.base_name
         self.generalParameters["genome_size"] = args.genome_size
         self.generalParameters["preprocess_ont_step"] = args.preprocess_ont_step
+        self.generalParameters["preprocess_10X_step"] = args.preprocess_10X_step
         self.generalParameters["flye_step"] = args.flye_step
         self.generalParameters["run_flye"] = args.run_flye
         self.generalParameters["nextdenovo_step"] = args.nextdenovo_step
@@ -1068,6 +1078,7 @@ class CreateConfigurationFile(object):
         self.filtlongParameters["Filtlong path"] = args.filtlong_path
         self.filtlongParameters["Filtlong minlen"] = args.filtlong_minlen
         self.filtlongParameters["Filtlong min_mean_q"] = args.filtlong_min_mean_q
+        self.filtlongParameters["options"] = args.filtlong_opts
         self.allParameters ["Filtlong"] = self.filtlongParameters
 
     def storefiltlongSpecParameters(self,args):

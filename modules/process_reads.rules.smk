@@ -34,7 +34,6 @@ rule concat_reads:
   shell:
     "zcat {input.fastqs} | pigz -p {threads} -c  > {output.final_fastq};"
 
-
 rule build_meryl_db:
   input:
     fastq = "all_reads.fastq.gz"
@@ -97,10 +96,11 @@ rule filtlong:
   params:
     path = "/scratch/project/devel/aateam/bin/filtlong",
     minlen = 1000,
-    min_mean_q = 80
+    min_mean_q = 80,
+    opts = ""
   threads: 8
   shell:
     "module purge; module load PIGZ/2.3.3 gcc/4.9.3;"
     "export PATH={params.path}:$PATH;"
     "filtlong --version;"
-    "filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {input.reads} | pigz -p {threads} -c > {output.outreads};"
+    "filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"

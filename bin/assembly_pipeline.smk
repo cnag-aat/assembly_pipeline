@@ -53,10 +53,12 @@ fastqs = {}
 if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextdenovo"] == True:
   ONT_filtered = config["Inputs"]["ONT_filtered"]
   if not os.path.exists(ONT_filtered):
+    if not os.path.exists(config["Outputs"]["filtlong_dir"] + "logs"):
+      os.makedirs(config["Outputs"]["filtlong_dir"]  + "logs")
     if config["Inputs"]["ONT_reads"] == None:
       ont_dir = config["Inputs"]["ONT_dir"]
       ont_list = config["Wildcards"]["ONT_wildcards"].split(',')
-      ont_reads = working_dir + "reads.ont.fastq.gz"
+      ont_reads =config["Outputs"]["filtlong_dir"] + "reads.ont.fastq.gz"
       extensions = ["fastq.gz"]
       for i in extensions:
         fastqs["ont."+i] = []
@@ -70,13 +72,16 @@ if len(fastqs) > 0:
   input:
     fastqs = lambda wildcards: fastqs[wildcards.ext]
   output:
-    final_fastq = working_dir + "reads.{ext}"
+    final_fastq = "{dir}reads.{ext}"
   log:
-    logs_dir + str(date) + ".concat.{ext}.out",
-    logs_dir + str(date) + ".concat.{ext}.err"
+    "{dir}logs/" + str(date) + ".concat.{ext}.out",
+    "{dir}logs/" + str(date) + ".concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
 
 if not os.path.exists(ONT_filtered):
+  extra_filtlong_opts = config["Filtlong"]["options"]
+  if extra_filtlong_opts == None:
+    extra_filtlong_opts = ""
   use rule filtlong from preprocess_workflow with:
     input:
       reads = ont_reads
@@ -85,10 +90,11 @@ if not os.path.exists(ONT_filtered):
     params:
       path = config["Filtlong"]["Filtlong path"],
       minlen = config["Filtlong"]["Filtlong minlen"],
-      min_mean_q = config["Filtlong"]["Filtlong min_mean_q"]
+      min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
+      opts = extra_filtlong_opts
     log:
-      logs_dir + str(date) + ".filtlong.out",
-      logs_dir + str(date) + ".filtlong.err"
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.out",
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.err"
     threads: config["Parameters"]["concat_cores"]  
 
 ##Run assemblers

@@ -1,5 +1,3 @@
-shell.prefix("echo 'Cluster jobid $SLURM_JOB_ID'; export PATH=" + config["Inputs"]["scripts_dir"] + ":$PATH;")
-
 from datetime import datetime
 import os
 import re
@@ -314,10 +312,12 @@ fastqs = {}
 if rr > 0 or mr > 0 or nor or hr >0:
   ONT_filtered = config["Inputs"]["ONT_filtered"]
   if not os.path.exists(ONT_filtered):
+    if not os.path.exists(config["Outputs"]["filtlong_dir"] + "logs"):
+      os.makedirs(config["Outputs"]["filtlong_dir"]  + "logs")
     if config["Inputs"]["ONT_reads"] == None:
       ont_dir = config["Inputs"]["ONT_dir"]
       ont_list = config["Wildcards"]["ONT_wildcards"].split(',')
-      ont_reads = working_dir + "reads.ont.fastq.gz"
+      ont_reads = config["Outputs"]["filtlong_dir"] + "reads.ont.fastq.gz"
       extensions = ["fastq.gz"]
       for i in extensions:
         fastqs["ont."+i] = []
@@ -344,17 +344,19 @@ if pr > 0 or nir>0 or hr>0:
           fastqs["illumina." + i].append(illumina_dir + file + "." + i)
     if config["Inputs"]["processed_10X"] != None or config["Inputs"]["raw_10X"] != None:
       r10X_list = config["Wildcards"]["10X_wildcards"].split(',')
-      if config["Inputs"]["processed_10X"] != None:
-        processed_10X_dir = config["Inputs"]["processed_10X"]
-      else:
+      r10X_dir = config["Inputs"]["processed_10X"]
+      if config["Inputs"]["raw_10X"] != None:
         raw_10X_dir = config["Inputs"]["raw_10X"]
-        processed_10X_dir = working_dir + "processed_10X/"
+        for i in r10X_list:
+          longranger_inputs[i] = [i]
       extensions = ["barcoded.fastq.gz"]
-      r10X_reads = working_dir + "reads.illumina10X.barcoded.fastq.gz"
+      r10X_reads = r10X_dir + "reads.illumina10X.barcoded.fastq.gz"
+      if not os.path.exists(r10X_dir + "logs/"):
+        os.makedirs(r10X_dir + "logs/")
       for i in extensions:
         fastqs["illumina10X." + i] = []
         for file in r10X_list:
-          fastqs["illumina10X." + i].append(processed_10X_dir + file + "." + i)
+          fastqs["illumina10X." + i].append(r10X_dir + file + ".lr." + i)
 
   elif config["Inputs"]["ILLUMINA_10X"] != None:
     r10X_reads = config["Inputs"]["ILLUMINA_10X"]
@@ -371,14 +373,13 @@ if config["Finalize"]["Merqury db"]:
     meryl_dbs = []
     if config["Inputs"]["processed_10X"]!= None or config["Inputs"]["raw_10X"] != None:
       r10X_list = config["Wildcards"]["10X_wildcards"].split(',')
-      if config["Inputs"]["processed_10X"] != None:
-        r10X_dir = config["Inputs"]["processed_10X"]
-      else:
-        r10X_dir = working_dir + "processed_10X/"
+      r10X_dir = config["Inputs"]["processed_10X"]
       if config["Inputs"]["raw_10X"] != None: 
         raw_10X_dir = config["Inputs"]["raw_10X"]
         for i in r10X_list:
           longranger_inputs[i] = [i]
+      if not os.path.exists(r10X_dir + "logs/"):
+        os.makedirs(r10X_dir + "logs/")
       extensions = [".barcoded.fastq.gz"]
       for i in r10X_list:
         for e in extensions:
@@ -399,15 +400,15 @@ if len(longranger_inputs) > 0:
     input: 
       mkfastq_dir = raw_10X_dir
     output:
-      fastq_out = r10X_dir + "{bname}.barcoded.fastq.gz",
-      sum_out = r10X_dir + "{bname}.barcoded.summary.csv"
+      fastq_out = r10X_dir + "{bname}.lr.barcoded.fastq.gz",
+      sum_out = r10X_dir + "{bname}.lr.barcoded.summary.csv"
     params:
       path = config["Parameters"]["longranger_path"],
       outdir = r10X_dir,
       sample = lambda wildcards: longranger_inputs[wildcards.bname]
     log:
-      logs_dir + str(date) + ".longranger.{bname}.out",
-      logs_dir + str(date) + ".longranger.{bname}.err"
+      r10X_dir + "logs/" + str(date) + ".longranger.{bname}.out",
+      r10X_dir + "logs/" + str(date) + ".longranger.{bname}.err"
     threads: config["Parameters"]["longranger_cores"] 
 
 if len(fastqs) > 0:
@@ -415,13 +416,16 @@ if len(fastqs) > 0:
   input:
     fastqs = lambda wildcards: fastqs[wildcards.ext]
   output:
-    final_fastq = working_dir + "reads.{ext}"
+    final_fastq = "{dir}reads.{ext}"
   log:
-    logs_dir + str(date) + ".concat.{ext}.out",
-    logs_dir + str(date) + ".concat.{ext}.err"
+    "{dir}logs/" + str(date) + ".concat.{ext}.out",
+    "{dir}logs/" + str(date) + ".concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
 
 if not os.path.exists(ONT_filtered):
+  extra_filtlong_opts = config["Filtlong"]["options"]
+  if extra_filtlong_opts == None:
+    extra_filtlong_opts = ""
   use rule filtlong from preprocess_workflow with:
     input:
       reads = ont_reads
@@ -430,10 +434,11 @@ if not os.path.exists(ONT_filtered):
     params:
       path = config["Filtlong"]["Filtlong path"],
       minlen = config["Filtlong"]["Filtlong minlen"],
-      min_mean_q = config["Filtlong"]["Filtlong min_mean_q"]
+      min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
+      opts = extra_filtlong_opts
     log:
-      logs_dir + str(date) + ".filtlong.out",
-      logs_dir + str(date) + ".filtlong.err"
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.out",
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.err"
     threads: config["Parameters"]["concat_cores"] 
 
 if config["Finalize"]["Merqury db"]:
