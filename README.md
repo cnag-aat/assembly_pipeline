@@ -82,12 +82,13 @@ For this project we have 10X and ONT data (also HiC but this is not implemented 
 
 When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
 
-``  /scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py --configFile run1.dependence_test.config --specFile run1.dependence_test.spec  --basename test --genome-size 68m --ont-reads /scratch/devel/talioto/denovo_assemblies/EASI/dependence_cattlemites/s01.1_p0.0_raw_reads/ont/AR8331/AR8331.0.EASI_41.EASI_42.EASI_41.FAP94258.1.fastq.gz --raw-10X /scratch/project/production/fastq/H7YGVDSX2/4/fastq/ --r10X-list "H7YGVDSX2_1_SI-GA-B9,H7YGVDSX2_4_SI-GA-B9,H7YGVDSX2_2_SI-GA-B9,H7YGVDSX2_3_SI-GA-B9" --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/arthropoda_odb10 --merqury-db dependence.meryl --meryl-k 18
+```` 
+/scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py --configFile run1.dependence_test.config --specFile run1.dependence_test.spec  --basename test --genome-size 68m --ont-reads /scratch/devel/talioto/denovo_assemblies/EASI/dependence_cattlemites/s01.1_p0.0_raw_reads/ont/AR8331/AR8331.0.EASI_41.EASI_42.EASI_41.FAP94258.1.fastq.gz --raw-10X /scratch/project/production/fastq/H7YGVDSX2/4/fastq/ --r10X-list "H7YGVDSX2_1_SI-GA-B9,H7YGVDSX2_4_SI-GA-B9,H7YGVDSX2_2_SI-GA-B9,H7YGVDSX2_3_SI-GA-B9" --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/arthropoda_odb10 --merqury-db dependence.meryl --meryl-k 18
 Genome size is 68.0 megabases
 /scratch/devel/jgomez/test_assembly_pipeline/dependence.meryl not found, the pipeline will create it
-``
+````
 
-``
+````
 snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile run1.dependence_test.config --is --cluster-conf run1.dependence_test.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np
 Building DAG of jobs...
 Job counts:
@@ -106,7 +107,7 @@ Job counts:
         2       run_busco
         2       run_merqury
         21
-``
+````
 # Description of implemented rules
 
 1- Preprocessing:
