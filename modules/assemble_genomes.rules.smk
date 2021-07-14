@@ -3,7 +3,6 @@ import re
 import os
 
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
-shell.prefix("echo 'Cluster jobid $SLURM_JOB_ID';")
 #keepfiles = False
 #scripts_dir = os.path.dirname(sys.argv[0]) + "/../scripts/" 
 
@@ -28,9 +27,11 @@ rule flye:
   shell:
     "source  ~jgomez/init_shell.sh;"
     "conda activate {input.env};"
-    "echo 'Running command: flye --{params.readtype} {input.reads} -o {params.outdir} -t {threads} -i {params.pol_iterations} {params.other_flye_opts}';"
-    "flye --{params.readtype} {input.reads} -o {params.outdir} -t {threads} -i {params.pol_iterations} {params.other_flye_opts};"
-    "ln -s {params.outdir}assembly.fasta {output.assembly};"
+    "mkdir -p {params.outdir}out;"
+    "cd {params.outdir};"
+    "echo 'Running command: flye --{params.readtype} {input.reads} -o {params.outdir}out -t {threads} -i {params.pol_iterations} {params.other_flye_opts}';"
+    "flye --{params.readtype} {input.reads} -o {params.outdir}out -t {threads} -i {params.pol_iterations} {params.other_flye_opts};"
+    "ln -s {params.outdir}out/assembly.fasta {output.assembly};"
     "conda deactivate;"
 
 rule nextdenovo:

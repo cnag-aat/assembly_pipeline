@@ -14,7 +14,7 @@ module preprocess_workflow:
 
 working_dir = config["Outputs"]["base_dir"]
 scripts_dir = config["Inputs"]["scripts_dir"]
-shell.prefix("echo 'Cluster jobid $SLURM_JOB_ID'; export PATH=" + scripts_dir + ":$PATH;")
+shell.prefix("echo 'Cluster jobid $SLURM_JOBID'; export PATH=" + scripts_dir + ":$PATH;")
 logs_dir = config["Parameters"]["logs_dir"]
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
