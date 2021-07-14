@@ -81,7 +81,7 @@ If you want to polish an already assembled assembly, you can give it to the pipe
 
 ``longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads}``
 
-- Filtlong:  it uses the Filtlong version installed in the path specified in the configfile
+- Filtlong: it uses the Filtlong version installed in the path specified in the configfile. By default it gives the min_length and min_mean_q parameters, but extra parameters can be added with the ``--filtlong-opts`` option.
 
 ``filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads}``
 	
