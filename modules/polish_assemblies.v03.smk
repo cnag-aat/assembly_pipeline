@@ -471,7 +471,7 @@ if rr > 0 or mr > 0 or nor>0 or hr>0:
   use rule align_ont from eval_workflow with:
     input:
       genome = lambda wildcards: minimap2[wildcards.name],
-      reads = ont_reads
+      reads = ONT_filtered,
     output:
       mapping = "{directory}/mappings/{name}_{ext}"
     params:
@@ -503,7 +503,7 @@ if rr > 0:
   rule racon:
     input:
       assembly = lambda wildcards: racon_in[wildcards.directory + "/rmp/" + wildcards.base + ".racon" + wildcards.param + ".fasta"],
-      reads = ont_reads, 
+      reads = ONT_filtered, 
       mapping = lambda wildcards: racon_map[wildcards.directory + "/rmp/" + wildcards.base + ".racon" + wildcards.param + ".fasta"], 
     output:
       polished = "{directory}/rmp/{base}.racon{param}.fasta"
@@ -532,7 +532,7 @@ if mr > 0:
   rule medaka:
     input:
       assembly = lambda wildcards: medaka_in[wildcards.directory + "/rmp/" + wildcards.base + ".medaka" + wildcards.param + ".fasta"],
-      reads = ont_reads, 
+      reads = ONT_filtered, 
       mapping = lambda wildcards: medaka_map[wildcards.directory + "/rmp/" + wildcards.base + ".medaka" + wildcards.param + ".fasta"], 
     output:
       polished = "{directory}/rmp/{base}.medaka{param}.fasta"
