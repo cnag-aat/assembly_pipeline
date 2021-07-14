@@ -380,7 +380,7 @@ if config["Finalize"]["Merqury db"]:
           longranger_inputs[i] = [i]
       if not os.path.exists(r10X_dir + "logs/"):
         os.makedirs(r10X_dir + "logs/")
-      extensions = [".barcoded.fastq.gz"]
+      extensions = [".lr.barcoded.fastq.gz"]
       for i in r10X_list:
         for e in extensions:
           reads_loc[i + e] = r10X_dir + i + e
