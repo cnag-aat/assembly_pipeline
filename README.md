@@ -11,6 +11,10 @@ It needs a config file and a spec file (json file with instructions on which res
 bin/create_config_assembly.py -h
 ```
 
+Once the 2 config files are produced, the pipeline can be launched using snakemake like this:
+
+``snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np ``
+
 # How to provide input data:
 
 There are several ways of providing the reads for assembly and polishing.
