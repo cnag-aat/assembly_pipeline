@@ -80,6 +80,8 @@ We will show several examples on how can we use the pipeline. For this purpose, 
 ### 1- Complete run with default parameters on the EASI/dependence-cattlemites project. 
 For this project we have 10X and ONT data (also HiC but this is not implemented here yet).  We'll preprocess the reads, do an assembly with Flye and polish it with Hypo. As for evaluations, we'll run merqury, busco and nseries. 
 
+![](https://github.com/cnag-aat/assembly_pipeline/blob/main/imgs/run1.dependence_test.dag.png)
+
 When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
 
 ``` 
