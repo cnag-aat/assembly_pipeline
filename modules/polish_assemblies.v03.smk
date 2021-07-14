@@ -8,9 +8,9 @@ import subprocess
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
 
 module eval_workflow:
-  snakefile: "../../Snakemake_modules/evaluate_assemblies.rules.smk"
+  snakefile: "../modules/evaluate_assemblies.rules.smk"
 module preprocess_workflow:
-  snakefile: "../../Snakemake_modules/process_reads.rules.dev.smk"
+  snakefile: "../modules/process_reads.rules.smk"
 
 def get_targets(assembly):
   basename = os.path.splitext(os.path.basename(assembly))[0]
