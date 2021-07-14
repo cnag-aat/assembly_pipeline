@@ -19,7 +19,7 @@ Once the 2 config files are produced, the pipeline can be launched using snakema
 
 There are several ways of providing the reads for assembly and polishing.
 
-1- ONT reads
+### 1- ONT reads
 
 1.1 Using the option ``--ont-dir {DIR}`` in create_config_assembly.py:
 
@@ -45,7 +45,7 @@ If you do so, it will consider that you already have all the reads in one file a
 
 
 
-2-Illumina 10X-linked data
+### 2-Illumina 10X-linked data
 
 2.1 Using the  ```--raw-10X {DIR}``` and ``` --10X-list``` options:
 
@@ -55,7 +55,7 @@ It will take each basename in the list to get the corresponding fastqs from the 
 
 2.3 Using the ``--10X`` option. The argument would be the path to the concatenated ".barcoded" file that needs to be used for polishing. If the pre-concatenated files are not given, meryldbs will be directly generated with this file, but it may run out of memory. 
 
-3- Illumina short-read data
+### 3- Illumina short-read data
 
 3.1 Using the ``--illumina-dir {DIR}`` option, that will look for all the files in the directory that end in '.1.fastq.gz' and will add the basenames to "illumina_wildcards". These wildcards will be processed by the pipeline that will: 
 
@@ -65,7 +65,7 @@ It will take each basename in the list to get the corresponding fastqs from the 
 
 3.2 Using the ``--pe1 {FILE} and --pe2 {FILE}`` options. That will consider that these are the paired files containing all the illumina reads to be used and will build meryldbs and polish with them.
 
-4- Input assemblies
+### 4- Input assemblies
 
 If you want to polish an already assembled assembly, you can give it to the pipeline by using the option ``--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]
                         Dictionary with assemblies that need to be polished but not assembled and directory where they should
@@ -73,6 +73,40 @@ If you want to polish an already assembled assembly, you can give it to the pipe
 			
 
 
+# Run examples
+
+We will show several examples on how can we use the pipeline. For this purpose, we will use data from a project that has been assembled recently.
+
+### 1- Complete run with default parameters on the EASI/dependence-cattlemites project. 
+For this project we have 10X and ONT data (also HiC but this is not implemented here yet).  We'll preprocess the reads, do an assembly with Flye and polish it with Hypo. As for evaluations, we'll run merqury, busco and nseries. 
+
+When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
+
+``  /scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py --configFile run1.dependence_test.config --specFile run1.dependence_test.spec  --basename test --genome-size 68m --ont-reads /scratch/devel/talioto/denovo_assemblies/EASI/dependence_cattlemites/s01.1_p0.0_raw_reads/ont/AR8331/AR8331.0.EASI_41.EASI_42.EASI_41.FAP94258.1.fastq.gz --raw-10X /scratch/project/production/fastq/H7YGVDSX2/4/fastq/ --r10X-list "H7YGVDSX2_1_SI-GA-B9,H7YGVDSX2_4_SI-GA-B9,H7YGVDSX2_2_SI-GA-B9,H7YGVDSX2_3_SI-GA-B9" --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/arthropoda_odb10 --merqury-db dependence.meryl --meryl-k 18
+Genome size is 68.0 megabases
+/scratch/devel/jgomez/test_assembly_pipeline/dependence.meryl not found, the pipeline will create it
+``
+
+``
+snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile run1.dependence_test.config --is --cluster-conf run1.dependence_test.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np
+Building DAG of jobs...
+Job counts:
+        count   jobs
+        1       align_illumina
+        1       align_ont
+        1       all
+        4       build_meryl_db
+        1       concat_meryl
+        1       concat_reads
+        1       filtlong
+        1       finalize
+        1       flye
+        1       hypo
+        4       long_ranger
+        2       run_busco
+        2       run_merqury
+        21
+``
 # Description of implemented rules
 
 1- Preprocessing:
