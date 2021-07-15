@@ -114,19 +114,19 @@ Job counts:
 
 1- Preprocessing:
 	
-- Read concatenation:
+- **Read concatenation:**
 
 ``zcat {input.fastqs} | pigz -p {threads} -c  > {output.final_fastq}``
 	
-- Longranger for 10X reads: it uses the Longranger version installed in the path specified in the configfile
+- **Longranger for 10X reads**: it uses the Longranger version installed in the path specified in the configfile
 
 ``longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads}``
 
-- Filtlong: it uses the Filtlong version installed in the path specified in the configfile. By default it gives the min_length and min_mean_q parameters, but extra parameters can be added with the ``--filtlong-opts`` option.
+- **Filtlong:** it uses the Filtlong version installed in the path specified in the configfile. By default it gives the min_length and min_mean_q parameters, but extra parameters can be added with the ``--filtlong-opts`` option.
 
 ``filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads}``
 	
-- Build meryldb (with processed 10X reads or illumina reads): with the merqury conda environment specified in the configfile
+- **Build meryldb** (with processed 10X reads or illumina reads): it uses the merqury conda environment specified in the configfile. It takes as argument the `--mery-k` value that needs to be estimated first for the genime size. 
 
 ``meryl k={params.kmer} count output {output.out_dir} {input.fastq}``
 	
@@ -134,17 +134,19 @@ Job counts:
 
 ``meryl union-sum output {output.meryl_all} {input.input_run}``
 	
-- Align ONT (Minimap2): it aligns the reads using minimap2 and outputs the alignment either in bam or in paf.gz formats. It uses the minimap2 conda environment specified in the configfile
+- **Align ONT (Minimap2):** it aligns the reads using minimap2 and outputs the alignment either in bam or in paf.gz formats. It uses the minimap2 conda environment specified in the configfile
 
 ``minimap2 -{params.align_opts} -t {threads} {input.genome} {input.reads} ``
 
-- Align Illumina (BWA-MEM): it aligns the reads with BWA-mem and outputs a bam file
+- **Align Illumina (BWA-MEM):** it aligns the reads with BWA-mem and outputs a bam file
 
 ``bwa mem -Y {params.options} -t {threads} {input.genome} {input.reads} | samtools view -Sb - | samtools sort -@ {threads} -o {output.mapping} -``
 
 2- Assembly
 
-- Flye (default)
+- **Flye (default)**. It is run by default, if you don't want the pipeline to run it, you can give `--no-flye` option when creating the config. It uses the conda environment specified in the config. By default it is set to 2 polishing iterations and gives the genome-size estimate that has been given when creating the config. Extra options can be provided with the `--flye-opts`.
+
+``flye --{params.readtype} {input.reads} -o {params.outdir}out -t {threads} -i {params.pol_iterations} {params.other_flye_opts} ``
 	
 - Nextdenovo (if turned on)
 
