@@ -110,6 +110,9 @@ Job counts:
         2       run_merqury
         21
 ```
+
+This run was launched at 8:10h PM and it completed at 6:30h AM the day after, taking in total around 10h30 for a genome of around 70Mb. 
+
 # Description of implemented rules
 
 1- Preprocessing:
