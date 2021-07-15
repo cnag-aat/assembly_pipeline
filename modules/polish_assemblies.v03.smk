@@ -797,10 +797,17 @@ rule finalize:
       shell (
         "echo 'Pipeline has been completed succesffully, we are now going to delete temporary files:';"
       )
-     # for f in working_dir + "tmp_meryl", hypo_dir + "aux", working_dir + "mappings":
+     # for f in working_dir + "tmp_meryl", hypo_dir + "aux", working_dir + "mappings"
+      if config["Finalize"]["Merqury db"] != None:
+        t = os.path.dirname(config["Finalize"]["Merqury db"]) + "/tmp_meryl/"
+        if (os.path.exists(t)):
+          shell(
+            "echo 'Deleting {t}';"
+            "rm -r {t};"
+          )
       for i in inputs:
         rundir = inputs[i]
-        for f in rundir + "tmp_meryl", rundir + "hypo/aux", rundir + "mappings":
+        for f in rundir + "hypo/aux", rundir + "mappings":
           if (os.path.exists(f)):
             shell(
               "echo 'Deleting {f}';"
