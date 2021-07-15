@@ -263,7 +263,9 @@ BuscoSummaries = []
 if len(assemblies4Busco) > 0:
   for busco in assemblies4Busco:
     buscobase = os.path.splitext(os.path.basename(busco))[0]
-    basedirname = os.path.basename(os.path.dirname(os.path.dirname(busco)))
+    basedirname = os.path.basename(os.path.dirname(busco))
+    if basedirname == "hypo" or basedirname == "rmp" or basedirname == "nextpolish":
+      basedirname = os.path.basename(os.path.dirname(os.path.dirname(busco)))
     evaldir =  eval_dir + basedirname + "/"
     if not os.path.exists(evaldir + "logs/"):
       os.makedirs(evaldir + "logs/")
