@@ -45,6 +45,7 @@ class CreateConfigurationFile(object):
         self.nextpolish_ont_rounds = 0                                                            #Number of rounds for running Nexpolish with ONT
         self.nextpolish_ill_rounds = 0                                                            #Number of rounds for running Nexpolish with illumina
         self.hypo_rounds = 1                                                                      #Number of rounds for running hypo
+        self.run_purgedups = True 
         self.minimap2_cores = 16                                                                  #Number of threads to run the alignment with minimap2
         self.bwa_cores = 16                                                                       #Number of threads to run the alignment for the pilon step
         self.racon_cores = 16                                                                     #Number of threads to run the racon step
@@ -55,6 +56,8 @@ class CreateConfigurationFile(object):
         self.busco_cores = 16                                                                     #Number of threads to tun the BUSCO    
         self.longranger_cores = 8                                                                 #Number of threads to run longranger   
         self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2"      
+        self.purgedups_cores = 8 
+        self.purgedups_module = "PURGEDUPS/1.2.5"                                                 #Module in CNAG cluster with PURGEDUPS installation
 
         #ALL SPEC PARAMETERS
         self.all_qos = "normal"
@@ -95,6 +98,8 @@ class CreateConfigurationFile(object):
         self.illumina_dir = None                                                                  #Directory with the illumina reads, give this option if you don't have a single fastq file with all the reads
         self.assembly_in = {}                                                                     #List of input assemblies that need to be polished but are not assembled by the pipeline
         self.assemblies = {}
+        self.curate_assemblies = {}                                                               #List of input assemblies taht need to be curated but are not produced by the pipeline
+        self.assemblies_cur = {}
 
         #OUTPUT PARAMETERS
         self.pipeline_workdir = os.getcwd() + "/"                                                 #Base directory for the pipeline run
@@ -230,6 +235,12 @@ class CreateConfigurationFile(object):
         self.nextpolish_sr_queue = "main"
         self.nextpolish_sr_threads = self.nextpolish_cores
 
+        #PURGEDUPS SPEC PARAMETERS
+        self.purgedups_qos = "normal"
+        self.purgedups_time = "6:00:00"
+        self.purgedups_queue = "main"
+        self.purgedups_threads = self.purgedups_cores
+
         #FINALIZE PARAMETERS
         self.busco_env = "/scratch/project/devel/aateam/bin/busco_envs/busco_v4.0.6/" 
         self.intermediate_buscos = False                                                          #Set this to true if you want BUSCO to be run on each intermediate assembly  
@@ -291,6 +302,7 @@ class CreateConfigurationFile(object):
         self.joinpilonSpecParameters = {}
         self.nextpolishlrSpecParameters = {}
         self.nextpolishsrSpecParameters = {}
+        self.purgedupsSpecParameters = {}
         self.finalizeParameters = {}
         self.buscoSpecParameters = {}
         self.merqSpecParameters = {}
@@ -353,6 +365,9 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--hypo-rounds', type = int, dest="hypo_rounds", metavar="hypo_rounds", default=self.hypo_rounds, help='Number of rounds to run the Hypostep. Default %s' % self.hypo_rounds)
         general_group.add_argument('--longranger-cores', type = int, dest="longranger_cores", metavar="longranger_cores", default=self.longranger_cores, help='Number of threads to run longranger. Default %s' % self.longranger_cores)
         general_group.add_argument('--longranger-path', dest="longranger_path", metavar="longranger_path", help='Path to longranger executable. Default %s' % self.longranger_path)
+        general_group.add_argument('--no-purgedups', dest="run_purgedups", action="store_false", help='Give this option if you do not want to run Purgedups.')
+        general_group.add_argument('--purgedups-cores', type = int, dest="purgedups_cores", metavar="purgedups_cores", default=self.purgedups_cores, help='Number of threads to run purgedups. Default %s' % self.purgedups_cores)
+        general_group.add_argument('--purgedups-module', dest="purgedups_module", metavar="purgedups_module", default = self.purgedups_module, help='Module in CNAG cluster with PURGEDUPS installation. Default %s' % self.purgedups_module)
 
     def register_input(self, parser):
         """Register all input parameters with the given
@@ -372,6 +387,7 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--10X', dest="r10X", help='File with barcoded 10X reads in fastq.gz format, concatenated.')
         input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
+        input_group.add_argument('--curate-assemblies', dest="curate_assemblies", nargs="+", type=json.loads, default=self.curate_assemblies, help='Dictionary with assemblies that need to be curated but not assembled and base step for the directory where they should be curated. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\"=\"s04.2_p03.2\"}\' ...')
 
     def register_output(self, parser):
         """Register all output parameters with the given
@@ -674,6 +690,11 @@ class CreateConfigurationFile(object):
         if args.nextpolish_sr_threads > 24:
           args.nextpolish_sr_threads = 24
 
+        args.purgedups_qos =  self.purgedups_qos
+        args.purgedups_time = self.purgedups_time 
+        args.purgedups_queue = self.purgedups_queue
+        args.purgedups_threads = self.purgedups_threads
+
         args.busco_qos =  self.busco_qos
         args.busco_time = self.busco_time 
         args.busco_queue = self.busco_queue
@@ -924,6 +945,13 @@ class CreateConfigurationFile(object):
           for my_dict in args.assembly_in:
             for key in my_dict:
               args.assemblies[os.path.abspath(key)] = os.path.abspath(my_dict[key]) + "/"
+
+        args.assemblies_cur = {}
+        if len(args.curate_assemblies):
+          for my_dict in args.curate_assemblies:
+            for key in my_dict:
+              args.assemblies_cur[os.path.abspath(key)] = my_dict[key]
+
         if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds:
           if args.run_flye == True:
             if args.polish_flye_dir != None:
@@ -940,6 +968,43 @@ class CreateConfigurationFile(object):
               args.polish_nextdenovo_dir = args.pipeline_workdir + "s0" + str(step) + "_p" + args.nextdenovo_step + "_polishing/"
             args.assemblies[args.nextdenovo_out] = args.polish_nextdenovo_dir
 
+          if args.run_purgedups == True:          
+            if len(args.assemblies) > 0:
+              pol_bases = {}
+              base_tmp = ""
+              if  args.hypo_rounds >0:
+                pol_bases["hypo"] = "hypo" + str(args.hypo_rounds)
+              if args.racon_rounds > 0:
+                base_tmp+= "racon" + str(args.racon_rounds)
+              if base_tmp != "":
+                base_tmp += "."
+              if args.medaka_rounds > 0:
+                base_tmp += "medaka" + str(args.medaka_rounds)
+              if base_tmp != "":
+                base_tmp += "."
+              if args.pilon_rounds > 0:
+                base_tmp += "pilon" + str(args.pilon_rounds)
+              if base_tmp != "":
+                pol_bases["rmp"] = base_tmp
+                base_tmp = ""
+              if args.nextpolish_ont_rounds > 0:
+                base_tmp+= "nextpolish_ont" + str(args.racon_rounds)
+              if base_tmp != "":
+                base_tmp += "."
+              if args.nextpolish_ill_rounds > 0:
+                base_tmp += "nextpolish_ill" + str(args.medaka_rounds)
+              if base_tmp != "":
+                pol_bases["nextpolish"] = base_tmp
+
+              for m in args.assemblies:
+                bpol = os.path.splitext(os.path.basename(m))[0]
+                path = args.assemblies[m]
+                pstep = path.split('/')[-2].split('_')[0]
+                
+                nstep = pstep.replace('s','')
+                cstep = float(nstep) + 1
+                for p in pol_bases:
+                  args.assemblies_cur[args.assemblies[m] + p + "/" + bpol + "." +  pol_bases[p] + ".fasta"] = "s0" + str(cstep) + "_p" + nstep
 ###
 
     def storeGeneralParameters(self,args):
@@ -978,6 +1043,9 @@ class CreateConfigurationFile(object):
         self.generalParameters["busco_cores"] = args.busco_cores
         self.generalParameters["longranger_cores"] = args.longranger_cores
         self.generalParameters["longranger_path"] = args.longranger_path
+        self.generalParameters["run_purgedups"] = args.run_purgedups
+        self.generalParameters["purgedups_cores"] = args.purgedups_cores
+        self.generalParameters["purgedups_module"] = args.purgedups_module
         self.allParameters["Parameters"] = self.generalParameters
 
     def storeallSpecParameters(self,args):
@@ -1008,6 +1076,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["ILLUMINA_10X"] = args.r10X
         self.inputParameters["illumina_dir"] = args.illumina_dir
         self.inputParameters["Assemblies for polishing"] = args.assemblies
+        self.inputParameters["Assemblies for curation"] = args.assemblies_cur
         self.allParameters ["Inputs"] = self.inputParameters
 
     def storeOutputParameters(self,args):
@@ -1290,6 +1359,19 @@ class CreateConfigurationFile(object):
         self.nextpolishsrSpecParameters["threads"] = args.nextpolish_sr_threads
         self.allParameters ["nextpolish_sr"] = self.nextpolishsrSpecParameters
 
+
+    def storepurgedupsSpecParameters(self,args):
+        """Updates purgedups cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.purgedupsSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base_in}"
+        self.purgedupsSpecParameters["qos"] = args.purgedups_qos
+        self.purgedupsSpecParameters["time"] = args.purgedups_time
+        self.purgedupsSpecParameters["queue"] = args.purgedups_queue
+        self.purgedupsSpecParameters["threads"] = args.purgedups_threads
+        self.allParameters ["purge_dups"] = self.purgedupsSpecParameters
+
     def storeFinalizeParameters(self,args):
         """Updates finalize parameters to the map of parameters to be store in a JSON file
 
@@ -1424,7 +1506,7 @@ if args.r10X_wildcards != None:
   specManager.storelongrangerSpecParameters(args)
 if args.illumina_wildcards != None or args.ONT_wildcards != None or args.r10X_wildcards:
   specManager.storeconcatreadsSpecParameters(args)
-if args.ONT_wildcards != None or args.ONT_reads != None:
+if args.ONT_wildcards != None and args.ONT_reads != None:
   if not os.path.exists(args.ONT_filtered):
     specManager.storefiltlongSpecParameters(args)
 if args.run_flye == True:
@@ -1436,7 +1518,7 @@ if args.run_nextdenovo == True:
     nextdenovo_config.write(ndconf)
 if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0:
   specManager.storebwaSpecParameters(args)
-if args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds >0:
+if args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds >0 or args.run_purgedups == True:
   specManager.storeminimapSpecParameters(args)
 if args.hypo_rounds > 0:
   specManager.storehypoSpecParameters(args)
@@ -1452,6 +1534,8 @@ if args.nextpolish_ont_rounds > 0:
   specManager.storenextpolishlrSpecParameters(args)
 if args.nextpolish_ill_rounds > 0:
   specManager.storenextpolishsrSpecParameters(args)
+if args.run_purgedups == True:
+  specManager.storepurgedupsSpecParameters(args)
 if args.intermediate_buscos == True or args.final_buscos == True:
   specManager.storebuscoSpecParameters(args)
 if args.merqury_db:

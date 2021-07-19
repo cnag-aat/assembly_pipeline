@@ -172,6 +172,7 @@ scripts_dir = config["Inputs"]["scripts_dir"]
 logs_dir = config["Parameters"]["logs_dir"]
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
+shell.prefix("echo 'Cluster jobid $SLURM_JOBID'; export PATH=" + scripts_dir + ":$PATH;")
 
 rr = config["Parameters"]["racon_rounds"]
 pr = config["Parameters"]["pilon_rounds"]
@@ -244,6 +245,12 @@ inputs = config["Inputs"]["Assemblies for polishing"]
 for assembly_in in inputs:
   get_targets(assembly_in)
 
+curation = []
+if config["Parameters"]["run_purgedups"] == True:
+  for i in config["Inputs"]["Assemblies for curation"]:
+    curation.append(i)
+    base_curation = os.path.splitext(os.path.basename(i))[0]
+    curation.append( working_dir + config["Inputs"]["Assemblies for curation"][i] + "_run_purgedups/" + base_curation + ".purged.fa")
 
 assemblies4Busco = []
 if config["Finalize"]["intermediate BUSCOs"] == True or config["Finalize"]["final BUSCOs"] == True:
@@ -255,6 +262,8 @@ if config["Finalize"]["final BUSCOs"] == True:
   for i in terminalassemblies:
     assemblies4Busco.append(i)
   for i in inputs:
+    assemblies4Busco.append(i)
+  for i in curation:
     assemblies4Busco.append(i)
 
 busco_in = {}
@@ -285,6 +294,8 @@ if config["Finalize"]["Merqury db"] != None:
       assemblies4Merqury.append(i)
     for i in inputs:
       assemblies4Merqury.append(i)
+    for i in curation:
+      assemblies4Merqury.append(i)    
 
 merq_in = {}
 MerqurySummaries = []
@@ -292,7 +303,9 @@ MerquryQV = []
 if len(assemblies4Merqury) > 0:
   for merq in assemblies4Merqury:
     merqbase = os.path.splitext(os.path.basename(merq))[0]
-    basedirname = os.path.basename(os.path.dirname(os.path.dirname(merq)))
+    basedirname = os.path.basename(os.path.dirname(merq))
+    if basedirname == "hypo" or basedirname == "rmp" or basedirname == "nextpolish":
+      basedirname = os.path.basename(os.path.dirname(os.path.dirname(merq)))
     evaldir =  eval_dir + basedirname + "/"
     merqdir = evaldir + "merqury/" + merqbase + "/"
     if not os.path.exists(merqdir):
@@ -424,7 +437,7 @@ if len(fastqs) > 0:
     "{dir}logs/" + str(date) + ".concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
 
-if not os.path.exists(ONT_filtered):
+if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
   extra_filtlong_opts = config["Filtlong"]["options"]
   if extra_filtlong_opts == None:
     extra_filtlong_opts = ""

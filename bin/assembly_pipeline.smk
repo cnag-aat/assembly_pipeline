@@ -78,7 +78,7 @@ if len(fastqs) > 0:
     "{dir}logs/" + str(date) + ".concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
 
-if not os.path.exists(ONT_filtered):
+if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
   extra_filtlong_opts = config["Filtlong"]["options"]
   if extra_filtlong_opts == None:
     extra_filtlong_opts = ""
@@ -130,6 +130,7 @@ if config["Parameters"]["run_nextdenovo"] == True:
     nextdenovo_dir + "logs/" + str(date) + ".nextdenovo.err"
   threads: config["Nextdenovo"]["Nextdenovo cores"]
 
-##Run polishing pipeline
+##Run after assembly steps
 include: "../modules/polish_assemblies.v03.smk"
+include: "../modules/curate_assemblies.smk"
 
