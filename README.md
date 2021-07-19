@@ -4,7 +4,7 @@
  conda activate /home/devel/jgomez/conda_environments/snakemake
  ```
 
-Currently it can take ONT reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups and evaluations. By default it will preprocess the reads, run Flye + Hypo and evaluate the resulting assemblies with BUSCO, MERQURY and Nseries. 
+Currently it can take ONT reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups and evaluations. By default it will preprocess the reads, run Flye + Hypo + purge_dups and evaluate the resulting assemblies with BUSCO, MERQURY and Nseries. 
 It needs a config file and a spec file (json file with instructions on which resources to use in the CNAG cluster for each of the jobs). Both files are created by the script "create_config_assembly.py" that is located in the bin directory. To check all the options accepted by the script, do:
 
 ```
@@ -85,7 +85,7 @@ For this project we have 10X and ONT data (also HiC but this is not implemented 
 When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
 
 ``` 
-/scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py --configFile run1.dependence_test.config --specFile run1.dependence_test.spec  --basename test --genome-size 68m --ont-reads /scratch/devel/talioto/denovo_assemblies/EASI/dependence_cattlemites/s01.1_p0.0_raw_reads/ont/AR8331/AR8331.0.EASI_41.EASI_42.EASI_41.FAP94258.1.fastq.gz --raw-10X /scratch/project/production/fastq/H7YGVDSX2/4/fastq/ --r10X-list "H7YGVDSX2_1_SI-GA-B9,H7YGVDSX2_4_SI-GA-B9,H7YGVDSX2_2_SI-GA-B9,H7YGVDSX2_3_SI-GA-B9" --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/arthropoda_odb10 --merqury-db dependence.meryl --meryl-k 18
+/scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py --configFile run1.dependence_test.config --specFile run1.dependence_test.spec  --basename test --genome-size 68m --ont-reads /scratch/devel/talioto/denovo_assemblies/EASI/dependence_cattlemites/s01.1_p0.0_raw_reads/ont/AR8331/AR8331.0.EASI_41.EASI_42.EASI_41.FAP94258.1.fastq.gz --raw-10X /scratch/project/production/fastq/H7YGVDSX2/4/fastq/ --r10X-list "H7YGVDSX2_1_SI-GA-B9,H7YGVDSX2_4_SI-GA-B9,H7YGVDSX2_2_SI-GA-B9,H7YGVDSX2_3_SI-GA-B9" --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/arthropoda_odb10 --merqury-db dependence.meryl --meryl-k 18 --no-purgedups
 Genome size is 68.0 megabases
 /scratch/devel/jgomez/test_assembly_pipeline/dependence.meryl not found, the pipeline will create it
 ```
@@ -167,7 +167,11 @@ This run was launched at 8:10h PM and it completed at 6:30h AM the day after, ta
 	
 - Nextpolish illumina (if turned on)
 
-4- Evaluations
+4- Curation
+
+- Purge_dups (by default)
+
+5- Evaluations
 	
 - Merqury
 	
@@ -190,19 +194,22 @@ usage: create_configuration_file [-h] [--configFile configFile] [--specFile spec
                                  [--racon-rounds racon_rounds] [--pilon-rounds pilon_rounds] [--medaka-rounds medaka_rounds]
                                  [--nextpolish-ont-rounds nextpolish_ont_rounds]
                                  [--nextpolish-ill-rounds nextpolish_ill_rounds] [--hypo-rounds hypo_rounds]
-                                 [--longranger-cores longranger_cores] [--longranger-path longranger_path]
+                                 [--longranger-cores longranger_cores] [--longranger-path longranger_path] [--no-purgedups]
+                                 [--purgedups-cores purgedups_cores] [--purgedups-module purgedups_module]
                                  [--scripts-dir SCRIPTS_DIR] [--ont-reads ONT_READS] [--ont-dir ONT_DIR]
                                  [--ont-filt ONT_FILTERED] [--pe1 PE1] [--pe2 PE2] [--raw-10X RAW_10X]
                                  [--processed-10X PROCESSED_10X] [--10X R10X] [--illumina-dir ILLUMINA_DIR]
-                                 [--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]] [--pipeline-workdir PIPELINE_WORKDIR]
-                                 [--filtlong-dir FILTLONG_DIR] [--flye-dir FLYE_DIR] [--nextdenovo-dir NEXTDENOVO_DIR]
-                                 [--flye-polishing-dir POLISH_FLYE_DIR] [--nextdenovo-polishing-dir POLISH_NEXTDENOVO_DIR]
-                                 [--eval-dir eval_dir] [--stats-out stats_out] [--filtlong-path filtlong_path]
-                                 [--filtlong-minlen filtlong_minlen] [--filtlong-min-mean-q filtlong_min_mean_q]
-                                 [--filtlong-opts filtlong_opts] [--flye-env flye_env] [--flye-cores flye_cores]
-                                 [--flye-polishing-iterations flye_pol_it] [--other-flye-opts other_flye_opts]
-                                 [--nextdenovo-module nextdenovo_module] [--nextdenovo-cores nextdenovo_cores]
-                                 [--nextdenovo-task nextdenovo_task] [--nextdenovo-rewrite nextdenovo_rewrite]
+                                 [--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]]
+                                 [--curate-assemblies CURATE_ASSEMBLIES [CURATE_ASSEMBLIES ...]]
+                                 [--pipeline-workdir PIPELINE_WORKDIR] [--filtlong-dir FILTLONG_DIR] [--flye-dir FLYE_DIR]
+                                 [--nextdenovo-dir NEXTDENOVO_DIR] [--flye-polishing-dir POLISH_FLYE_DIR]
+                                 [--nextdenovo-polishing-dir POLISH_NEXTDENOVO_DIR] [--eval-dir eval_dir]
+                                 [--stats-out stats_out] [--filtlong-path filtlong_path] [--filtlong-minlen filtlong_minlen]
+                                 [--filtlong-min-mean-q filtlong_min_mean_q] [--filtlong-opts filtlong_opts]
+                                 [--flye-env flye_env] [--flye-cores flye_cores] [--flye-polishing-iterations flye_pol_it]
+                                 [--other-flye-opts other_flye_opts] [--nextdenovo-module nextdenovo_module]
+                                 [--nextdenovo-cores nextdenovo_cores] [--nextdenovo-task nextdenovo_task]
+                                 [--nextdenovo-rewrite nextdenovo_rewrite]
                                  [--nextdenovo-parallel_jobs nextdenovo_parallel_jobs]
                                  [--nextdenovo-minreadlen nextdenovo_minreadlen]
                                  [--nextdenovo-seeddepth nextdenovo_seeddepth]
@@ -285,6 +292,11 @@ General Parameters:
                         Number of threads to run longranger. Default 8
   --longranger-path longranger_path
                         Path to longranger executable. Default /scratch/project/devel/aateam/src/10X/longranger-2.2.2
+  --no-purgedups        Give this option if you do not want to run Purgedups.
+  --purgedups-cores purgedups_cores
+                        Number of threads to run purgedups. Default 8
+  --purgedups-module purgedups_module
+                        Module in CNAG cluster with PURGEDUPS installation. Default PURGEDUPS/1.2.5
 
 Inputs:
   --scripts-dir SCRIPTS_DIR
@@ -304,12 +316,17 @@ Inputs:
   --illumina-dir ILLUMINA_DIR
                         Directory where the illumina fastqs are stored. Default None
   --assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]
-                        Dictionary with assemblies that need to be polished but not assembled and directory where they should
-                        be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...
+                        Dictionary with assemblies that need to be polished but not assembled and directory where they
+                        should be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...
+  --curate-assemblies CURATE_ASSEMBLIES [CURATE_ASSEMBLIES ...]
+                        Dictionary with assemblies that need to be curated but not assembled and base step for the directory
+                        where they should be curated. Example: '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}'
+                        ...
 
 Outputs:
   --pipeline-workdir PIPELINE_WORKDIR
-                        Base directory for the pipeline run. Default /scratch/devel/jgomez/test_assembly_pipeline/
+                        Base directory for the pipeline run. Default
+                        /scratch/devel/talioto/denovo_assemblies/podarcis_lilfordi/s05.2_p04.1_run_purgedups/
   --filtlong-dir FILTLONG_DIR
                         Directory to process the ONT reads with filtlong. Default s01.1_p01.1_Filtlong
   --flye-dir FLYE_DIR   Directory to run flye. Default s02.1_p01.1_flye/
@@ -361,8 +378,8 @@ Nextdenovo:
   --nextdenovo-seedcutoff nextdenovo_seedcutoff
                         Minimum seed length, <=0 means calculate it automatically using bin/seq_stat. Default 0
   --nextdenovo-blocksize nextdenovo_blocksize
-                        Block size for parallel running, split non-seed reads into small files, the maximum size of each file
-                        is blocksize. Default 1g
+                        Block size for parallel running, split non-seed reads into small files, the maximum size of each
+                        file is blocksize. Default 1g
   --nextdenovo-pa-correction  nextdenovo_pa_correction
                         number of corrected tasks used to run in parallel, each corrected task requires ~TOTAL_INPUT_BASES/4
                         bytes of memory usage, overwrite parallel_jobs only for this step. Default 4
@@ -440,7 +457,6 @@ Wildcards:
   --r10X-list r10X_wildcards
                         List with basename of the raw 10X fastqs. For raw 10X we need to give this argument, for processed
                         10X reads, the pipeline can obtain it. Default None
-
 
 ```
 
