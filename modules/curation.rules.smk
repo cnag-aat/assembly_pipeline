@@ -31,5 +31,6 @@ rule purge_dups:
     "calcuts PB.stat > cutoffs 2>calcults.log;"
     "purge_dups -2 -T cutoffs -c PB.base.cov {params.base}.split.self.paf.gz > dups.bed 2> purge_dups.log;"
     "get_seqs -e dups.bed {input.assembly_in};"
+    "ln -s purged.fa {output.assembly_out};"
     "module purge; module load gcc/6.3.0 PYTHON/3.7.1;"
     "python3 /apps/{params.module}/scripts/hist_plot.py -c cutoffs PB.stat PB.cov.png;"

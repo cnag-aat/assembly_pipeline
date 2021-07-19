@@ -237,7 +237,7 @@ class CreateConfigurationFile(object):
 
         #PURGEDUPS SPEC PARAMETERS
         self.purgedups_qos = "normal"
-        self.purgedups_time = "6:00:00"
+        self.purgedups_time = "1:00:00"
         self.purgedups_queue = "main"
         self.purgedups_threads = self.purgedups_cores
 
