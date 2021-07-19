@@ -4,7 +4,7 @@
  conda activate /home/devel/jgomez/conda_environments/snakemake
  ```
 
-Currently it can take ONT reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups and evaluations. By default it will preprocess the reads, run Flye + Hypo + purge_dups and evaluate the resulting assemblies with BUSCO, MERQURY and Nseries. 
+Currently it can take ONT reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups and evaluations. By default it will preprocess the reads, run Flye + Hypo and evaluate the resulting assemblies with BUSCO, MERQURY and Nseries. 
 It needs a config file and a spec file (json file with instructions on which resources to use in the CNAG cluster for each of the jobs). Both files are created by the script "create_config_assembly.py" that is located in the bin directory. To check all the options accepted by the script, do:
 
 ```
