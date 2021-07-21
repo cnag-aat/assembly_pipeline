@@ -132,5 +132,5 @@ if config["Parameters"]["run_nextdenovo"] == True:
 
 ##Run after assembly steps
 include: "../modules/polish_assemblies.v03.smk"
-include: "../modules/curate_assemblies.smk"
+#include: "../modules/curate_assemblies.smk"
 

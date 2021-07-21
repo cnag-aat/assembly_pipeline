@@ -35,6 +35,7 @@ class CreateConfigurationFile(object):
         self.genome_size = None							                  #Estimated genome size
         self.preprocess_ont_step = "01.1"                                                         #Step directory for preprocessing ont
         self.preprocess_10X_step = "01.2"
+        self.preprocess_illumina_step = "01.2"
         self.flye_step = "02.1"                                                                   #Step direcotory for running flye
         self.nextdenovo_step = "02.2"                                                             #Step direcotory for running nextdenovo
         self.run_flye = True       
@@ -69,6 +70,15 @@ class CreateConfigurationFile(object):
         self.longranger_time = "6:00:00"
         self.longranger_queue = "main"
 
+        #TRIMGALORE PARAMETERS
+        self.trim_galore_opts = "--gzip -q 20 --paired --retain_unpaired"
+        self.Trim_Illumina_cores = 4                                                              #Number of threads to run the trim Illumina step
+
+        #TRIMGALORE SPEC PARAMETERS
+        self.trimgalore_qos = "normal"
+        self.trimgalore_time = "3:00:00"
+        self.trimgalore_queue = "genB,main"
+
         #CONCAT READS SPEC PARAMETERS
         self.concat_reads_qos = "normal"
         self.concat_reads_time = "10:00:00"
@@ -90,12 +100,13 @@ class CreateConfigurationFile(object):
         self.ONT_reads = None                                                                     #File with all the ONT reads    
         self.ONT_dir = None                                                                       #Directory with the ONT reads, give this option if you don't have a single fastq file with all the reads
         self.ONT_filtered = None                                                                  #File with the ONT reads after running filtlong         
-        self.pe1 = None                                                                           #File with the illumina paired-end fastqs, pair 1
-        self.pe2 = None                                                                           #File with the illumina paired-end fastqs, pair 2
+        self.pe1 = None                                                                           #File with the illumina paired-end fastqs, already trimeed, pair 1
+        self.pe2 = None                                                                           #File with the illumina paired-end fastqs, already trimmed, pair 2
         self.r10X = None                                                                          #File with barcoded 10X reads in fastq.gz format, concatenated
         self.raw_10X = None                                                                       #Directory to Raw 10X reads, it has to be the mkfastq dir
         self.processed_10X = None                                                                 #Directory to Processed 10X reads, already there or to be produced by the pipeline
-        self.illumina_dir = None                                                                  #Directory with the illumina reads, give this option if you don't have a single fastq file with all the reads
+        self.illumina_dir = None                                                                  #Directory with the illumina raw reads, give this option if you don't have a single fastq file with all the reads
+        self.processed_illumina = None                                                            #Directory to Processed illumina reads, already there or to be produced by the pipeline
         self.assembly_in = {}                                                                     #List of input assemblies that need to be polished but are not assembled by the pipeline
         self.assemblies = {}
         self.curate_assemblies = {}                                                               #List of input assemblies taht need to be curated but are not produced by the pipeline
@@ -278,6 +289,8 @@ class CreateConfigurationFile(object):
         self.inputParameters = {}
         self.outputParameters = {}
         self.longrangerSpecParameters = {}
+        self.trimgaloreParameters = {}
+        self.trimgaloreSpecParameters = {}
         self.concatreadsSpecParameters = {}
         self.buildmerylSpecParameters = {}
         self.concatmerylSpecParameters = {}
@@ -318,6 +331,7 @@ class CreateConfigurationFile(object):
         self.register_input(parser)
         self.register_output(parser)
         self.register_filtlong(parser)
+        self.register_trimgalore(parser)
         self.register_flye(parser)
         self.register_nextdenovo(parser)
         self.register_hypo(parser)
@@ -345,6 +359,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--keep-intermediate', dest="keepintermediate", action="store_true", help='Set this to True if you do not want intermediate files to be removed. Default %s' % self.keepintermediate)
         general_group.add_argument('--preprocess-lr-step', dest="preprocess_ont_step", default=self.preprocess_ont_step, help='Step for preprocessing long-reads. Default %s' % self.preprocess_ont_step)
         general_group.add_argument('--preprocess-10X-step', dest="preprocess_10X_step", default=self.preprocess_10X_step, help='Step for preprocessing 10X reads. Default %s' % self.preprocess_10X_step)
+        general_group.add_argument('--preprocess-illumina-step', dest="preprocess_illumina_step", default=self.preprocess_illumina_step, help='Step for preprocessing illumina reads. Default %s' % self.preprocess_illumina_step)
         general_group.add_argument('--flye-step', dest="flye_step", default=self.flye_step, help='Step for running flye. Default %s' % self.flye_step)
         general_group.add_argument('--no-flye', dest="run_flye", action="store_false", help='Give this option if you do not want to run Flye.')
         general_group.add_argument('--nextdenovo-step', dest="nextdenovo_step", default=self.nextdenovo_step, help='Step for running nextdenovo. Default %s' % self.nextdenovo_step)
@@ -380,12 +395,13 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--ont-reads', dest="ONT_reads", help='File with all the ONT reads. Default %s' % self.ONT_reads)
         input_group.add_argument('--ont-dir', dest="ONT_dir", help='Directory where the ONT fastqs are stored. Default %s' % self.ONT_dir)
         input_group.add_argument('--ont-filt', dest="ONT_filtered", help='File with the ONT reads after running filtlong on them. Default %s' % self.ONT_filtered)
-        input_group.add_argument('--pe1', dest="pe1", help='File with the illumina paired-end fastqs, pair 1.')
-        input_group.add_argument('--pe2', dest="pe2", help='File with the illumina paired-end fastqs, pair 2.')
+        input_group.add_argument('--pe1', dest="pe1", help='File with the illumina paired-end fastqs, already trimmed,  pair 1.')
+        input_group.add_argument('--pe2', dest="pe2", help='File with the illumina paired-end fastqs, already trimmed, pair 2.')
+        input_group.add_argument('--processed-illumina', dest="processed_illumina", help='Directory to Processed illumina reads. Already there or to be produced by the pipeline.')
         input_group.add_argument('--raw-10X', dest="raw_10X", help='Directory to mkfastq Raw 10X reads.')
         input_group.add_argument('--processed-10X', dest="processed_10X", help='Directory to Processed 10X reads. Already there or to be produced by the pipeline.')
         input_group.add_argument('--10X', dest="r10X", help='File with barcoded 10X reads in fastq.gz format, concatenated.')
-        input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the illumina fastqs are stored. Default %s' % self.illumina_dir)
+        input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the raw illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
         input_group.add_argument('--curate-assemblies', dest="curate_assemblies", nargs="+", type=json.loads, default=self.curate_assemblies, help='Dictionary with assemblies that need to be curated but not assembled and base step for the directory where they should be curated. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\"=\"s04.2_p03.2\"}\' ...')
 
@@ -416,6 +432,16 @@ class CreateConfigurationFile(object):
         filtlong_group.add_argument('--filtlong-minlen', dest="filtlong_minlen", metavar="filtlong_minlen", default=self.filtlong_minlen, type = int, help='Minimum read length to use with Filtlong. Default %s' % self.filtlong_minlen)
         filtlong_group.add_argument('--filtlong-min-mean-q', dest="filtlong_min_mean_q", metavar="filtlong_min_mean_q", default=self.filtlong_min_mean_q, type = int, help='Minimum mean quality to use with Filtlong. Default %s' % self.filtlong_min_mean_q)
         filtlong_group.add_argument('--filtlong-opts', dest="filtlong_opts", metavar="filtlong_opts", default=self.filtlong_opts, help='Extra options to run Filtlong (eg. -t 4000000000)')
+
+    def register_trimgalore(self, parser):
+        """Register all trimgalore parameters with the given
+        argparse parser
+
+        parser -- the argparse parser
+        """
+        trimgalore_group = parser.add_argument_group('Trim_Galore')
+        trimgalore_group.add_argument('--trim-galore-opts', dest="trim_galore_opts", metavar="trim_galore_opts", default=self.trim_galore_opts, help='Optional parameters for the rule trim_galore. Default %s' % self.trim_galore_opts)
+        trimgalore_group.add_argument('--trim-Illumina-cores', type = int, dest="Trim_Illumina_cores", metavar="Trim_Illumina_cores", default=self.Trim_Illumina_cores, help='Number of threads to run the Illumina trimming step. Default %s' % self.Trim_Illumina_cores)
 
     def register_flye(self, parser):
         """Register all flye parameters with the given
@@ -625,6 +651,10 @@ class CreateConfigurationFile(object):
         args.longranger_time = self.longranger_time 
         args.longranger_queue = self.longranger_queue     
 
+        args.trimgalore_qos = self.trimgalore_qos
+        args.trimgalore_time = self.trimgalore_time
+        args.trimgalore_queue = self.trimgalore_queue
+
         args.concat_reads_qos =  self.concat_reads_qos
         args.concat_reads_time = self.concat_reads_time 
         args.concat_reads_queue = self.concat_reads_queue
@@ -760,7 +790,7 @@ class CreateConfigurationFile(object):
                   sys.exit(-1)
 
         if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.merqury_db:
-          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.raw_10X == None and args.processed_10X == None:
+          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and args.raw_10X == None and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
             sys.exit(-1)
@@ -779,7 +809,7 @@ class CreateConfigurationFile(object):
               sys.exit(-1)
 
             if not os.path.exists(args.pe1) or not os.path.exists(args.pe2):
-              if args.illumina_dir == None:
+              if args.illumina_dir == None and args.processed_illumina == None:
                 parser.print_help()
                 print ("Illumina reads are not found and are needed")
                 sys.exit(-1)
@@ -792,12 +822,22 @@ class CreateConfigurationFile(object):
                 sys.exit(-1)
           elif args.illumina_dir != None:
             args.illumina_dir = os.path.abspath(args.illumina_dir) + "/" 
+            if args.processed_illumina == None:
+              args.processed_illumina =  args.pipeline_workdir + "s" + self.preprocess_illumina_step + "_p01.1_preprocess_illumina_reads/trim/"
             if not os.path.exists(args.illumina_dir):
               parser.print_help()
               print (args.illumina_dir + " not found")
               sys.exit(-1)
             elif args.illumina_wildcards == None:
               args.illumina_wildcards = get_wildcards(args.illumina_dir, args.illumina_wildcards, '.1.fastq.gz')
+          elif args.processed_illumina != None:
+            args.processed=illumina = os.path.abspath(args.processed_illumina) 
+            if not os.path.exists(args.processed_illumina):
+              parser.print_help()
+              print (args.processed_illumina + " not found and missing raw illumina directory")
+              sys.exit(-1) 
+            elif args.illumina_wildcards == NOne:
+              args.illumina_wildcards = get_wildcards(args.processed_illumina, args.illumina_wildcards, '.1.fastq.gz')
           else:
             if args.raw_10X != None:
               args.raw_10X = os.path.abspath(args.raw_10X) + "/"
@@ -1022,6 +1062,7 @@ class CreateConfigurationFile(object):
         self.generalParameters["base_name"] = args.base_name
         self.generalParameters["genome_size"] = args.genome_size
         self.generalParameters["preprocess_ont_step"] = args.preprocess_ont_step
+        self.generalParameters["preprocess_illumina_step"] = args.preprocess_illumina_step
         self.generalParameters["preprocess_10X_step"] = args.preprocess_10X_step
         self.generalParameters["flye_step"] = args.flye_step
         self.generalParameters["run_flye"] = args.run_flye
@@ -1071,6 +1112,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["ONT_filtered"] = args.ONT_filtered
         self.inputParameters["ILLUMINA_pe1"] = args.pe1
         self.inputParameters["ILLUMINA_pe2"] = args.pe2
+        self.inputParameters["processed_illumina"] = args.processed_illumina
         self.inputParameters["raw_10X"] = args.raw_10X
         self.inputParameters["processed_10X"] = args.processed_10X
         self.inputParameters["ILLUMINA_10X"] = args.r10X
@@ -1104,6 +1146,26 @@ class CreateConfigurationFile(object):
         self.longrangerSpecParameters["time"] = args.longranger_time
         self.longrangerSpecParameters["queue"] = args.longranger_queue
         self.allParameters ["long_ranger"] = self.longrangerSpecParameters
+
+    def storeTrimgaloreParameters(self,args):
+        """Updates the Trim_Galore parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.trimgaloreParameters["options"] = args.trim_galore_opts
+        self.trimgaloreParameters["Trim_Illumina_cores"] = args.Trim_Illumina_cores
+        self.allParameters ["Trim_Galore"] = self.trimgaloreParameters
+
+    def storetrimgaloreSpecParameters(self,args):
+        """Updates trimgalore cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.trimgaloreSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.file}"
+        self.trimgaloreSpecParameters["qos"] = args.trimgalore_qos
+        self.trimgaloreSpecParameters["time"] = args.trimgalore_time
+        self.trimgaloreSpecParameters["queue"] = args.trimgalore_queue
+        self.allParameters ["trimgalore"] = self.trimgaloreSpecParameters
 
     def storeconcatreadsSpecParameters(self,args):
         """Updates concat reads cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1491,6 +1553,7 @@ configManager.check_parameters(args)
 configManager.storeGeneralParameters(args)
 configManager.storeInputParameters(args)
 configManager.storeOutputParameters(args)
+configManager.storeTrimgaloreParameters(args)
 configManager.storeFiltlongParameters(args)
 configManager.storeFlyeParameters(args)
 configManager.storeNextdenovoParameters(args)
@@ -1504,6 +1567,8 @@ configManager.storeWildcardParameters(args)
 specManager.storeallSpecParameters(args)
 if args.r10X_wildcards != None:
   specManager.storelongrangerSpecParameters(args)
+if args.illumina_dir != None:
+  specManager.storetrimgaloreSpecParameters(args)
 if args.illumina_wildcards != None or args.ONT_wildcards != None or args.r10X_wildcards:
   specManager.storeconcatreadsSpecParameters(args)
 if args.ONT_wildcards != None and args.ONT_reads != None:

@@ -81,16 +81,14 @@ if config["Parameters"]["run_purgedups"] == True:
       genome = lambda wildcards: minimap2[wildcards.name],
       reads = ont_reads,
     output:
-      mapping = "{directory}/mappings/{name}_{ext}"
+      mapping = "{directory}/mappings/{name}_minimap2.paf.gz"
     params:
       env = config["Racon"]["Minimap environment"],
-      align_opts = lambda wildcards:"ax map-ont" if wildcards.ext == "minimap2.bam" else "x map-ont",
-      tmp = "$TMPDIR/{name}_{ext}.tmp"
-    wildcard_constraints:
-      ext = "minimap2.(.+)"
+      align_opts = "x map-ont",
+      tmp = "$TMPDIR/{name}_minimap2.paf.gz.tmp"
     log:
-      "{directory}/logs/" + str(date) + ".{ext}.{name}.out",
-      "{directory}/logs/" + str(date) + ".{ext}.{name}.err",
+      "{directory}/logs/" + str(date) + ".minimap2.paf.gz.{name}.out",
+      "{directory}/logs/" + str(date) + ".minimap2.paf.gz.{name}.err",
     threads: config["Parameters"]["minimap2_cores"]
 
 #4- Run curation rules

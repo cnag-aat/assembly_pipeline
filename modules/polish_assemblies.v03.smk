@@ -351,12 +351,13 @@ if pr > 0 or nir>0 or hr>0:
       illumina_dir = config["Inputs"]["illumina_dir"]
       illumina_list = config["Wildcards"]["illumina_wildcards"].split(',')
       extensions = ["1.fastq.gz", "2.fastq.gz"]
-      pe1_reads = working_dir + "reads.illumina.1.fastq.gz"
-      pe2_reads = working_dir + "reads.illumina.2.fastq.gz"
+      illumina_processed = config["Inputs"]["processed_illumina"]
+      pe1_reads = os.path.dirname(os.path.dirname(illumina_processed)) + "/reads.illumina.1.fastq.gz"
+      pe2_reads = os.path.dirname(os.path.dirname(illumina_processed)) + "/reads.illumina.2.fastq.gz"
       for i in extensions:
         fastqs["illumina." + i] = []
         for file in illumina_list:
-          fastqs["illumina." + i].append(illumina_dir + file + "." + i)
+          fastqs["illumina." + i].append(illumina_processed + file + ".trimmed." + i)
     if config["Inputs"]["processed_10X"] != None or config["Inputs"]["raw_10X"] != None:
       r10X_list = config["Wildcards"]["10X_wildcards"].split(',')
       r10X_dir = config["Inputs"]["processed_10X"]
@@ -425,6 +426,22 @@ if len(longranger_inputs) > 0:
       r10X_dir + "logs/" + str(date) + ".longranger.{bname}.out",
       r10X_dir + "logs/" + str(date) + ".longranger.{bname}.err"
     threads: config["Parameters"]["longranger_cores"] 
+
+if config["Inputs"]["processed_illumina"] != None:
+  use rule trim_galore from preprocess_workflow with:
+    input:
+      read1 = config["Inputs"]["illumina_dir"] + "{file}.1.fastq.gz",
+      read2 = config["Inputs"]["illumina_dir"] + "{file}.2.fastq.gz"
+    output:
+      trim1 = illumina_processed + "{file}.trimmed.1.fastq.gz",
+      trim2 = illumina_processed + "{file}.trimmed.2.fastq.gz"
+    params:
+      outdir = illumina_dir,
+      opts = config["Trim_Galore"]["options"]
+    log: 
+      illumina_processed + "logs/" + str(date) + ".{file}.trim_galore.out",
+      illumina_processed + "logs/" + str(date) + ".{file}.trim_galore.err",
+    threads: config["Trim_Galore"]["Trim_Illumina_cores"]
 
 if len(fastqs) > 0:
  use rule concat_reads from preprocess_workflow with:
@@ -801,7 +818,10 @@ rule finalize:
     )
     for genome in input.assembly:
       outbase = os.path.splitext(os.path.basename(genome))[0]  
-      dir = eval_dir + os.path.basename(os.path.dirname(os.path.dirname(genome))) + "/"
+      basedirname = os.path.basename(os.path.dirname(genome))
+      if basedirname == "hypo" or basedirname == "rmp" or basedirname == "nextpolish":
+        basedirname = os.path.basename(os.path.dirname(os.path.dirname(genome)))
+      dir =  eval_dir + basedirname + "/"
       if not os.path.exists(dir + "stats"):
         os.makedirs(dir + "stats")
       shell(
@@ -813,6 +833,12 @@ rule finalize:
         "echo 'Pipeline has been completed succesffully, we are now going to delete temporary files:';"
       )
      # for f in working_dir + "tmp_meryl", hypo_dir + "aux", working_dir + "mappings"
+      if config["Inputs"]["processed_illumina"] != None:
+        t = config["Inputs"]["processed_illumina"]
+        shell(
+          "echo 'Deleting {t}';"
+          "rm -r {t};"
+        )
       if config["Finalize"]["Merqury db"] != None:
         t = os.path.dirname(config["Finalize"]["Merqury db"]) + "/tmp_meryl/"
         if (os.path.exists(t)):
