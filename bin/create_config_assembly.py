@@ -1177,7 +1177,7 @@ class CreateConfigurationFile(object):
         self.trimgaloreSpecParameters["qos"] = args.trimgalore_qos
         self.trimgaloreSpecParameters["time"] = args.trimgalore_time
         self.trimgaloreSpecParameters["queue"] = args.trimgalore_queue
-        self.allParameters ["trimgalore"] = self.trimgaloreSpecParameters
+        self.allParameters ["trim_galore"] = self.trimgaloreSpecParameters
 
     def storeconcatreadsSpecParameters(self,args):
         """Updates concat reads cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1443,7 +1443,6 @@ class CreateConfigurationFile(object):
         self.purgedupsParameters["calcuts_options"] = args.calcuts_opts
         self.allParameters ["Purge_dups"] = self.purgedupsParameters
 
-
     def storepurgedupsSpecParameters(self,args):
         """Updates purgedups cluster spec parameters to the map of parameters to be store in a JSON file
 
@@ -1594,7 +1593,7 @@ if args.illumina_dir != None:
   specManager.storetrimgaloreSpecParameters(args)
 if args.illumina_wildcards != None or args.ONT_wildcards != None or args.r10X_wildcards:
   specManager.storeconcatreadsSpecParameters(args)
-if args.ONT_wildcards != None and args.ONT_reads != None:
+if args.ONT_wildcards != None or args.ONT_reads != None:
   if not os.path.exists(args.ONT_filtered):
     specManager.storefiltlongSpecParameters(args)
 if args.run_flye == True:
