@@ -167,7 +167,7 @@ This run was launched at 8:10h PM and it completed at 6:30h AM the day after, ta
 	
 - Nextpolish illumina (if turned on)
 
-4- Curation
+4- Post-assembly
 
 - Purge_dups (by default)
 
