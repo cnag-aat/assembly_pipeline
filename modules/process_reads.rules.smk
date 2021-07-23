@@ -1,5 +1,3 @@
-shell.prefix("source ~jgomez/init_shell.sh;")
-
 from datetime import datetime
 import re
 import os
@@ -12,17 +10,21 @@ rule trim_galore:
     read1 = "illumina.1.fastq.gz",
     read2 = "illumina.2.fastq.gz",
   output:
-    trim1 = "illumina_trimed.1_val_1.fq.gz",
-    trim2 = "illumina_trimed.2_val_2.fq.gz",
+    trim1 = "illumina.trimed.1.fastq.gz",
+    trim2 = "illumina.trimed.2.fastq.gz",
   params:
     outdir = "illumina_trim",
     opts = "--gzip -q 20 --paired --retain_unpaired",
   threads: 4
   shell:
+    "source ~jgomez/init_shell.sh;"
     "conda activate ~jgomez/conda_environments/preprocess_illumina;"
     "mkdir -p {params.outdir};"
     "cd {params.outdir}; "
     "trim_galore -j {threads} {params.opts} {input.read1} {input.read2} ;"
+    "b=`basename {input.read1} .1.fastq.gz`;"
+    "ln -s $b.1_val_1.fq.gz {output.trim1};"
+    "ln -s $b.1_val_2.fq.gz {output.trim2};"
     "conda deactivate;"
 
 rule concat_reads:
@@ -44,6 +46,7 @@ rule build_meryl_db:
     kmer = 21
   threads: 4
   shell:
+    "source ~jgomez/init_shell.sh;"
     "conda activate {params.environment};"
     "meryl k={params.kmer} count output {output.out_dir} {input.fastq};"
     "conda deactivate;"
@@ -57,6 +60,7 @@ rule concat_meryl:
     environment = "~fcruz/.conda/envs/merqury_v1.1/;",
   threads: 4
   shell:
+    "source ~jgomez/init_shell.sh;"
     "conda activate {params.environment};"
     "meryl union-sum output {output.meryl_all} {input.input_run};"
     "conda deactivate;"
