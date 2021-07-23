@@ -14,7 +14,7 @@ module preprocess_workflow:
 
 working_dir = config["Outputs"]["base_dir"]
 scripts_dir = config["Inputs"]["scripts_dir"]
-shell.prefix("echo 'Cluster jobid $SLURM_JOBID'; export PATH=" + scripts_dir + ":$PATH;")
+shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
 logs_dir = config["Parameters"]["logs_dir"]
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
@@ -45,8 +45,8 @@ rule all:
     targets,
     config["Outputs"]["stats_out"]
   log:
-    logs_dir + str(date) + ".rule_all.out",
-    logs_dir + str(date) + ".rule_all.err"
+    logs_dir + str(date) + ".j%j.rule_all.out",
+    logs_dir + str(date) + ".j%j.rule_all.err"
 
 ##2- Obtain input reads
 fastqs = {}
@@ -74,8 +74,8 @@ if len(fastqs) > 0:
   output:
     final_fastq = "{dir}reads.{ext}"
   log:
-    "{dir}logs/" + str(date) + ".concat.{ext}.out",
-    "{dir}logs/" + str(date) + ".concat.{ext}.err"
+    "{dir}logs/" + str(date) + ".j%j.concat.{ext}.out",
+    "{dir}logs/" + str(date) + ".j%j.concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
 
 if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
@@ -93,8 +93,8 @@ if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs
       min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
       opts = extra_filtlong_opts
     log:
-      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.out",
-      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.err"
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.out",
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.err"
     threads: config["Parameters"]["concat_cores"]  
 
 ##Run assemblers
@@ -111,8 +111,8 @@ if config["Parameters"]["run_flye"] == True:
       pol_iterations = config["Flye"]["Flye polishing iterations"],
       other_flye_opts = config["Flye"]["options"]
     log:
-      flye_dir + "logs/" + str(date) + ".flye.out",
-      flye_dir + "logs/" + str(date) + ".flye.err"
+      flye_dir + "logs/" + str(date) + ".j%j.flye.out",
+      flye_dir + "logs/" + str(date) + ".j%j.flye.err"
     threads: config["Flye"]["Flye cores"]
 
 if config["Parameters"]["run_nextdenovo"] == True:
@@ -126,11 +126,11 @@ if config["Parameters"]["run_nextdenovo"] == True:
     outdir = nextdenovo_dir,
     module = config["Nextdenovo"]["Nextdenovo module"],
   log:
-    nextdenovo_dir + "logs/" + str(date) + ".nextdenovo.out",
-    nextdenovo_dir + "logs/" + str(date) + ".nextdenovo.err"
+    nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.out",
+    nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.err"
   threads: config["Nextdenovo"]["Nextdenovo cores"]
 
 ##Run after assembly steps
 include: "../modules/polish_assemblies.v03.smk"
-#include: "../modules/curate_assemblies.smk"
+include: "../modules/postpolishing.smk"
 

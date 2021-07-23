@@ -172,7 +172,7 @@ scripts_dir = config["Inputs"]["scripts_dir"]
 logs_dir = config["Parameters"]["logs_dir"]
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
-shell.prefix("echo 'Cluster jobid $SLURM_JOBID'; export PATH=" + scripts_dir + ":$PATH;")
+shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
 
 rr = config["Parameters"]["racon_rounds"]
 pr = config["Parameters"]["pilon_rounds"]
@@ -245,12 +245,13 @@ inputs = config["Inputs"]["Assemblies for polishing"]
 for assembly_in in inputs:
   get_targets(assembly_in)
 
-curation = []
+postpolish = []
 if config["Parameters"]["run_purgedups"] == True:
-  for i in config["Inputs"]["Assemblies for curation"]:
-    curation.append(i)
-    base_curation = os.path.splitext(os.path.basename(i))[0]
-    curation.append( working_dir + config["Inputs"]["Assemblies for curation"][i] + "_run_purgedups/" + base_curation + ".purged.fa")
+  for i in config["Inputs"]["Assemblies for postpolishing"]:
+    postpolish.append(i)
+    base_postpolish = os.path.splitext(os.path.basename(i))[0]
+    postpolish.append( working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base_postpolish + ".purged.fa")
+    minimap2[base_postpolish] = i
 
 assemblies4Busco = []
 if config["Finalize"]["intermediate BUSCOs"] == True or config["Finalize"]["final BUSCOs"] == True:
@@ -263,7 +264,7 @@ if config["Finalize"]["final BUSCOs"] == True:
     assemblies4Busco.append(i)
   for i in inputs:
     assemblies4Busco.append(i)
-  for i in curation:
+  for i in postpolish:
     assemblies4Busco.append(i)
 
 busco_in = {}
@@ -294,7 +295,7 @@ if config["Finalize"]["Merqury db"] != None:
       assemblies4Merqury.append(i)
     for i in inputs:
       assemblies4Merqury.append(i)
-    for i in curation:
+    for i in postpolish:
       assemblies4Merqury.append(i)    
 
 merq_in = {}
@@ -319,8 +320,8 @@ rule all_polishing:
   input:
     targets
   log:
-    logs_dir + str(date) + ".rule_all.out",
-    logs_dir + str(date) + ".rule_all.err"
+    logs_dir + str(date) + ".j%j.rule_all.out",
+    logs_dir + str(date) + ".j%j.rule_all.err"
 
 ##2- Obtain input reads
 fastqs = {}
@@ -329,6 +330,8 @@ if rr > 0 or mr > 0 or nor or hr >0:
   if not os.path.exists(ONT_filtered):
     if not os.path.exists(config["Outputs"]["filtlong_dir"] + "logs"):
       os.makedirs(config["Outputs"]["filtlong_dir"]  + "logs")
+
+if rr > 0 or mr > 0 or nor or hr >0 or config["Parameters"]["run_purgedups"] == True:
     if config["Inputs"]["ONT_reads"] == None:
       ont_dir = config["Inputs"]["ONT_dir"]
       ont_list = config["Wildcards"]["ONT_wildcards"].split(',')
@@ -354,6 +357,8 @@ if pr > 0 or nir>0 or hr>0:
       illumina_processed = config["Inputs"]["processed_illumina"]
       pe1_reads = os.path.dirname(os.path.dirname(illumina_processed)) + "/reads.illumina.1.fastq.gz"
       pe2_reads = os.path.dirname(os.path.dirname(illumina_processed)) + "/reads.illumina.2.fastq.gz"
+      if not os.path.exists(illumina_processed + "logs/"):
+        os.makedirs(illumina_processed + "logs/")
       for i in extensions:
         fastqs["illumina." + i] = []
         for file in illumina_list:
@@ -423,8 +428,8 @@ if len(longranger_inputs) > 0:
       outdir = r10X_dir,
       sample = lambda wildcards: longranger_inputs[wildcards.bname]
     log:
-      r10X_dir + "logs/" + str(date) + ".longranger.{bname}.out",
-      r10X_dir + "logs/" + str(date) + ".longranger.{bname}.err"
+      r10X_dir + "logs/" + str(date) + ".j%j.longranger.{bname}.out",
+      r10X_dir + "logs/" + str(date) + ".j%j.longranger.{bname}.err"
     threads: config["Parameters"]["longranger_cores"] 
 
 if config["Inputs"]["processed_illumina"] != None:
@@ -439,8 +444,8 @@ if config["Inputs"]["processed_illumina"] != None:
       outdir = illumina_dir,
       opts = config["Trim_Galore"]["options"]
     log: 
-      illumina_processed + "logs/" + str(date) + ".{file}.trim_galore.out",
-      illumina_processed + "logs/" + str(date) + ".{file}.trim_galore.err",
+      illumina_processed + "logs/" + str(date) + ".j%j.{file}.trim_galore.out",
+      illumina_processed + "logs/" + str(date) + ".j%j.{file}.trim_galore.err",
     threads: config["Trim_Galore"]["Trim_Illumina_cores"]
 
 if len(fastqs) > 0:
@@ -450,8 +455,8 @@ if len(fastqs) > 0:
   output:
     final_fastq = "{dir}reads.{ext}"
   log:
-    "{dir}logs/" + str(date) + ".concat.{ext}.out",
-    "{dir}logs/" + str(date) + ".concat.{ext}.err"
+    "{dir}logs/" + str(date) + ".j%j.concat.{ext}.out",
+    "{dir}logs/" + str(date) + ".j%j.concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
 
 if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
@@ -469,8 +474,8 @@ if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs
       min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
       opts = extra_filtlong_opts
     log:
-      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.out",
-      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.err"
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.out",
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.err"
     threads: config["Parameters"]["concat_cores"] 
 
 if config["Finalize"]["Merqury db"]:
@@ -484,8 +489,8 @@ if config["Finalize"]["Merqury db"]:
         environment = config["Finalize"]["Merqury environment"],
         kmer = config["Finalize"]["Meryl K"],
       log:
-        logs_dir + str(date) + ".build_meryl.{db}.out",
-        logs_dir + str(date) + ".build_meryl.{db}.err" 
+        logs_dir + str(date) + ".j%j.build_meryl.{db}.out",
+        logs_dir + str(date) + ".j%j.build_meryl.{db}.err" 
 
     use rule concat_meryl from preprocess_workflow with:
       input:
@@ -495,15 +500,15 @@ if config["Finalize"]["Merqury db"]:
       params:
         environment = config["Finalize"]["Merqury environment"],
       log:
-        logs_dir + str(date) + ".concat_meryl.out",
-        logs_dir + str(date) + ".concat_meryl.err" 
+        logs_dir + str(date) + ".j%j.concat_meryl.out",
+        logs_dir + str(date) + ".j%j.concat_meryl.err" 
 
 #3- Perform mappings
-if rr > 0 or mr > 0 or nor>0 or hr>0:
+if rr > 0 or mr > 0 or nor>0 or hr>0 or config["Parameters"]["run_purgedups"] == True:
   use rule align_ont from eval_workflow with:
     input:
       genome = lambda wildcards: minimap2[wildcards.name],
-      reads = ONT_filtered,
+      reads = lambda wildcards: ont_reads if wildcards.ext == "minimap2.allreads.paf.gz" else ONT_filtered,
     output:
       mapping = "{directory}/mappings/{name}_{ext}"
     params:
@@ -513,8 +518,8 @@ if rr > 0 or mr > 0 or nor>0 or hr>0:
     wildcard_constraints:
       ext = "minimap2.(.+)"
     log:
-      "{directory}/logs/" + str(date) + ".{ext}.{name}.out",
-      "{directory}/logs/" + str(date) + ".{ext}.{name}.err",
+      "{directory}/logs/" + str(date) + ".j%j.{ext}.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.{ext}.{name}.err",
     threads: config["Parameters"]["minimap2_cores"]
 
 if pr > 0 or nir>0 or hr>0:
@@ -525,8 +530,8 @@ if pr > 0 or nir>0 or hr>0:
   output:
     mapping = "{directory}/mappings/{name}_bwa.bam",
   log:
-    "{directory}/logs/" + str(date) + ".bwa.{name}.out",
-    "{directory}/logs/" + str(date) + ".bwa.{name}.err",
+    "{directory}/logs/" + str(date) + ".j%j.bwa.{name}.out",
+    "{directory}/logs/" + str(date) + ".j%j.bwa.{name}.err",
   threads: config["Parameters"]["BWA_cores"]
 
 #4- Run polishers
@@ -612,8 +617,8 @@ if config["Pilon"]["chunks"] > 1 and pr > 1:
       chunks = config["Pilon"]["chunks"],
       splitdir = "{directory}/rmp/{base}.split{param}/"
     log:
-      "{directory}/rmp/logs/" + str(date) + ".{base}.split_pilon{param}.out",
-      "{directory}/rmp/logs/" + str(date) + ".{base}.split_pilon{param}.err",
+      "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.split_pilon{param}.out",
+      "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.split_pilon{param}.err",
     threads: config["Parameters"]["BWA_cores"]
     shell:
       "module load SAMTOOLS/1.12 bwa java/1.8.0u31 PILON/1.21;"
@@ -635,8 +640,8 @@ if pr > 0:
       java_opts = java_opt,
       dir = "{directory}/rmp/{base}.split{param}/" if config["Pilon"]["chunks"] > 1 else "{directory}/rmp/"
     log:
-      "{directory}/rmp/logs/" + str(date) + ".{base}.pilon{param}.chunk{c}.out" if config["Pilon"]["chunks"] > 1 else "{directory}/rmp/logs/" + str(date) + ".{base}.pilon{param}.out",
-      "{directory}/rmp/logs/" + str(date) + ".{base}.pilon{param}.chunk{c}.err" if config["Pilon"]["chunks"] > 1 else  "{directory}/rmp/logs/" + str(date) + ".{base}.pilon{param}.err"
+      "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.pilon{param}.chunk{c}.out" if config["Pilon"]["chunks"] > 1 else "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.pilon{param}.out",
+      "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.pilon{param}.chunk{c}.err" if config["Pilon"]["chunks"] > 1 else  "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.pilon{param}.err"
     threads: config["Parameters"]["pilon_cores"]
     run:
       basename = os.path.splitext(os.path.basename(output.polished))[0]
@@ -660,8 +665,8 @@ if config["Pilon"]["chunks"] > 1 and pr > 1:
       splitdir ="{directory}/rmp/{base}.split{param}/",
       chunks = config["Pilon"]["chunks"]
     log:
-      "{directory}/rmp/logs/" + str(date) + ".{base}.concat_pilon{param}.out",
-      "{directory}/rmp/logs/" + str(date) + ".{base}.concat_pilon{param}.err",
+      "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.concat_pilon{param}.out",
+      "{directory}/rmp/logs/" + str(date) + ".j%j.{base}.concat_pilon{param}.err",
     threads: 1
     run:
       shell (
@@ -686,8 +691,8 @@ if nor > 0:
     wildcard_constraints:
       param="\d+"
     log:
-      "{directory}nextpolish/logs/" + str(date) + ".{base}.nextpolish_lr{param}.out",
-      "{directory}nextpolish/logs/" + str(date) + ".{base}.nextpolish_lr{param}.err",
+      "{directory}nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_lr{param}.out",
+      "{directory}nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_lr{param}.err",
     threads:  config["Parameters"]["nextpolish_cores"]
     shell:
       "module purge; module unload intel; module load NEXTPOLISH/1.3.1;"
@@ -704,8 +709,8 @@ rule nextpolish_sr:
   params:
     task = lambda wildcards: tasks[wildcards.directory + "nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param]
   log:
-    "{directory}nextpolish/logs/" + str(date) + ".{base}.nextpolish_sr{param}.out",
-    "{directory}nextpolish/logs/" + str(date) + ".{base}.nextpolish_sr{param}.err",
+    "{directory}nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_sr{param}.out",
+    "{directory}nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_sr{param}.err",
   threads:  config["Parameters"]["nextpolish_cores"]
   shell:
     "module purge;module unload intel; module load NEXTPOLISH/1.3.1;"
@@ -732,8 +737,8 @@ if hr > 0:
     wildcard_constraints:
       param="\d+"
     log:
-      "{directory}hypo/logs/" + str(date) + ".{base}.hypo{param}.out",
-      "{directory}hypo/logs/" + str(date) + ".{base}.hypo{param}.err",
+      "{directory}hypo/logs/" + str(date) + ".j%j.{base}.hypo{param}.out",
+      "{directory}hypo/logs/" + str(date) + ".j%j.{base}.hypo{param}.err",
     threads: config["Parameters"]["hypo_cores"]
     run:
       if (params.cov == 0):
@@ -775,8 +780,8 @@ if config["Finalize"]["BUSCO lineage"] != None:
       odb = os.path.basename(config["Finalize"]["BUSCO lineage"]),
       buscobase = lambda wildcards:  wildcards.buscobase
     log:
-      eval_dir + "{dir}/logs/" + str(date) + ".busco.{buscobase}.out",
-      eval_dir + "{dir}/logs/" + str(date) + ".busco.{buscobase}.err",
+      eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.out",
+      eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.err",
     threads: config["Parameters"]["busco_cores"]
 
 if  config["Finalize"]["Merqury db"] != None:
@@ -794,8 +799,8 @@ if  config["Finalize"]["Merqury db"] != None:
     conda_env = config["Finalize"]["Merqury environment"],
     directory= eval_dir + "{dir}/merqury/{merqbase}",
   log:
-    eval_dir + "{dir}/logs/" + str(date) + ".merqury.{merqbase}.out",
-    eval_dir + "{dir}/logs/" + str(date) + ".merqury.{merqbase}.err"
+    eval_dir + "{dir}/logs/" + str(date) + ".j%j.merqury.{merqbase}.out",
+    eval_dir + "{dir}/logs/" + str(date) + ".j%j.merqury.{merqbase}.err"
 
 rule finalize:
   input:
@@ -807,8 +812,8 @@ rule finalize:
     output = config["Outputs"]["stats_out"]
   params:
   log:
-    logs_dir + str(date) + ".finalize.out",
-    logs_dir + str(date) + ".finalize.err"
+    logs_dir + str(date) + ".j%j.finalize.out",
+    logs_dir + str(date) + ".j%j.finalize.err"
   threads: 1
   run:
     shell(

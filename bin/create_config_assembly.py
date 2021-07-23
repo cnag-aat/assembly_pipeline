@@ -57,8 +57,6 @@ class CreateConfigurationFile(object):
         self.busco_cores = 16                                                                     #Number of threads to tun the BUSCO    
         self.longranger_cores = 8                                                                 #Number of threads to run longranger   
         self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2"      
-        self.purgedups_cores = 8 
-        self.purgedups_module = "PURGEDUPS/1.2.5"                                                 #Module in CNAG cluster with PURGEDUPS installation
 
         #ALL SPEC PARAMETERS
         self.all_qos = "normal"
@@ -109,7 +107,7 @@ class CreateConfigurationFile(object):
         self.processed_illumina = None                                                            #Directory to Processed illumina reads, already there or to be produced by the pipeline
         self.assembly_in = {}                                                                     #List of input assemblies that need to be polished but are not assembled by the pipeline
         self.assemblies = {}
-        self.curate_assemblies = {}                                                               #List of input assemblies taht need to be curated but are not produced by the pipeline
+        self.postpolish_assemblies = {}                                                           #List of input assemblies for which postpolishing steps need to be run but are not produced by the pipeline
         self.assemblies_cur = {}
 
         #OUTPUT PARAMETERS
@@ -246,6 +244,11 @@ class CreateConfigurationFile(object):
         self.nextpolish_sr_queue = "main"
         self.nextpolish_sr_threads = self.nextpolish_cores
 
+        #PURGEDUPS PARAMETERS
+        self.purgedups_cores = 8 
+        self.purgedups_module = "PURGEDUPS/1.2.5"                                                 #Module in CNAG cluster with PURGEDUPS installation
+        self.calcuts_opts = None                                                                  #Adjusted values to run calcuts for purgedups
+
         #PURGEDUPS SPEC PARAMETERS
         self.purgedups_qos = "normal"
         self.purgedups_time = "1:00:00"
@@ -315,6 +318,7 @@ class CreateConfigurationFile(object):
         self.joinpilonSpecParameters = {}
         self.nextpolishlrSpecParameters = {}
         self.nextpolishsrSpecParameters = {}
+        self.purgedupsParameters = {}
         self.purgedupsSpecParameters = {}
         self.finalizeParameters = {}
         self.buscoSpecParameters = {}
@@ -338,6 +342,7 @@ class CreateConfigurationFile(object):
         self.register_racon(parser)
         self.register_medaka(parser)
         self.register_pilon(parser)
+        self.register_purgedups(parser)
         self.register_finalize(parser)
         self.register_wildcards(parser)
 
@@ -381,8 +386,6 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--longranger-cores', type = int, dest="longranger_cores", metavar="longranger_cores", default=self.longranger_cores, help='Number of threads to run longranger. Default %s' % self.longranger_cores)
         general_group.add_argument('--longranger-path', dest="longranger_path", metavar="longranger_path", help='Path to longranger executable. Default %s' % self.longranger_path)
         general_group.add_argument('--no-purgedups', dest="run_purgedups", action="store_false", help='Give this option if you do not want to run Purgedups.')
-        general_group.add_argument('--purgedups-cores', type = int, dest="purgedups_cores", metavar="purgedups_cores", default=self.purgedups_cores, help='Number of threads to run purgedups. Default %s' % self.purgedups_cores)
-        general_group.add_argument('--purgedups-module', dest="purgedups_module", metavar="purgedups_module", default = self.purgedups_module, help='Module in CNAG cluster with PURGEDUPS installation. Default %s' % self.purgedups_module)
 
     def register_input(self, parser):
         """Register all input parameters with the given
@@ -403,7 +406,7 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--10X', dest="r10X", help='File with barcoded 10X reads in fastq.gz format, concatenated.')
         input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the raw illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
-        input_group.add_argument('--curate-assemblies', dest="curate_assemblies", nargs="+", type=json.loads, default=self.curate_assemblies, help='Dictionary with assemblies that need to be curated but not assembled and base step for the directory where they should be curated. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\"=\"s04.2_p03.2\"}\' ...')
+        input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\"=\"s04.2_p03.2\"}\' ...')
 
     def register_output(self, parser):
         """Register all output parameters with the given
@@ -527,6 +530,17 @@ class CreateConfigurationFile(object):
         pilon_group.add_argument('--java-opts', dest="java_opts", metavar="java_opts", default=self.java_opts, help='Options for the java execution of Pilon. Default %s' % self.java_opts)
         pilon_group.add_argument('--pilon-subs', dest="pilon_subsampling", metavar="pilon_subsampling", type = int, default=self.pilon_subsampling, help='Percentage of reads to randomly use when running pilon. Default %s' % self.pilon_subsampling)
         pilon_group.add_argument('--pilon-chunks', dest="pilon_chunks", metavar="pilon_chunks", type = int, default=self.pilon_chunks, help='Number of chunks to split the pilon polishing jobs. Default %s' % self.pilon_chunks)
+
+    def register_purgedups(self, parser):
+        """Register all purgedups parameters with the given
+        argparse parser
+
+        parser -- the argparse parser
+        """
+        purgedups_group = parser.add_argument_group('Purge_dups')
+        purgedups_group.add_argument('--purgedups-cores', type = int, dest="purgedups_cores", metavar="purgedups_cores", default=self.purgedups_cores, help='Number of threads to run purgedups. Default %s' % self.purgedups_cores)
+        purgedups_group.add_argument('--purgedups-module', dest="purgedups_module", metavar="purgedups_module", default = self.purgedups_module, help='Module in CNAG cluster with PURGEDUPS installation. Default %s' % self.purgedups_module)
+        purgedups_group.add_argument('--purgedups-calcuts-opts', dest="calcuts_opts", metavar="calcuts_opts", default = self.calcuts_opts, help='Adjusted values to run calcuts for purgedups. Default %s' % self.calcuts_opts)
 
     def register_finalize(self, parser):
         """Register all finalize parameters with the given
@@ -987,8 +1001,8 @@ class CreateConfigurationFile(object):
               args.assemblies[os.path.abspath(key)] = os.path.abspath(my_dict[key]) + "/"
 
         args.assemblies_cur = {}
-        if len(args.curate_assemblies):
-          for my_dict in args.curate_assemblies:
+        if len(args.postpolish_assemblies):
+          for my_dict in args.postpolish_assemblies:
             for key in my_dict:
               args.assemblies_cur[os.path.abspath(key)] = my_dict[key]
 
@@ -1085,8 +1099,6 @@ class CreateConfigurationFile(object):
         self.generalParameters["longranger_cores"] = args.longranger_cores
         self.generalParameters["longranger_path"] = args.longranger_path
         self.generalParameters["run_purgedups"] = args.run_purgedups
-        self.generalParameters["purgedups_cores"] = args.purgedups_cores
-        self.generalParameters["purgedups_module"] = args.purgedups_module
         self.allParameters["Parameters"] = self.generalParameters
 
     def storeallSpecParameters(self,args):
@@ -1118,7 +1130,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["ILLUMINA_10X"] = args.r10X
         self.inputParameters["illumina_dir"] = args.illumina_dir
         self.inputParameters["Assemblies for polishing"] = args.assemblies
-        self.inputParameters["Assemblies for curation"] = args.assemblies_cur
+        self.inputParameters["Assemblies for postpolishing"] = args.assemblies_cur
         self.allParameters ["Inputs"] = self.inputParameters
 
     def storeOutputParameters(self,args):
@@ -1421,6 +1433,16 @@ class CreateConfigurationFile(object):
         self.nextpolishsrSpecParameters["threads"] = args.nextpolish_sr_threads
         self.allParameters ["nextpolish_sr"] = self.nextpolishsrSpecParameters
 
+    def storePurgedupsParameters(self,args):
+        """Updates purge_dups parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.purgedupsParameters["purgedups_cores"] = args.purgedups_cores
+        self.purgedupsParameters["purgedups_module"] = args.purgedups_module
+        self.purgedupsParameters["calcuts_options"] = args.calcuts_opts
+        self.allParameters ["Purge_dups"] = self.purgedupsParameters
+
 
     def storepurgedupsSpecParameters(self,args):
         """Updates purgedups cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1561,6 +1583,7 @@ configManager.storeHypoParameters(args)
 configManager.storeRaconParameters(args)
 configManager.storeMedakaParameters(args)
 configManager.storePilonParameters(args)
+configManager.storePurgedupsParameters(args)
 configManager.storeFinalizeParameters(args)
 configManager.storeWildcardParameters(args)
 

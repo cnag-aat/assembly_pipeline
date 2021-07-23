@@ -1,5 +1,3 @@
-shell.prefix("source ~jgomez/init_shell.sh;")
-
 from datetime import datetime
 import re
 import os
@@ -82,6 +80,8 @@ rule run_merqury:
     "logs/" + date + ".merqury.err",
   threads: 1
   shell:
+    "module purge;"
+    "source ~jgomez/init_shell.sh;"
     "conda activate {params.conda_env};"
     "mkdir -p {params.directory}; cd {params.directory};"
     "merqury.sh {input.meryl_db} {input.assembly} {params.out_pref};"
