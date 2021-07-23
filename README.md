@@ -133,7 +133,9 @@ This run was launched at 8:10h PM and it completed at 6:30h AM the day after, ta
 
 ``longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads}``
 
--**Trimgalore** it uses the Trimgalore version intalled in the module specified in the configfile. By default it gives the ``--gzip -q 20 --paired --retain_unpaired`` options, but it can be changed with the ``--trim-galore-opts `` argument. 
+- **Trimgalore:** By default it gives the ``--gzip -q 20 --paired --retain_unpaired`` options, but it can be changed with the ``--trim-galore-opts `` argument. 
+
+``trim_galore -j {threads} {params.opts} {input.read1} {input.read2}``
 
 - **Filtlong:** it uses the Filtlong version installed in the path specified in the configfile. By default it gives the min_length and min_mean_q parameters, but extra parameters can be added with the ``--filtlong-opts`` option.
 
