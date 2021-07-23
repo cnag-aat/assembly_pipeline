@@ -1,5 +1,3 @@
-shell.prefix("source ~jgomez/init_shell.sh;")
-
 from datetime import datetime
 import re
 import os
@@ -19,6 +17,7 @@ rule trim_galore:
     opts = "--gzip -q 20 --paired --retain_unpaired",
   threads: 4
   shell:
+    "source ~jgomez/init_shell.sh;"
     "conda activate ~jgomez/conda_environments/preprocess_illumina;"
     "mkdir -p {params.outdir};"
     "cd {params.outdir}; "
@@ -44,6 +43,7 @@ rule build_meryl_db:
     kmer = 21
   threads: 4
   shell:
+    "source ~jgomez/init_shell.sh;"
     "conda activate {params.environment};"
     "meryl k={params.kmer} count output {output.out_dir} {input.fastq};"
     "conda deactivate;"
@@ -57,6 +57,7 @@ rule concat_meryl:
     environment = "~fcruz/.conda/envs/merqury_v1.1/;",
   threads: 4
   shell:
+    "source ~jgomez/init_shell.sh;"
     "conda activate {params.environment};"
     "meryl union-sum output {output.meryl_all} {input.input_run};"
     "conda deactivate;"
