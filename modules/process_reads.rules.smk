@@ -24,7 +24,7 @@ rule trim_galore:
     "trim_galore -j {threads} {params.opts} {input.read1} {input.read2} ;"
     "b=`basename {input.read1} .1.fastq.gz`;"
     "ln -s $b.1_val_1.fq.gz {output.trim1};"
-    "ln -s $b.1_val_2.fq.gz {output.trim2};"
+    "ln -s $b.2_val_2.fq.gz {output.trim2};"
     "conda deactivate;"
 
 rule concat_reads:
