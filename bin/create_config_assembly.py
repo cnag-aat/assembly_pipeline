@@ -33,11 +33,11 @@ class CreateConfigurationFile(object):
         self.lr_type  = "nano-raw"                                                                #Type of long reads (options are flye read-type options)
         self.base_name = None                                                                     #Base name for the project
         self.genome_size = None							                  #Estimated genome size
-        self.preprocess_ont_step = "01.1"                                                         #Step directory for preprocessing ont
-        self.preprocess_10X_step = "01.2"
-        self.preprocess_illumina_step = "01.2"
-        self.flye_step = "02.1"                                                                   #Step direcotory for running flye
-        self.nextdenovo_step = "02.2"                                                             #Step direcotory for running nextdenovo
+        self.preprocess_ont_step = "02.1"                                                         #Step directory for preprocessing ont
+        self.preprocess_10X_step = "02.2"
+        self.preprocess_illumina_step = "02.2"
+        self.flye_step = "03.1"                                                                   #Step direcotory for running flye
+        self.nextdenovo_step = "03.2"                                                             #Step direcotory for running nextdenovo
         self.run_flye = True       
         self.run_nextdenovo = False   
         self.racon_rounds = 0                                                                     #Number of rounds of racon to run
@@ -117,8 +117,8 @@ class CreateConfigurationFile(object):
         self.nextdenovo_dir =  "s" + self.nextdenovo_step + "_p" + self.preprocess_ont_step + "_nextdenovo/"         #Directory to run Nextdenovo 
         self.flye_out = self.flye_dir + "flye.assembly.fasta"
         self.nextdenovo_out = self.nextdenovo_dir + "nextdenovo.asssembly.fasta"
-        self.polish_flye_dir = "s03.1_p" + self.flye_step + "_polishing/"                          #Base directory to run polishing pipeline in flye assembly
-        self.polish_nextdenovo_dir = "s03.2_p" + self.nextdenovo_step + "_polishing/"              #Base directory to run polishing pipeline in nextdenovo assembly  
+        self.polish_flye_dir = "s04.1_p" + self.flye_step + "_polishing/"                          #Base directory to run polishing pipeline in flye assembly
+        self.polish_nextdenovo_dir = "s04.2_p" + self.nextdenovo_step + "_polishing/"              #Base directory to run polishing pipeline in nextdenovo assembly  
         self.eval_dir = "evaluations/"                                                             #Base directory for the evaluations
         self.stats_out = None                                                                      #Path to the file with the final pipeline statistics
 
