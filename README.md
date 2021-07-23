@@ -470,12 +470,3 @@ Wildcards:
 
 ```
 
-# Steps that will be included soon
-	
-Trim_galore (rule done, need to integrate it)
-
-
-10X scaffolding (pending)
-	
-Shasta?
-
