@@ -59,11 +59,19 @@ It will take each basename in the list to get the corresponding fastqs from the 
 
 3.1 Using the ``--illumina-dir {DIR}`` option, that will look for all the files in the directory that end in '.1.fastq.gz' and will add the basenames to "illumina_wildcards". These wildcards will be processed by the pipeline that will: 
 
-- Concatenate all the *.1.fastq.gz and the *2.fastq.gz in one file per pair. 
+- Trim adaptors with Trimgalore
+
+- Concatenate all the trimmed *.1.fastq.gz and the *2.fastq.gz in one file per pair. 
 
 - The resulting reads will be used for building meryldbs and polishing. 
 
-3.2 Using the ``--pe1 {FILE} and --pe2 {FILE}`` options. That will consider that these are the paired files containing all the illumina reads to be used and will build meryldbs and polish with them.
+3.2 Using the ``--processed-illumina`` option. If the directory exists and contains files, the pipeline will look for all the files in the directory that end in '.1.fastq.gz' and will add the basenames to "illumina_wildcards". These wildcards will be processed by the pipeline that will:
+
+- Concatenate all the trimmed *.1.fastq.gz and the *2.fastq.gz in one file per pair. 
+
+- The resulting reads will be used for building meryldbs and polishing. 
+
+3.3 Using the ``--pe1 {FILE} and --pe2 {FILE}`` options. That will consider that these are the paired files containing all the illumina reads ready to be used and will build meryldbs and polish with them.
 
 ### 4- Input assemblies
 
@@ -124,6 +132,8 @@ This run was launched at 8:10h PM and it completed at 6:30h AM the day after, ta
 - **Longranger for 10X reads**: it uses the Longranger version installed in the path specified in the configfile
 
 ``longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads}``
+
+-**Trimgalore** it uses the Trimgalore version intalled in the module specified in the configfile. By default it gives the ``--gzip -q 20 --paired --retain_unpaired`` options, but it can be changed with the ``--trim-galore-opts `` argument. 
 
 - **Filtlong:** it uses the Filtlong version installed in the path specified in the configfile. By default it gives the min_length and min_mean_q parameters, but extra parameters can be added with the ``--filtlong-opts`` option.
 
