@@ -125,6 +125,36 @@ Job counts:
 
 This run was launched at 8:10h PM and it completed at 6:30h AM the day after, taking in total around 10h30 for a genome of around 70Mb. 
 
+### 1- Complete run with default parameters on the MARTINEZPAU solea senegalensis project. 
+For this project we have illumina paired-end and ONT data.  We'll preprocess the reads, do an assembly with Flye, polish it with Hypo and run purgedups. As for evaluations, we'll run merqury, busco and nseries. 
+
+![](https://github.com/cnag-aat/assembly_pipeline/blob/main/imgs/run1.sole.dag.png)
+
+When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
+
+```
+/scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py  --configFile run1.sole_trimgalore_test.config --specFile run1.sole_trimgalore_test.spec  --basename trimgalore_test  --genome-size 615m  --ont-reads /scratch/devel/talioto/denovo_assemblies/solea_senegalensis_MARTINEZPAU/s03.1_p02.1_polishing_with_racon_medaka/sole.R9.all.5kb.40Gbp.fastq.gz --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/vertebrata_odb10 --illumina-dir /scratch/devel/talioto/denovo_assemblies/solea_senegalensis_MARTINEZPAU/s01.2_preprocess_illumina_reads/reads/MARTINEZPAU_02/
+```
+
+```
+snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile run1.sole_trimgalore_test.config  --is --cluster-conf run1.sole_trimgalore_test.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np
+Building DAG of jobs...
+Job counts:
+        count   jobs
+        1       align_illumina
+        2       align_ont
+        1       all
+        2       concat_reads
+        1       filtlong
+        1       finalize
+        1       flye
+        1       hypo
+        1       purge_dups
+        3       run_busco
+        40      trim_galore
+        54
+
+```
 # Description of implemented rules
 
 1- Preprocessing:
