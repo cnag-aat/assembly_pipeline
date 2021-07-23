@@ -355,10 +355,11 @@ if pr > 0 or nir>0 or hr>0:
       illumina_list = config["Wildcards"]["illumina_wildcards"].split(',')
       extensions = ["1.fastq.gz", "2.fastq.gz"]
       illumina_processed = config["Inputs"]["processed_illumina"]
-      pe1_reads = os.path.dirname(os.path.dirname(illumina_processed)) + "/reads.illumina.1.fastq.gz"
-      pe2_reads = os.path.dirname(os.path.dirname(illumina_processed)) + "/reads.illumina.2.fastq.gz"
-      if not os.path.exists(illumina_processed + "logs/"):
-        os.makedirs(illumina_processed + "logs/")
+      ill_out_dir = os.path.dirname(os.path.dirname(illumina_processed)) + "/"
+      pe1_reads = ill_out_dir + "reads.illumina.1.fastq.gz"
+      pe2_reads = ill_out_dir + "reads.illumina.2.fastq.gz"
+      if not os.path.exists(ill_out_dir + "logs/"):
+        os.makedirs(ill_out_dir + "logs/")
       for i in extensions:
         fastqs["illumina." + i] = []
         for file in illumina_list:
@@ -441,11 +442,11 @@ if config["Inputs"]["processed_illumina"] != None:
       trim1 = illumina_processed + "{file}.trimmed.1.fastq.gz",
       trim2 = illumina_processed + "{file}.trimmed.2.fastq.gz"
     params:
-      outdir = illumina_dir,
+      outdir = illumina_processed,
       opts = config["Trim_Galore"]["options"]
     log: 
-      illumina_processed + "logs/" + str(date) + ".j%j.{file}.trim_galore.out",
-      illumina_processed + "logs/" + str(date) + ".j%j.{file}.trim_galore.err",
+      os.path.dirname(os.path.dirname(illumina_processed)) + "logs/" + str(date) + ".j%j.{file}.trim_galore.out",
+      os.path.dirname(os.path.dirname(illumina_processed)) + "logs/" + str(date) + ".j%j.{file}.trim_galore.err",
     threads: config["Trim_Galore"]["Trim_Illumina_cores"]
 
 if len(fastqs) > 0:

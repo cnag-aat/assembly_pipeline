@@ -10,8 +10,8 @@ rule trim_galore:
     read1 = "illumina.1.fastq.gz",
     read2 = "illumina.2.fastq.gz",
   output:
-    trim1 = "illumina_trimed.1_val_1.fq.gz",
-    trim2 = "illumina_trimed.2_val_2.fq.gz",
+    trim1 = "illumina.trimed.1.fastq.gz",
+    trim2 = "illumina.trimed.2.fastq.gz",
   params:
     outdir = "illumina_trim",
     opts = "--gzip -q 20 --paired --retain_unpaired",
@@ -22,6 +22,9 @@ rule trim_galore:
     "mkdir -p {params.outdir};"
     "cd {params.outdir}; "
     "trim_galore -j {threads} {params.opts} {input.read1} {input.read2} ;"
+    "b=`basename {input.read1} .1.fastq.gz`;"
+    "ln -s $b.1_val_1.fq.gz {output.trim1};"
+    "ln -s $b.1_val_2.fq.gz {output.trim2};"
     "conda deactivate;"
 
 rule concat_reads:
