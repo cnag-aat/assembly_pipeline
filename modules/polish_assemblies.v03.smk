@@ -445,8 +445,8 @@ if config["Inputs"]["processed_illumina"] != None:
       outdir = illumina_processed,
       opts = config["Trim_Galore"]["options"]
     log: 
-      os.path.dirname(os.path.dirname(illumina_processed)) + "logs/" + str(date) + ".j%j.{file}.trim_galore.out",
-      os.path.dirname(os.path.dirname(illumina_processed)) + "logs/" + str(date) + ".j%j.{file}.trim_galore.err",
+      os.path.dirname(os.path.dirname(illumina_processed)) + "/logs/" + str(date) + ".j%j.{file}.trim_galore.out",
+      os.path.dirname(os.path.dirname(illumina_processed)) + "/logs/" + str(date) + ".j%j.{file}.trim_galore.err",
     threads: config["Trim_Galore"]["Trim_Illumina_cores"]
 
 if len(fastqs) > 0:
