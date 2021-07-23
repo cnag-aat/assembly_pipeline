@@ -79,6 +79,10 @@ If you want to polish an already assembled assembly, you can give it to the pipe
                         Dictionary with assemblies that need to be polished but not assembled and directory where they should
                         be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...``
 			
+If you want to improve an already polished assembly, you can give it to the pipeline by using the option ``--postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]
+                        Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and
+                        base step for the directory where the first postpolishing step should be run. Example:
+                        '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}' ...``
 
 
 # Run examples
@@ -199,25 +203,26 @@ usage: create_configuration_file [-h] [--configFile configFile] [--specFile spec
                                  [--logs-dir logs_dir] [--concat-cores concat_cores] [--genome-size genome_size]
                                  [--lr-type lr_type] [--basename base_name] [--keep-intermediate]
                                  [--preprocess-lr-step PREPROCESS_ONT_STEP] [--preprocess-10X-step PREPROCESS_10X_STEP]
-                                 [--flye-step FLYE_STEP] [--no-flye] [--nextdenovo-step NEXTDENOVO_STEP] [--run-nextdenovo]
-                                 [--racon-cores racon_cores] [--nextpolish-cores nextpolish_cores]
-                                 [--minimap2-cores minimap2_cores] [--bwa-cores bwa_cores] [--pilon-cores pilon_cores]
-                                 [--medaka-cores medaka_cores] [--hypo-cores hypo_cores] [--busco-cores busco_cores]
-                                 [--racon-rounds racon_rounds] [--pilon-rounds pilon_rounds] [--medaka-rounds medaka_rounds]
+                                 [--preprocess-illumina-step PREPROCESS_ILLUMINA_STEP] [--flye-step FLYE_STEP] [--no-flye]
+                                 [--nextdenovo-step NEXTDENOVO_STEP] [--run-nextdenovo] [--racon-cores racon_cores]
+                                 [--nextpolish-cores nextpolish_cores] [--minimap2-cores minimap2_cores]
+                                 [--bwa-cores bwa_cores] [--pilon-cores pilon_cores] [--medaka-cores medaka_cores]
+                                 [--hypo-cores hypo_cores] [--busco-cores busco_cores] [--racon-rounds racon_rounds]
+                                 [--pilon-rounds pilon_rounds] [--medaka-rounds medaka_rounds]
                                  [--nextpolish-ont-rounds nextpolish_ont_rounds]
                                  [--nextpolish-ill-rounds nextpolish_ill_rounds] [--hypo-rounds hypo_rounds]
                                  [--longranger-cores longranger_cores] [--longranger-path longranger_path] [--no-purgedups]
-                                 [--purgedups-cores purgedups_cores] [--purgedups-module purgedups_module]
                                  [--scripts-dir SCRIPTS_DIR] [--ont-reads ONT_READS] [--ont-dir ONT_DIR]
-                                 [--ont-filt ONT_FILTERED] [--pe1 PE1] [--pe2 PE2] [--raw-10X RAW_10X]
-                                 [--processed-10X PROCESSED_10X] [--10X R10X] [--illumina-dir ILLUMINA_DIR]
-                                 [--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]]
-                                 [--curate-assemblies CURATE_ASSEMBLIES [CURATE_ASSEMBLIES ...]]
+                                 [--ont-filt ONT_FILTERED] [--pe1 PE1] [--pe2 PE2] [--processed-illumina PROCESSED_ILLUMINA]
+                                 [--raw-10X RAW_10X] [--processed-10X PROCESSED_10X] [--10X R10X]
+                                 [--illumina-dir ILLUMINA_DIR] [--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]]
+                                 [--postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]]
                                  [--pipeline-workdir PIPELINE_WORKDIR] [--filtlong-dir FILTLONG_DIR] [--flye-dir FLYE_DIR]
                                  [--nextdenovo-dir NEXTDENOVO_DIR] [--flye-polishing-dir POLISH_FLYE_DIR]
                                  [--nextdenovo-polishing-dir POLISH_NEXTDENOVO_DIR] [--eval-dir eval_dir]
                                  [--stats-out stats_out] [--filtlong-path filtlong_path] [--filtlong-minlen filtlong_minlen]
                                  [--filtlong-min-mean-q filtlong_min_mean_q] [--filtlong-opts filtlong_opts]
+                                 [--trim-galore-opts trim_galore_opts] [--trim-Illumina-cores Trim_Illumina_cores]
                                  [--flye-env flye_env] [--flye-cores flye_cores] [--flye-polishing-iterations flye_pol_it]
                                  [--other-flye-opts other_flye_opts] [--nextdenovo-module nextdenovo_module]
                                  [--nextdenovo-cores nextdenovo_cores] [--nextdenovo-task nextdenovo_task]
@@ -238,10 +243,12 @@ usage: create_configuration_file [-h] [--configFile configFile] [--specFile spec
                                  [--medaka-env medaka_env] [--medaka-workdir medaka_workdir] [--medaka-model medaka_model]
                                  [--medaka-consensus-opts medaka_consensus_opts] [--pilon-path pilon_path]
                                  [--pilon-opts pilon_opts] [--java-opts java_opts] [--pilon-subs pilon_subsampling]
-                                 [--pilon-chunks pilon_chunks] [--intermediate-evals] [--no-final-evals]
-                                 [--busco-env busco_env] [--busco-lin busco_lineage] [--merqury-env merqury_env]
-                                 [--merqury-db merqury_db] [--meryl-k meryl_k] [--ont-list ONT_wildcards]
-                                 [--illumina-list illumina_wildcards] [--r10X-list r10X_wildcards]
+                                 [--pilon-chunks pilon_chunks] [--purgedups-cores purgedups_cores]
+                                 [--purgedups-module purgedups_module] [--purgedups-calcuts-opts calcuts_opts]
+                                 [--intermediate-evals] [--no-final-evals] [--busco-env busco_env]
+                                 [--busco-lin busco_lineage] [--merqury-env merqury_env] [--merqury-db merqury_db]
+                                 [--meryl-k meryl_k] [--ont-list ONT_wildcards] [--illumina-list illumina_wildcards]
+                                 [--r10X-list r10X_wildcards]
 
 Create a configuration json file for the assembly pipeline.
 
@@ -266,6 +273,8 @@ General Parameters:
                         Step for preprocessing long-reads. Default 01.1
   --preprocess-10X-step PREPROCESS_10X_STEP
                         Step for preprocessing 10X reads. Default 01.2
+  --preprocess-illumina-step PREPROCESS_ILLUMINA_STEP
+                        Step for preprocessing illumina reads. Default 01.2
   --flye-step FLYE_STEP
                         Step for running flye. Default 02.1
   --no-flye             Give this option if you do not want to run Flye.
@@ -305,40 +314,36 @@ General Parameters:
   --longranger-path longranger_path
                         Path to longranger executable. Default /scratch/project/devel/aateam/src/10X/longranger-2.2.2
   --no-purgedups        Give this option if you do not want to run Purgedups.
-  --purgedups-cores purgedups_cores
-                        Number of threads to run purgedups. Default 8
-  --purgedups-module purgedups_module
-                        Module in CNAG cluster with PURGEDUPS installation. Default PURGEDUPS/1.2.5
 
 Inputs:
   --scripts-dir SCRIPTS_DIR
-                        Directory with the different scripts for the pipeline. Default
-                        /scratch/project/devel/aateam/src/assembly_pipeline/bin/../scripts/
+                        Directory with the different scripts for the pipeline. Default bin/../scripts/
   --ont-reads ONT_READS
                         File with all the ONT reads. Default None
   --ont-dir ONT_DIR     Directory where the ONT fastqs are stored. Default None
   --ont-filt ONT_FILTERED
                         File with the ONT reads after running filtlong on them. Default None
-  --pe1 PE1             File with the illumina paired-end fastqs, pair 1.
-  --pe2 PE2             File with the illumina paired-end fastqs, pair 2.
+  --pe1 PE1             File with the illumina paired-end fastqs, already trimmed, pair 1.
+  --pe2 PE2             File with the illumina paired-end fastqs, already trimmed, pair 2.
+  --processed-illumina PROCESSED_ILLUMINA
+                        Directory to Processed illumina reads. Already there or to be produced by the pipeline.
   --raw-10X RAW_10X     Directory to mkfastq Raw 10X reads.
   --processed-10X PROCESSED_10X
                         Directory to Processed 10X reads. Already there or to be produced by the pipeline.
   --10X R10X            File with barcoded 10X reads in fastq.gz format, concatenated.
   --illumina-dir ILLUMINA_DIR
-                        Directory where the illumina fastqs are stored. Default None
+                        Directory where the raw illumina fastqs are stored. Default None
   --assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]
-                        Dictionary with assemblies that need to be polished but not assembled and directory where they
-                        should be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...
-  --curate-assemblies CURATE_ASSEMBLIES [CURATE_ASSEMBLIES ...]
-                        Dictionary with assemblies that need to be curated but not assembled and base step for the directory
-                        where they should be curated. Example: '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}'
-                        ...
+                        Dictionary with assemblies that need to be polished but not assembled and directory where they should
+                        be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...
+  --postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]
+                        Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and
+                        base step for the directory where the first postpolishing step should be run. Example:
+                        '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}' ...
 
 Outputs:
   --pipeline-workdir PIPELINE_WORKDIR
-                        Base directory for the pipeline run. Default
-                        /scratch/devel/talioto/denovo_assemblies/podarcis_lilfordi/s05.2_p04.1_run_purgedups/
+                        Base directory for the pipeline run. Default /scratch/project/devel/aateam/src/assembly_pipeline/
   --filtlong-dir FILTLONG_DIR
                         Directory to process the ONT reads with filtlong. Default s01.1_p01.1_Filtlong
   --flye-dir FLYE_DIR   Directory to run flye. Default s02.1_p01.1_flye/
@@ -361,6 +366,12 @@ Filtlong:
                         Minimum mean quality to use with Filtlong. Default 80
   --filtlong-opts filtlong_opts
                         Extra options to run Filtlong (eg. -t 4000000000)
+
+Trim_Galore:
+  --trim-galore-opts trim_galore_opts
+                        Optional parameters for the rule trim_galore. Default --gzip -q 20 --paired --retain_unpaired
+  --trim-Illumina-cores Trim_Illumina_cores
+                        Number of threads to run the Illumina trimming step. Default 4
 
 Flye:
   --flye-env flye_env   Conda environment to run FLYE. Default /home/devel/talioto/miniconda3/envs/flye-v2.8.3/
@@ -390,8 +401,8 @@ Nextdenovo:
   --nextdenovo-seedcutoff nextdenovo_seedcutoff
                         Minimum seed length, <=0 means calculate it automatically using bin/seq_stat. Default 0
   --nextdenovo-blocksize nextdenovo_blocksize
-                        Block size for parallel running, split non-seed reads into small files, the maximum size of each
-                        file is blocksize. Default 1g
+                        Block size for parallel running, split non-seed reads into small files, the maximum size of each file
+                        is blocksize. Default 1g
   --nextdenovo-pa-correction  nextdenovo_pa_correction
                         number of corrected tasks used to run in parallel, each corrected task requires ~TOTAL_INPUT_BASES/4
                         bytes of memory usage, overwrite parallel_jobs only for this step. Default 4
@@ -447,6 +458,14 @@ Pilon:
                         Percentage of reads to randomly use when running pilon. Default 0
   --pilon-chunks pilon_chunks
                         Number of chunks to split the pilon polishing jobs. Default 25
+
+Purge_dups:
+  --purgedups-cores purgedups_cores
+                        Number of threads to run purgedups. Default 8
+  --purgedups-module purgedups_module
+                        Module in CNAG cluster with PURGEDUPS installation. Default PURGEDUPS/1.2.5
+  --purgedups-calcuts-opts calcuts_opts
+                        Adjusted values to run calcuts for purgedups. Default None
 
 Finalize:
   --intermediate-evals  If specified, run evaluations on intermediate assemblies. Default False
