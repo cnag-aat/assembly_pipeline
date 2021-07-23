@@ -51,7 +51,7 @@ if config["Parameters"]["run_purgedups"] == True:
   calcuts = ""
   if config["Purge_dups"]["calcuts_options"] != None:
     calcuts = config["Purge_dups"]["calcuts_options"]
-  use rule purge_dups from postpolish_workflow with:
+  use rule purge_dups from purging_workflow with:
     input:
       assembly_in = lambda wildcards: input_assemblies[wildcards.dir + "/"],
       reads = ont_reads,
