@@ -1042,11 +1042,11 @@ class CreateConfigurationFile(object):
                 pol_bases["rmp"] = base_tmp
                 base_tmp = ""
               if args.nextpolish_ont_rounds > 0:
-                base_tmp+= "nextpolish_ont" + str(args.racon_rounds)
+                base_tmp+= "nextpolish_ont" + str(args.nextpolish_ont_rounds)
               if base_tmp != "":
                 base_tmp += "."
               if args.nextpolish_ill_rounds > 0:
-                base_tmp += "nextpolish_ill" + str(args.medaka_rounds)
+                base_tmp += "nextpolish_ill" + str(args.nextpolish_ill_rounds)
               if base_tmp != "":
                 pol_bases["nextpolish"] = base_tmp
 
