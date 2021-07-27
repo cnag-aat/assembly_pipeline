@@ -197,33 +197,51 @@ Job counts:
 
 ``flye --{params.readtype} {input.reads} -o {params.outdir}out -t {threads} -i {params.pol_iterations} {params.other_flye_opts} ``
 	
-- Nextdenovo (if turned on)
+- **Nextdenovo (if ``run-nextdenovo``):** It uses the cluster module specified in the config. If nextdenovo option is turned on, the create_config script will also create the nextdenovo config file. Check the create_config help to see which options can be modified on it. 
+
+``nextDenovo {input.config}``
 
 3- Polishing
 
-- Hypo (default)
+- **Hypo (default):** It is the polisher that the pipeline uses by default, it can be turned off specifying ``--no-hypo`` when creating the config. If selected, the reads will be aligned in previous rules and then hypo will be run, it requires illumina data. It uses the conda environment specified in the config. 
+
+``hypo -r @short_reads.list.txt -d {input.genome} -b {input.sr_bam} -c {coverage} -s {params.genome_size} -B {input.lr_bam} -t {threads} -o {output.polished} -p {params.proc} {params.opts} ``
 	
-- Racon (if turned on)
+- **Racon (if turned on):** to run racon, specify ``--racon-rounds `` and the number of rounds of it you want to run. It uses the conda environment specified in the config file. 
+
+``{params.racon_env}/scripts/racon_wrapper.py -u {params.opts} -t {threads} reads4racon.fastq.gz {input.mapping} {input.assembly} > {output.polished} ``
 	
-- Medaka (if turned on)
+- **Medaka (if turned on):** to run medaka, specify ``--medaka-rounds`` and the nummber of rounds of it you want to run. It uses the conda environment specified in the config file. It'll run after racon and before pilon, if they are also selected. 
+
+`` medaka consensus {input.mapping} {wildcards.directory}/rmp/{wildcards.base}.medaka{wildcards.param}.hdf --threads {medaka_threads} --model {params.model} {params.consensus_opts};
+medaka stitch --threads {threads} {wildcards.directory}/rmp/{wildcards.base}.medaka{wildcards.param}.hdf {input.assembly} {output.polished}``
 	
-- Pilon (if turned on)
+- **Pilon (if turned on):** to run Pilon, specify ``--pilon-rounds`` and the number of rounds of it you want to run. If it's a big genome, the pipeline will split the consensus step in several jobs, each of them running on certain scaffolds. It uses the version installed in the path specified in the config. 
+
+``{scripts_dir}split_bam.py assembly.len {input.mapping} {params.chunks} {threads};
+java {params.java_opts} -jar {params.path} --genome {input.assembly} --frags {input.alignment} {params.opts} --threads {threads} --output {basename}; 
+{scripts_dir}/concat_pilon.py {params.splitdir} {params.chunks} > {output.polished}``
+
 	
-- Nextpolish ont (if turned on)
+- **Nextpolish ont (if turned on):** to run nextpolish with ONT reads, specify ``--nextpolish-ont-rounds`` and the number of rounds you want to run of it. 
+
+``"python /apps/NEXTPOLISH/1.3.1/lib/nextpolish2.py -g {input.genome} -p {threads} -l lgs.fofn -r {params.lrtype} > {output.polished}``
 	
-- Nextpolish illumina (if turned on)
+- **Nextpolish illumina (if turned on):** to run nextpolish with ONT reads, specify ``--nextpolish-ill-rounds`` and the number of rounds you want to run of it. 
+
+``"python /apps/NEXTPOLISH/1.3.1/lib/nextpolish1.py -g {input.genome}  -p {threads} -s {input.bam} -t {params.task} > {output.polished}``
 
 4- Post-assembly
 
-- Purge_dups (by default)
+- **Purge_dups (by default):** select ``--no-purgedups`` if you don't want to run it. If no manual cutoffs are given, it'll run purgedups with automatic cutoffs and then will rerun it selecting the mean cutoff as 0.75\*cov. It uses the version installed in the cluster module specified in the config. 
 
 5- Evaluations
 	
-- Merqury
+- **Merqury:** It runs on each 'terminal' assembly. This is, the base assembly and the resulting assembly from each branch of the pipeline. 
 	
-- Busco
+- **Busco:** It can be run only in the terminal assemblies or on all the assemblies produced by the pipeline. It uses the conda environment specified in the config as well as the parameters specified. 
 	
-- Nseries
+- **Nseries:** This is run during the *finalize* on all the assemblies that are evaluated. After it, that rule combines the statistics produced by all the evaluation rules. 
 
 # Description of all options
 
