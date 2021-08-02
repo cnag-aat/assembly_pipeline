@@ -1049,16 +1049,18 @@ class CreateConfigurationFile(object):
                 base_tmp += "nextpolish_ill" + str(args.nextpolish_ill_rounds)
               if base_tmp != "":
                 pol_bases["nextpolish"] = base_tmp
-
+              paths = 0
               for m in args.assemblies:
                 bpol = os.path.splitext(os.path.basename(m))[0]
                 path = args.assemblies[m]
                 pstep = path.split('/')[-2].split('_')[0]
                 
                 nstep = pstep.replace('s','')
-                cstep = float(nstep) + 1
+                cstep = float(nstep) + 1 + paths
                 for p in pol_bases:
+                  cstep = float(nstep) + 1 + paths
                   args.assemblies_cur[args.assemblies[m] + p + "/" + bpol + "." +  pol_bases[p] + ".fasta"] = "s0" + str(cstep) + "_p" + nstep
+                  paths += 0.1
 ###
 
     def storeGeneralParameters(self,args):
