@@ -347,10 +347,11 @@ if rr > 0 or mr > 0 or nor or hr >0 or config["Parameters"]["run_purgedups"] == 
       ont_reads = config["Inputs"]["ONT_reads"]
 
 longranger_inputs = {}
+longranger_dir = {}
 pe1_reads = None
 pe2_reads = None
 r10X_reads = None
-if pr > 0 or nir>0 or hr>0:
+if pr > 0 or nir>0 or hr>0 or config["Finalize"]["Merqury db"]:
   if config["Inputs"]["ILLUMINA_pe1"] == None and config["Inputs"]["ILLUMINA_pe2"] == None and config["Inputs"]["ILLUMINA_10X"] == None:
     if config["Inputs"]["processed_illumina"] != None:
       illumina_dir = config["Inputs"]["illumina_dir"]
@@ -371,13 +372,19 @@ if pr > 0 or nir>0 or hr>0:
           for file in illumina_list:
             fastqs["illumina." + i].append(illumina_processed + file + "." + i)
 
-    if config["Inputs"]["processed_10X"] != None or config["Inputs"]["raw_10X"] != None:
+    if config["Inputs"]["processed_10X"] != None or len(config["Inputs"]["raw_10X"])>0:
       r10X_list = config["Wildcards"]["10X_wildcards"].split(',')
       r10X_dir = config["Inputs"]["processed_10X"]
-      if config["Inputs"]["raw_10X"] != None:
-        raw_10X_dir = config["Inputs"]["raw_10X"]
-        for i in r10X_list:
-          longranger_inputs[i] = [i]
+
+      if len(config["Inputs"]["raw_10X"]) >0:
+        for d in config["Inputs"]["raw_10X"]:
+          #print (d)
+          l = config["Inputs"]["raw_10X"][d].split(',')
+         # print (l)
+          for i in l:
+          #  print (d, i)
+            longranger_inputs[i] = i
+            longranger_dir[i] = d
       extensions = ["barcoded.fastq.gz"]
       r10X_reads = r10X_dir + "reads.illumina10X.barcoded.fastq.gz"
       if not os.path.exists(r10X_dir + "logs/"):
@@ -393,26 +400,19 @@ if pr > 0 or nir>0 or hr>0:
     pe1_reads = config["Inputs"]["ILLUMINA_pe1"].split(',')[0]
     pe2_reads = config["Inputs"]["ILLUMINA_pe2"].split(',')[0]
 
-if config["Finalize"]["Merqury db"]:
-  if not os.path.exists(config["Finalize"]["Merqury db"]):
-    meryl_loc = os.path.dirname(config["Finalize"]["Merqury db"]) + "/tmp_meryl/"
-    if not os.path.exists(meryl_loc):
-      os.makedirs(meryl_loc)
+  if config["Finalize"]["Merqury db"]:
     reads_loc = {}
     meryl_dbs = []
-    if config["Inputs"]["processed_10X"]!= None or config["Inputs"]["raw_10X"] != None:
-      r10X_list = config["Wildcards"]["10X_wildcards"].split(',')
-      r10X_dir = config["Inputs"]["processed_10X"]
-      if config["Inputs"]["raw_10X"] != None: 
-        raw_10X_dir = config["Inputs"]["raw_10X"]
-        for i in r10X_list:
-          longranger_inputs[i] = [i]
-      if not os.path.exists(r10X_dir + "logs/"):
-        os.makedirs(r10X_dir + "logs/")
-      extensions = [".lr.barcoded.fastq.gz"]
+    if not os.path.exists(config["Finalize"]["Merqury db"]):
+      meryl_loc = os.path.dirname(config["Finalize"]["Merqury db"]) + "/tmp_meryl/"
+      if not os.path.exists(meryl_loc):
+        os.makedirs(meryl_loc)
+
+    if config["Inputs"]["processed_10X"]!= None:
       for i in r10X_list:
         for e in extensions:
-          reads_loc[i + e] = r10X_dir + i + e
+        #  print (i, e)
+          reads_loc[i + e] = r10X_dir + i + ".lr." + e
           meryl_dbs.append(i + e)
     elif r10X_reads != None:
       reads_loc[os.path.basename(r10X_reads)] = r10X_reads
@@ -434,10 +434,11 @@ if config["Finalize"]["Merqury db"]:
         reads_loc[os.path.basename(pe2_reads)] = pe2_reads
         meryl_dbs.append(os.path.basename(pe2_reads))
 
+
 if len(longranger_inputs) > 0:
   use rule long_ranger from preprocess_workflow with: 
     input: 
-      mkfastq_dir = raw_10X_dir
+      mkfastq_dir = lambda wildcards: longranger_dir[wildcards.bname]
     output:
       fastq_out = r10X_dir + "{bname}.lr.barcoded.fastq.gz",
       sum_out = r10X_dir + "{bname}.lr.barcoded.summary.csv"

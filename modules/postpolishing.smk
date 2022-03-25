@@ -27,10 +27,16 @@ base = config["Parameters"]["base_name"]
 targets_purgedups = []
 input_assemblies = {}
 if config["Parameters"]["run_purgedups"] == True:
+  if config["Inputs"]["ONT_reads"] != None:
+    ont_reads = config["Inputs"]["ONT_reads"]
+  elif config["Outputs"]["filtlong_dir"] != None:
+    ont_reads = config["Outputs"]["filtlong_dir"] + "reads.ont.fastq.gz"
+
   for i in config["Inputs"]["Assemblies for postpolishing"]:
     input_assemblies[working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/"] = i
     base = os.path.splitext(os.path.basename(i))[0]
     targets_purgedups.append( working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base + ".purged.fa")
+   # print (targets_purgedups)
     if not os.path.exists(working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/logs"):
       os.makedirs(working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/logs")
     mappings_dir = working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/mappings"
@@ -51,6 +57,7 @@ if config["Parameters"]["run_purgedups"] == True:
   calcuts = ""
   if config["Purge_dups"]["calcuts_options"] != None:
     calcuts = config["Purge_dups"]["calcuts_options"]
+
   use rule purge_dups from purging_workflow with:
     input:
       assembly_in = lambda wildcards: input_assemblies[wildcards.dir + "/"],

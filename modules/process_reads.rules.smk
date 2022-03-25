@@ -58,12 +58,21 @@ rule concat_meryl:
     meryl_all = directory("meryl_db_all")
   params:
     environment = "~fcruz/.conda/envs/merqury_v1.1/;",
+    kmer = 21,
+    genomescope_path = "/home/devel/jgomez/bin/genomescope2.0/genomescope2.0/",
+    ploidy = 2,
   threads: 4
   shell:
     "source ~jgomez/init_shell.sh;"
     "conda activate {params.environment};"
     "meryl union-sum output {output.meryl_all} {input.input_run};"
+    "d=`dirname {output.meryl_all}`;"
+    "meryl histogram {output.meryl_all} > $d/meryl.hist;"
     "conda deactivate;"
+    "module purge; module load gcc/6.3.0 R/3.6.0 mkl/12.1.6 PYTHON/3.6.0;"
+    "export PATH={params.genomescope_path}:$PATH;"
+    "export R_LIBS_USER=\"/home/devel/jgomez/R_libs\";"
+    "genomescope.R -i $d/meryl.hist -o $d/out_k{params.kmer}/ -p {params.ploidy} -k {params.kmer};"
 
 rule long_ranger:
   input: 
@@ -98,13 +107,12 @@ rule filtlong:
   output:
     outreads = "ont_reads.filtlong.fastq.gz"
   params:
-    path = "/scratch/project/devel/aateam/bin/filtlong",
+    path = "/scratch/project/devel/aateam/bin",
     minlen = 1000,
     min_mean_q = 80,
     opts = ""
   threads: 8
   shell:
     "module purge; module load PIGZ/2.3.3 gcc/4.9.3;"
-    "export PATH={params.path}:$PATH;"
-    "filtlong --version;"
-    "filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"
+    "{params.path}/filtlong --version;"
+    "{params.path}/filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"

@@ -6,6 +6,11 @@ date = datetime.now().strftime('%Y%m%d.%H%M%S')
 keepfiles = False
 scripts_dir = os.path.dirname(sys.argv[0]) + "/../scripts/"  
 
+shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
+logs_dir = "logs/"
+if not os.path.exists(logs_dir):
+  os.makedirs(logs_dir)
+
 rule finalize_assembly:
   input: 
     "assembly.fasta"

@@ -67,7 +67,7 @@ class CreateConfigurationFile(object):
 
         #LONGRANGER SPEC PARAMETERS
         self.longranger_qos = "normal"
-        self.longranger_time = "6:00:00"
+        self.longranger_time = "8:00:00"
         self.longranger_queue = "main"
 
         #TRIMGALORE PARAMETERS
@@ -103,7 +103,7 @@ class CreateConfigurationFile(object):
         self.pe1 = None                                                                           #File with the illumina paired-end fastqs, already trimeed, pair 1
         self.pe2 = None                                                                           #File with the illumina paired-end fastqs, already trimmed, pair 2
         self.r10X = None                                                                          #File with barcoded 10X reads in fastq.gz format, concatenated
-        self.raw_10X = None                                                                       #Directory to Raw 10X reads, it has to be the mkfastq dir
+        self.raw_10X = {}                                                                         #List with 10X raw read directories, it has to be the mkfastq dir. You must specify as well the sampleIDs from this run. Example: 
         self.processed_10X = None                                                                 #Directory to Processed 10X reads, already there or to be produced by the pipeline
         self.illumina_dir = None                                                                  #Directory with the illumina raw reads, give this option if you don't have a single fastq file with all the reads
         self.processed_illumina = None                                                            #Directory to Processed illumina reads, already there or to be produced by the pipeline
@@ -111,6 +111,7 @@ class CreateConfigurationFile(object):
         self.assemblies = {}
         self.postpolish_assemblies = {}                                                           #List of input assemblies for which postpolishing steps need to be run but are not produced by the pipeline
         self.assemblies_cur = {}
+        self.r10X_reads = {}
 
         #OUTPUT PARAMETERS
         self.pipeline_workdir = os.getcwd() + "/"                                                 #Base directory for the pipeline run
@@ -405,12 +406,12 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--pe1', dest="pe1", help='File with the illumina paired-end fastqs, already trimmed,  pair 1.')
         input_group.add_argument('--pe2', dest="pe2", help='File with the illumina paired-end fastqs, already trimmed, pair 2.')
         input_group.add_argument('--processed-illumina', dest="processed_illumina", help='Directory to Processed illumina reads. Already there or to be produced by the pipeline.')
-        input_group.add_argument('--raw-10X', dest="raw_10X", help='Directory to mkfastq Raw 10X reads.')
+        input_group.add_argument('--raw-10X', dest="raw_10X",  nargs="+", type=json.loads, default=self.raw_10X, help='Dictionary with 10X raw read directories, it has to be the mkfastq dir. You must specify as well the sampleIDs from this run. Example: \'{\"mkfastq-dir\":\"sample1,sample2,sample3\"}\'...')
         input_group.add_argument('--processed-10X', dest="processed_10X", help='Directory to Processed 10X reads. Already there or to be produced by the pipeline.')
         input_group.add_argument('--10X', dest="r10X", help='File with barcoded 10X reads in fastq.gz format, concatenated.')
         input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the raw illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
-        input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\"=\"s04.2_p03.2\"}\' ...')
+        input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\":\"s04.2_p03.2\"}\' ...')
 
     def register_output(self, parser):
         """Register all output parameters with the given
@@ -570,7 +571,7 @@ class CreateConfigurationFile(object):
         wildcards_group = parser.add_argument_group('Wildcards')
         wildcards_group.add_argument('--ont-list', dest="ONT_wildcards", metavar="ONT_wildcards", help='List with basename of the ONT fastqs that will be used. Default %s' % self.ONT_wildcards)
         wildcards_group.add_argument('--illumina-list', dest="illumina_wildcards", metavar="illumina_wildcards", help='List with basename of the illumina fastqs. Default %s' % self.illumina_wildcards)
-        wildcards_group.add_argument('--r10X-list', dest="r10X_wildcards", metavar="r10X_wildcards", help='List with basename of the raw 10X fastqs. For raw 10X we need to give this argument, for processed 10X reads, the pipeline can obtain it. Default %s' % self.r10X_wildcards)
+        wildcards_group.add_argument('--r10X-list', dest="r10X_wildcards", metavar="r10X_wildcards", help='List with basename of the raw 10X fastqs. Default %s' % self.r10X_wildcards)
 ####
 
     def check_parameters(self,args):
@@ -819,7 +820,8 @@ class CreateConfigurationFile(object):
                 print (args.ONT_reads + " not found")
                 sys.exit(-1)
 
-        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0:
+        args.r10X_reads = {}
+        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.merqury_db:
           if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and args.raw_10X == None and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
@@ -846,7 +848,7 @@ class CreateConfigurationFile(object):
           elif args.r10X:
             args.r10X = os.path.abspath(args.r10X) 
             if not os.path.exists(args.r10X):
-              if args.raw_10X == None and args.processed_10X == None:
+              if len(raw_10X) == 0 and args.processed_10X == None:
                 parser.print_help()
                 print ("Illumina reads are not found and are needed")
                 sys.exit(-1)
@@ -869,18 +871,28 @@ class CreateConfigurationFile(object):
             elif args.illumina_wildcards == None:
               args.illumina_wildcards = get_wildcards(args.processed_illumina, args.illumina_wildcards, '.1.fastq.gz')
           else:
-            if args.raw_10X != None:
-              args.raw_10X = os.path.abspath(args.raw_10X) + "/"
-              if not os.path.exists(args.raw_10X):
-                parser.print_help()
-                print (args.raw_10X + " not found")
-                sys.exit(-1)
-              elif args.r10X_wildcards == None:
-                parser.print_help()
-                print ('If you want to process the 10X reads, you need to provide the 10X basenames in r10X-wildcards.')
-                sys.exit(-1)    
+            if len(args.raw_10X):
+             # print (args.raw_10X)
+
+              args.r10X_wildcards = ""
+
+              for my_dict in args.raw_10X:
+                for key in my_dict:
+              #    print (key)
+                  args.r10X_reads[os.path.abspath(key)] = my_dict[key]
+                  if args.r10X_wildcards:
+                    args.r10X_wildcards += ","
+                  args.r10X_wildcards += my_dict[key]
+                  if not os.path.exists(os.path.abspath(key)):
+                    parser.print_help()
+                    print (os.path.abspath(key) + " not found")
+                    sys.exit(-1)
+                  elif key == None:
+                    parser.print_help()
+                    print ('If you want to process the 10X reads with longranger, you need to provide the 10X basenames together with the directory')
+                    sys.exit(-1)    
               if args.processed_10X == None:
-                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads/"
+                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads"
             if args.processed_10X != None:
               args.processed_10X = os.path.abspath(args.processed_10X) + "/"
               if args.r10X_wildcards == None:
@@ -890,6 +902,17 @@ class CreateConfigurationFile(object):
                   sys.exit(-1)
                 else:
                   args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz') 
+          if args.merqury_db:
+            args.merqury_db = os.path.abspath(args.merqury_db)
+            if not os.path.exists(args.merqury_db):
+              if args.meryl_k == None:
+                parser.print_help()
+                print (args.merqury_db + " not found, the pipeline will create it but you need to provide the kmer value")
+                sys.exit(-1)             
+              elif args.pe1 != None or args.r10X != None or args.r10X_wildcards != None or args.illumina_wildcards != None:
+                print (args.merqury_db + " not found, the pipeline will create it")   
+              else:
+                print ('We cannot create ' + args.merqury_db + ' without illumina reads')
                  
         if args.other_flye_opts == None:
           args.other_flye_opts = self.other_flye_opts + " -g " + args.genome_size + " "
@@ -973,44 +996,7 @@ class CreateConfigurationFile(object):
         else:
           args.merqury_env =  os.path.abspath(self.merqury_env)
         if not os.path.exists(args.merqury_env):
-          print (args.merqury_env + " not found") 
-
-        if args.merqury_db:
-          args.merqury_db = os.path.abspath(args.merqury_db)
-          if not os.path.exists(args.merqury_db):
-            if args.meryl_k == None:
-              parser.print_help()
-              print (args.merqury_db + " not found, the pipeline will create it but you need to provide the kmer value")
-              sys.exit(-1)             
-            elif args.pe1 != None or args.r10X != None or args.r10X_wildcards != None or args.illumina_wildcards != None:
-              print (args.merqury_db + " not found, the pipeline will create it")   
-            elif args.illumina_dir != None:
-              args.illumina_wildcards = get_wildcards(args.illumina_dir, args.illumina_wildcards, '.1.fastq.gz')      
-            else:
-              print ('We cannot create ' + args.merqury_db + ' without illumina reads')
-
-            if args.raw_10X != None and args.r10X != None:
-              args.raw_10X = os.path.abspath(args.raw_10X) + "/"
-              if not os.path.exists(args.raw_10X):
-                parser.print_help()
-                print (args.raw_10X + " not found")
-                sys.exit(-1)
-              elif args.r10X_wildcards == None and args.processed_10X == None:
-                parser.print_help()
-                print ('If you want to process the 10X reads, you need to provide the 10X basenames in r10X-wildcards.')
-                sys.exit(-1)    
-              if args.processed_10X != None:
-                args.processed_10X = os.path.abspath(args.processed_10X) + "/"
-              else:
-                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads/"
-
-              if args.r10X_wildcards == None:
-                if not os.path.exists(args.processed_10X):
-                  parser.print_help()
-                  print (args.processed_10X + " not found")
-                  sys.exit(-1)
-                else:
-                  args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz')             
+          print (args.merqury_env + " not found")      
               
 
         args.assemblies={}
@@ -1150,7 +1136,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["ILLUMINA_pe1"] = args.pe1
         self.inputParameters["ILLUMINA_pe2"] = args.pe2
         self.inputParameters["processed_illumina"] = args.processed_illumina
-        self.inputParameters["raw_10X"] = args.raw_10X
+        self.inputParameters["raw_10X"] = args.r10X_reads
         self.inputParameters["processed_10X"] = args.processed_10X
         self.inputParameters["ILLUMINA_10X"] = args.r10X
         self.inputParameters["illumina_dir"] = args.illumina_dir
