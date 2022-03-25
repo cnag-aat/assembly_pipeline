@@ -1080,8 +1080,6 @@ class CreateConfigurationFile(object):
                   cstep = float(nstep) + 1 + paths
                   args.assemblies_cur[args.assemblies[m] + p + "/" + bpol + "." +  pol_bases[p] + ".fasta"] = "s0" + str(cstep) + "_p" + nstep
                   paths += 0.1
-
-  
 ###
 
     def storeGeneralParameters(self,args):
