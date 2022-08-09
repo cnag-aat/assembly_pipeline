@@ -36,13 +36,13 @@ rule flye:
 
 rule nextdenovo:
   input:
-    reads = os.getcwd() + "/ontreads.fastq.gz",
-    config = "nextdenovo.cfg"
+    reads = os.getcwd() + "/ontreads.fastq.gz"
   output:
     assembly = os.getcwd() + "/nextDenovo/nextdenovo.assembly.fasta"
   params:
     outdir = os.getcwd() + "/nextDenovo/",
-    module = "NEXTDENOVO/2.4.0"
+    module = "NEXTDENOVO/2.4.0",
+    config = "nextdenovo.cfg"
   threads: 24
   log:
     "logs/" + str(date) + ".nextdenovo.out",
@@ -51,7 +51,7 @@ rule nextdenovo:
     "module purge; module load {params.module};"
     "mkdir -p {params.outdir};"
     "ls {input.reads} > {params.outdir}long_reads.fofn;"
-    "nextDenovo {input.config};"
+    "nextDenovo {params.config};"
     "ln -s {params.outdir}03.ctg_graph/nd.asm.fasta {output.assembly};"
 
 
