@@ -1,5 +1,5 @@
 # assembly_pipeline
- Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed using Snakemake v6.0.5, which can be loaded in the cluster by doing:
+Version 2.0 of the Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed using Snakemake v6.0.5, which can be loaded in the cluster by doing:
  ```bash
  conda activate /home/devel/jgomez/conda_environments/snakemake
  ```
