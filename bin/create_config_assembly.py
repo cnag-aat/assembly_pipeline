@@ -62,9 +62,9 @@ class CreateConfigurationFile(object):
         self.ploidy = 2   
 
         #ALL SPEC PARAMETERS
-        self.all_qos = "normal"
+        self.all_qos = "test"
         self.all_time = "00:05:00"
-        self.all_queue = "genB,main"
+        self.all_queue = "genD"
 
         #LONGRANGER SPEC PARAMETERS
         self.longranger_qos = "normal"
@@ -83,7 +83,8 @@ class CreateConfigurationFile(object):
         #CONCAT READS SPEC PARAMETERS
         self.concat_reads_qos = "normal"
         self.concat_reads_time = "10:00:00"
-        self.concat_reads_queue = "genB,main"
+        self.concat_reads_queue = "genD"
+        self.concat_reads_mem = "100"
 
         #BUILD MERYL SPEC PARAMETERS
         self.build_meryl_qos = "normal"
@@ -129,48 +130,48 @@ class CreateConfigurationFile(object):
         #FILTLONG PARAMETERS
         self.filtlong_minlen = "1000"
         self.filtlong_min_mean_q = "80"
-        self.filtlong_path = "/scratch/project/devel/aateam/bin"
         self.filtlong_opts = None
 
         #FILTLONG SPEC PARAMETERS
         self.filtlong_qos = "normal"
         self.filtlong_time = "15:00:00"
-        self.filtlong_queue = "genB,main"
+        self.filtlong_queue = "genD"
+        self.filtlong_mem = "100"
 
         #FLYE PARAMETERS
-        self.flye_env = "/home/devel/jgomez/conda_environments/flye_v2.9/"
         self.flye_cores = 24	                                                                  #Number of threads to run Flye
         self.flye_pol_it = 2				      			                  #Number of polishing iterations to use with FLYE
         self.other_flye_opts = " --scaffold "                                                     #include here genome size in pipeline											
 
         #FLYE SPEC PARAMETERS
-        self.flye_qos = "normal"
-        self.flye_time = "24:00:00"
-        self.flye_queue = "main"
+        self.flye_qos = "vlong"
+        self.flye_time = "48:00:00"
+        self.flye_queue = "genD"
+        self.flye_mem = 1000
 
         #NEXTDENOVO PARAMETERS
-        self.nextdenovo_module = "NEXTDENOVO/2.5.0"
-        self.nextdenovo_cores = 24	                                                          #Number of threads to run nextdenovo        
+        self.nextdenovo_cores = 72	                                                          #Number of threads to run nextdenovo        
         self.nextdenovo_task = "all"
         self.nextdenovo_rewrite = "yes"
-        self.nextdenovo_parallel_jobs = 6
+        self.nextdenovo_parallel_jobs = 18
       #  self.nextdenovo_tmp = "$TMPDIR"
         self.nextdenovo_minreadlen = "1k"
         self.nextdenovo_seeddepth = 45
         self.nextdenovo_seedcutoff = 0
         self.nextdenovo_blocksize = "1g"
-        self.nextdenovo_pa_correction = 32
-        self.nextdenovo_minimap_raw = "-t 10"
+        self.nextdenovo_pa_correction = 96
+        self.nextdenovo_minimap_raw = "-t 30"
         self.nextdenovo_sort = "-m 40g -t 20"
-        self.nextdenovo_correction_opts = "-p 6"                      
-        self.nextdenovo_minimap_cns = "-t 10 "
-        self.nextdenovo_minimap_map = "-t 10 "              
+        self.nextdenovo_correction_opts = "-p 18"                      
+        self.nextdenovo_minimap_cns = "-t 30 "
+        self.nextdenovo_minimap_map = "-t 30 "              
         self.nextdenovo_nextgraph_opt = "-a 1"
 
         #NEXTDENOVO SPEC PARAMETERS
-        self.nextdenovo_qos = "xlong"
+        self.nextdenovo_qos = "vlong"
         self.nextdenovo_time = "48:00:00"
-        self.nextdenovo_queue = "main"
+        self.nextdenovo_queue = "genD"
+        self.nextdenovo_mem = "1000"
 
         #MINIMAP2 SPEC PARAMETERS
         self.minimap_qos = "normal"
@@ -290,9 +291,9 @@ class CreateConfigurationFile(object):
         self.merq_queue = "genB,main"  
 
         #FINALIZE SPEC PARAMETERS
-        self.fin_qos = "normal"
+        self.fin_qos = "short"
         self.fin_time = "2:00:00"
-        self.fin_queue = "genB,main" 
+        self.fin_queue = "genD" 
 
         #WILDCARDS
         self.ONT_wildcards = None
@@ -452,7 +453,6 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         filtlong_group = parser.add_argument_group('Filtlong')
-        filtlong_group.add_argument('--filtlong-path', dest="filtlong_path", metavar="filtlong_path", default = self.filtlong_path, help='Path to the filtlong software. Default %s' % self.filtlong_path)
         filtlong_group.add_argument('--filtlong-minlen', dest="filtlong_minlen", metavar="filtlong_minlen", default=self.filtlong_minlen, type = int, help='Minimum read length to use with Filtlong. Default %s' % self.filtlong_minlen)
         filtlong_group.add_argument('--filtlong-min-mean-q', dest="filtlong_min_mean_q", metavar="filtlong_min_mean_q", default=self.filtlong_min_mean_q, type = int, help='Minimum mean quality to use with Filtlong. Default %s' % self.filtlong_min_mean_q)
         filtlong_group.add_argument('--filtlong-opts', dest="filtlong_opts", metavar="filtlong_opts", default=self.filtlong_opts, help='Extra options to run Filtlong (eg. -t 4000000000)')
@@ -474,7 +474,6 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         flye_group = parser.add_argument_group('Flye')
-        flye_group.add_argument('--flye-env', dest="flye_env", metavar="flye_env", help='Conda environment to run FLYE. Default %s' % self.flye_env)
         flye_group.add_argument('--flye-cores', dest="flye_cores", metavar="flye_cores", default=self.flye_cores, type = int, help='Number of threads to run FLYE. Default %s' % self.flye_cores)
         flye_group.add_argument('--flye-polishing-iterations', dest="flye_pol_it", metavar="flye_pol_it", default=self.flye_pol_it, type = int, help='Number of polishing iterations to use with FLYE. Default %s' % self.flye_pol_it)
         flye_group.add_argument('--other-flye-opts', dest="other_flye_opts", metavar="other_flye_opts", default=self.other_flye_opts, help='Additional options to run Flye. Default %s' % self.other_flye_opts)
@@ -486,7 +485,6 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         nextdenovo_group = parser.add_argument_group('Nextdenovo')
-        nextdenovo_group.add_argument('--nextdenovo-module', dest="nextdenovo_module", metavar="nextdenovo_module", default=self.nextdenovo_module, help='Cluster module to run nextdenovo. Default %s' % self.nextdenovo_module)
         nextdenovo_group.add_argument('--nextdenovo-cores', dest="nextdenovo_cores", metavar="nextdenovo_cores", default=self.nextdenovo_cores, type = int, help='Number of threads to run nextdenovo. Default %s' % self.nextdenovo_cores)
         nextdenovo_group.add_argument('--nextdenovo-task', dest="nextdenovo_task", metavar="nextdenovo_task", choices=['all', 'correct', 'assemble'], default=self.nextdenovo_task, help='Task need to run. Default %s' % self.nextdenovo_task)
         nextdenovo_group.add_argument('--nextdenovo-rewrite', dest="nextdenovo_rewrite", metavar="nextdenovo_rewrite", choices=['yes', 'no'], default=self.nextdenovo_rewrite, help='Overwrite existing directory. Default %s' % self.nextdenovo_rewrite)
@@ -653,13 +651,6 @@ class CreateConfigurationFile(object):
         else:
           args.stats_out = os.path.abspath(args.stats_out)
 
-        if args.flye_env:
-          args.flye_env = os.path.abspath(args.flye_env)
-        else:
-          args.flye_env =  os.path.abspath(self.flye_env)
-        if not os.path.exists(args.flye_env):
-          print (args.flye_env + " not found")
-
         if args.longranger_path:
           args.longranger_path = os.path.abspath(args.longranger_path)
         else:
@@ -673,13 +664,6 @@ class CreateConfigurationFile(object):
           args.genomescope_path =  os.path.abspath(self.genomescope_path)
         if not os.path.exists(args.genomescope_path):
           print (args.genomescope_path + " not found")
-
-        if args.filtlong_path:
-          args.filtlong_path = os.path.abspath(args.filtlong_path)
-        else:
-          args.filtong_path =  os.path.abspath(self.filtlong_path)
-        if not os.path.exists(args.filtlong_path):
-          print (args.filtlong_path + " not found")
 
         if args.genome_size == None:
           parser.print_help()
@@ -705,6 +689,7 @@ class CreateConfigurationFile(object):
         args.filtlong_qos =  self.filtlong_qos
         args.filtlong_time = self.filtlong_time 
         args.filtlong_queue = self.filtlong_queue 
+        args.filtlong_mem =  self.filtlong_mem        
 
         args.longranger_qos =  self.longranger_qos
         args.longranger_time = self.longranger_time 
@@ -717,7 +702,8 @@ class CreateConfigurationFile(object):
         args.concat_reads_qos =  self.concat_reads_qos
         args.concat_reads_time = self.concat_reads_time 
         args.concat_reads_queue = self.concat_reads_queue
-
+        args.concat_reads_mem =  self.concat_reads_mem      
+        
         args.build_meryl_qos =  self.build_meryl_qos
         args.build_meryl_time = self.build_meryl_time 
         args.build_meryl_queue = self.build_meryl_queue
@@ -730,10 +716,12 @@ class CreateConfigurationFile(object):
         args.flye_qos =  self.flye_qos
         args.flye_time = self.flye_time 
         args.flye_queue = self.flye_queue
+        args.flye_mem =  self.flye_mem      
 
         args.nextdenovo_qos =  self.nextdenovo_qos
         args.nextdenovo_time = self.nextdenovo_time 
         args.nextdenovo_queue = self.nextdenovo_queue
+        args.nextdenovo_mem =  self.nextdenovo_mem
 
         args.minimap_qos =  self.minimap_qos
         args.minimap_time = self.minimap_time 
@@ -806,7 +794,7 @@ class CreateConfigurationFile(object):
 
         if gsize > 1000:
           args.concat_cores = 16
-          args.flye_qos = "xlong"
+          args.flye_qos = "marathon"
           args.flye_time = "150:00:00"
           args.bwa_time = "24:00:00"
           args.minimap_time = "15:00:00"
@@ -819,6 +807,9 @@ class CreateConfigurationFile(object):
           args.busco_time = "2:00:00"
           args.merq_time = "2:00:00"
           args.fin_time = "0:30:00"
+          args.nextdenovo_qos = "long"
+          args.nextdenovo_time = "24:00:00"
+          args.nextdenovo_mem = 100
 
         if args.run_flye == True or args.run_nextdenovo == True or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups != None:
           if args.filtlong_dir == None:
@@ -1248,6 +1239,7 @@ class CreateConfigurationFile(object):
         self.concatreadsSpecParameters["qos"] = args.concat_reads_qos
         self.concatreadsSpecParameters["time"] = args.concat_reads_time
         self.concatreadsSpecParameters["queue"] = args.concat_reads_queue
+        self.concatreadsSpecParameters["mem"] = args.concat_reads_mem
         self.allParameters ["concat_reads"] = self.concatreadsSpecParameters
 
     def storebuildmerylSpecParameters(self,args):
@@ -1278,7 +1270,6 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.filtlongParameters["Filtlong path"] = args.filtlong_path
         self.filtlongParameters["Filtlong minlen"] = args.filtlong_minlen
         self.filtlongParameters["Filtlong min_mean_q"] = args.filtlong_min_mean_q
         self.filtlongParameters["options"] = args.filtlong_opts
@@ -1292,6 +1283,7 @@ class CreateConfigurationFile(object):
         self.filtlongSpecParameters["name"] = "{rule}_" + args.base_name + "_s" + args.preprocess_ont_step 
         self.filtlongSpecParameters["qos"] = args.filtlong_qos
         self.filtlongSpecParameters["time"] = args.filtlong_time
+        self.filtlongSpecParameters["mem"] = args.filtlong_mem
         self.filtlongSpecParameters["queue"] = args.filtlong_queue
         self.allParameters ["filtlong"] = self.filtlongSpecParameters
 
@@ -1300,7 +1292,6 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.flyeParameters["Flye environment"] = args.flye_env
         self.flyeParameters["Flye cores"] = args.flye_cores
         self.flyeParameters["Flye polishing iterations"] = args.flye_pol_it
         self.flyeParameters["options"] = args.other_flye_opts
@@ -1315,6 +1306,7 @@ class CreateConfigurationFile(object):
         self.flyeSpecParameters["qos"] = args.flye_qos
         self.flyeSpecParameters["time"] = args.flye_time
         self.flyeSpecParameters["queue"] = args.flye_queue
+        self.flyeSpecParameters["mem"] = args.flye_mem
         self.allParameters ["flye"] = self.flyeSpecParameters
 
     def storeNextdenovoParameters(self,args):
@@ -1322,7 +1314,6 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.nextdenovoParameters["Nextdenovo module"] = args.nextdenovo_module
         self.nextdenovoParameters["Nextdenovo cores"] = args.nextdenovo_cores
         self.allParameters ["Nextdenovo"] = self.nextdenovoParameters
 
@@ -1335,6 +1326,7 @@ class CreateConfigurationFile(object):
         self.nextdenovoSpecParameters["qos"] = args.nextdenovo_qos
         self.nextdenovoSpecParameters["time"] = args.nextdenovo_time
         self.nextdenovoSpecParameters["queue"] = args.nextdenovo_queue
+        self.nextdenovoSpecParameters["mem"] = args.nextdenovo_mem
         self.allParameters ["nextdenovo"] = self.nextdenovoSpecParameters
 
     def storeminimapSpecParameters(self,args):

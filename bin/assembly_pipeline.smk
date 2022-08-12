@@ -79,6 +79,10 @@ if len(fastqs) > 0:
   log:
     "{dir}logs/" + str(date) + ".j%j.concat.{ext}.out",
     "{dir}logs/" + str(date) + ".j%j.concat.{ext}.err"
+  benchmark:
+    "{dir}logs/" + str(date) + ".concat.benchmark.{ext}.txt"
+  conda:
+    '../envs/ass_base.yaml'
   threads: config["Parameters"]["concat_cores"]  
 
 if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
@@ -92,13 +96,16 @@ if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs
     output:
       outreads = ONT_filtered
     params:
-      path = config["Filtlong"]["Filtlong path"],
       minlen = config["Filtlong"]["Filtlong minlen"],
       min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
       opts = extra_filtlong_opts
     log:
       config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.out",
       config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.err"
+    benchmark:
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.benchmark.txt"
+    conda:
+      '../envs/filtlong0.2.1.yaml'
     threads: config["Parameters"]["concat_cores"]  
 
 ##Run assemblers
@@ -106,7 +113,6 @@ if config["Parameters"]["run_flye"] == True:
   use rule flye from assembly_workflow with:
     input:
       reads = ONT_filtered,
-      env = config["Flye"]["Flye environment"]
     output:
       assembly = flye_assembly
     params:
@@ -117,6 +123,10 @@ if config["Parameters"]["run_flye"] == True:
     log:
       flye_dir + "logs/" + str(date) + ".j%j.flye.out",
       flye_dir + "logs/" + str(date) + ".j%j.flye.err"
+    benchmark:
+      flye_dir + "logs/" + str(date) + ".flye.benchmark.txt",
+    conda:
+      '../envs/flye2.9.1.yaml'
     threads: config["Flye"]["Flye cores"]
 
 if config["Parameters"]["run_nextdenovo"] == True:
@@ -127,14 +137,17 @@ if config["Parameters"]["run_nextdenovo"] == True:
     assembly = nextdenovo_assembly
   params:
     outdir = nextdenovo_dir,
-    module = config["Nextdenovo"]["Nextdenovo module"],
     config = config["Parameters"]["ndconfFile"]
   log:
     nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.out",
     nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.err"
+  benchmark:
+    nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.benchmark.txt"
+  envmodules:
+    "NextDenovo/2.5.0"
   threads: config["Nextdenovo"]["Nextdenovo cores"]
 
 ##Run after assembly steps
-include: "../modules/polish_assemblies.v03.10X.dev.smk"
-include: "../modules/postpolishing.dev.smk"
+include: "../modules/polish_assemblies.v03.smk"
+include: "../modules/postpolishing.smk"
 

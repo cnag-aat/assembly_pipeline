@@ -1,0 +1,13 @@
+name: null
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=5.1=1_gnu
+  - filtlong=0.2.1=h9a82719_0
+  - libgcc-ng=11.2.0=h1234567_1
+  - libgomp=11.2.0=h1234567_1
+  - libstdcxx-ng=11.2.0=h1234567_1
+  - zlib=1.2.12=h7f8727e_2
+prefix: /software/assembly/conda/filtlong0.2.1

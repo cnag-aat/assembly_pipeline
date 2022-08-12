@@ -32,6 +32,13 @@ rule concat_reads:
     fastqs = ["reads1.fastq.gz", "reads2.fastq.gz"]
   output:
     final_fastq = "all_reads.fastq.gz"
+  log:
+    "{dir}logs/" + str(date) + ".j%j.concat.{ext}.out",
+    "{dir}logs/" + str(date) + ".j%j.concat.{ext}.err"
+  benchmark:
+    "{dir}logs/" + str(date) + ".concat.benchmark.{ext}.txt"
+  conda:
+    '../envs/ass_base.yaml'
   threads: 2
   shell:
     "zcat {input.fastqs} | pigz -p {threads} -c  > {output.final_fastq};"
@@ -107,12 +114,19 @@ rule filtlong:
   output:
     outreads = "ont_reads.filtlong.fastq.gz"
   params:
-    path = "/scratch/project/devel/aateam/bin",
+#    path = "/scratch/project/devel/aateam/bin",
     minlen = 1000,
     min_mean_q = 80,
     opts = ""
   threads: 8
+  log:
+    "{dir}logs/" + str(date) + ".j%j.filtlong.out",
+    "{dir}logs/" + str(date) + ".j%j.filtlong.err"
+  benchmark:
+    "{dir}logs/" + str(date) + ".filtlong.benchmark.txt"
+  conda:
+    '../envs/filtlong0.2.1.yaml'
   shell:
-    "module purge; module load PIGZ/2.3.3 gcc/4.9.3;"
-    "{params.path}/filtlong --version;"
-    "{params.path}/filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"
+ #   "module purge; module load PIGZ/2.3.3 gcc/4.9.3;"
+    "filtlong --version;"
+    "filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"
