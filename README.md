@@ -5,7 +5,7 @@
  ```
 
 Currently it can take ONT reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups and evaluations. By default it will preprocess the reads, run Flye + Hypo + purge_dups and evaluate the resulting assemblies with BUSCO, MERQURY and Nseries. 
-It needs a config file and a spec file (json file with instructions on which resources to use in the CNAG cluster for each of the jobs). Both files are created by the script "create_config_assembly.py" that is located in the bin directory. To check all the options accepted by the script, do:
+It needs a config file and a spec file (json file with instructions on which resources should slurm use for each of the jobs). Both files are created by the script "create_config_assembly.py" that is located in the bin directory. To check all the options accepted by the script, do:
 
 ```
 bin/create_config_assembly.py -h
@@ -21,39 +21,45 @@ There are several ways of providing the reads.
 
 ### 1- ONT reads
 
-1.1 Using the option ``--ont-dir {DIR}`` in create_config_assembly.py:
+1.1 Using the option ``--ont-dir {DIR}`` in create_config_assembly.py.
 
-If you do so, it will look for all the files in the directory that end in '.fastq.gz' and will add the basenames to "ONT_wildcards". These wildcards will be processed by the pipeline that will: 
+If you do so, it will look for all the files in the directory that end in '.fastq.gz' and will add the basenames to "ONT_wildcards". These wildcards will be processed by the pipeline that will:
 
 - Concatenate all the files into a single file
 
-- Run filtlong with the specified parameters for minlen and min_mean_q
+- Run filtlong with the default or specified parameters. 
 
-- Use the resulting file for assembly and/or polishing
+- Use the resulting file for assembly, polishing and/or purging.
 
 You can also specify the basenames of the files that you want to use with the ``--ont-list `` option. In this case, the pipeline will use the wildcards that you're providing instead of merging all the files in the directory.
 
-1.2 Using the option ```--ont-reads {FILE}``` in create_config_assembly.py:
+1.2 Using the option ```--ont-reads {FILE}``` in create_config_assembly.py.
 
 If you do so, it will consider that you already have all the reads in one file and will:  
 
-- Run filtlong with the specified parameters for minlen and min_mean_q
+- Run filtlong with the default or specified parameters.
 
-- Use the resulting file for assembly and/or polishing
+- Use the resulting file for assembly, polishing and/or purging.
 
-1.3 Using the option ```--ont-filt {FILE}```. It will use this file as the output from filtlong and will skip the preprocessing steps and directly use it for assembly and/or polishing. 
+1.3 Using the option ```--ont-filt {FILE}```. It will use this file as the output from filtlong. Hence, it will skip the preprocessing steps and directly use it for assembly, polishing and/or purging. 
 
 
 
 ### 2-Illumina 10X-linked data
 
-2.1 Using the  ```--raw-10X {DIR}``` and ``` --10X-list``` options:
+2.1 Using the  ```--raw-10X {DIR:list}``` option. 
 
-It will take each basename in the list to get the corresponding fastqs from the directory and run longranger on them. Afterwards, it will build meryldbs for each "barcoded" file. Finally, it will concatenate all the meryldbs and "barcoded" files. Resulting "barcoded" file will be used for polishing. 
+Dictionary with 10X raw read directories, it has to be the mkfastq dir. You must specify as well the sampleIDs from this run. Example: '{"mkfastq-                        dir":"sample1,sample2,sample3"}'...
 
-2.2 Using the ``--processed-10X {DIR}`` parameter. This directory can already be there or be produced by the pipeline as described in step 2.1. Once all the "barcoded" fastq files are there, meryldbs will be built for each "barcoded" file.  Finally, it will concatenate all the meryldbs and "barcoded" files. Resulting "barcoded" file will be used for polishing. 
+It will take each basename in the list to get the fastqs from the corresponding directory and run longranger on each sample. Afterwards, it will build meryldbs for each "barcoded" file. Finally, it will concatenate all the meryldbs and "barcoded" files. Resulting "barcoded" file will be used for polishing. 
 
-2.3 Using the ``--10X`` option. The argument would be the path to the concatenated ".barcoded" file that needs to be used for polishing. If the pre-concatenated files are not given, meryldbs will be directly generated with this file, but it may run out of memory. 
+2.2 Using the ``--processed-10X {DIR}`` parameter. 
+
+This directory can already be there or be produced by the pipeline as described in step 2.1. Once all the "barcoded" fastq files are there, meryldbs will be built for each "barcoded" file.  Finally, it will concatenate all the meryldbs and "barcoded" files. Resulting "barcoded" file will be used for polishing. 
+
+2.3 Using the ``--10X`` option. 
+
+The argument to this is the path to the concatenated ".barcoded" file that needs to be used for polishing. If the pre-concatenated files are not given, meryldbs will be directly generated with this file, but it may run out of memory. 
 
 ### 3- Illumina short-read data
 

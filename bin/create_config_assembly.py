@@ -47,6 +47,7 @@ class CreateConfigurationFile(object):
         self.nextpolish_ill_rounds = 0                                                            #Number of rounds for running Nexpolish with illumina
         self.hypo_rounds = 1                                                                      #Number of rounds for running hypo
         self.run_purgedups = True 
+        self.run_tigmint = False
         self.minimap2_cores = 16                                                                  #Number of threads to run the alignment with minimap2
         self.bwa_cores = 16                                                                       #Number of threads to run the alignment for the pilon step
         self.racon_cores = 16                                                                     #Number of threads to run the racon step
@@ -67,7 +68,7 @@ class CreateConfigurationFile(object):
 
         #LONGRANGER SPEC PARAMETERS
         self.longranger_qos = "normal"
-        self.longranger_time = "6:00:00"
+        self.longranger_time = "8:00:00"
         self.longranger_queue = "main"
 
         #TRIMGALORE PARAMETERS
@@ -103,7 +104,7 @@ class CreateConfigurationFile(object):
         self.pe1 = None                                                                           #File with the illumina paired-end fastqs, already trimeed, pair 1
         self.pe2 = None                                                                           #File with the illumina paired-end fastqs, already trimmed, pair 2
         self.r10X = None                                                                          #File with barcoded 10X reads in fastq.gz format, concatenated
-        self.raw_10X = None                                                                       #Directory to Raw 10X reads, it has to be the mkfastq dir
+        self.raw_10X = {}                                                                         #List with 10X raw read directories, it has to be the mkfastq dir. You must specify as well the sampleIDs from this run. Example: 
         self.processed_10X = None                                                                 #Directory to Processed 10X reads, already there or to be produced by the pipeline
         self.illumina_dir = None                                                                  #Directory with the illumina raw reads, give this option if you don't have a single fastq file with all the reads
         self.processed_illumina = None                                                            #Directory to Processed illumina reads, already there or to be produced by the pipeline
@@ -111,6 +112,7 @@ class CreateConfigurationFile(object):
         self.assemblies = {}
         self.postpolish_assemblies = {}                                                           #List of input assemblies for which postpolishing steps need to be run but are not produced by the pipeline
         self.assemblies_cur = {}
+        self.r10X_reads = {}
 
         #OUTPUT PARAMETERS
         self.pipeline_workdir = os.getcwd() + "/"                                                 #Base directory for the pipeline run
@@ -147,22 +149,22 @@ class CreateConfigurationFile(object):
         self.flye_queue = "main"
 
         #NEXTDENOVO PARAMETERS
-        self.nextdenovo_module = "NEXTDENOVO/2.4.0"
+        self.nextdenovo_module = "NEXTDENOVO/2.5.0"
         self.nextdenovo_cores = 24	                                                          #Number of threads to run nextdenovo        
         self.nextdenovo_task = "all"
         self.nextdenovo_rewrite = "yes"
-        self.nextdenovo_parallel_jobs = 4
+        self.nextdenovo_parallel_jobs = 6
       #  self.nextdenovo_tmp = "$TMPDIR"
         self.nextdenovo_minreadlen = "1k"
         self.nextdenovo_seeddepth = 45
         self.nextdenovo_seedcutoff = 0
         self.nextdenovo_blocksize = "1g"
-        self.nextdenovo_pa_correction = 4
-        self.nextdenovo_minimap_raw = "-t 6 -x ava-ont"
+        self.nextdenovo_pa_correction = 32
+        self.nextdenovo_minimap_raw = "-t 10"
         self.nextdenovo_sort = "-m 40g -t 20"
         self.nextdenovo_correction_opts = "-p 6"                      
-        self.nextdenovo_minimap_cns = "-t 6 -x ava-ont -k17 -w17"
-        self.nextdenovo_minimap_map = "-t 6 -x ava-ont"              
+        self.nextdenovo_minimap_cns = "-t 10 "
+        self.nextdenovo_minimap_map = "-t 10 "              
         self.nextdenovo_nextgraph_opt = "-a 1"
 
         #NEXTDENOVO SPEC PARAMETERS
@@ -257,8 +259,19 @@ class CreateConfigurationFile(object):
         self.purgedups_queue = "main"
         self.purgedups_threads = self.purgedups_cores
 
+        #10X SCAFFOLDING PARAMETERS
+        self.tigmint_env = "/scratch/project/devel/aateam/src/TIGMINT/tigmint_conda_env/"         #conda environment with TIGMINT, ARCS and ARKS installed
+        self.tigmint_opts = None                                                                  #Additional option to give to the 10X scaffolding step
+        self.tigmint_cores = 12
+
+        #10X SCAFFOLDING SPEC PARAMETERS
+        self.tigmint_qos = "normal"
+        self.tigmint_time = "24:00:00"
+        self.tigmint_queue = "genB,main"
+        self.tigmint_threads = self.tigmint_cores    
+
         #FINALIZE PARAMETERS
-        self.busco_env = "/scratch/project/devel/aateam/bin/busco_envs/busco_v4.0.6/" 
+        self.busco_env = "/scratch/project/devel/aateam/src/BUSCO/busco_v5.2.2/" 
         self.intermediate_buscos = False                                                          #Set this to true if you want BUSCO to be run on each intermediate assembly  
         self.final_buscos = True                                                                  #Set this to true if you want BUSCO to be run on each of the final assemblies     
         self.busco_lineage = None                                                                 #Path to the lineage directory to run Busco with
@@ -322,6 +335,8 @@ class CreateConfigurationFile(object):
         self.nextpolishsrSpecParameters = {}
         self.purgedupsParameters = {}
         self.purgedupsSpecParameters = {}
+        self.scaffold10XParameters = {}
+        self.scaffold10XSpecParameters = {}
         self.finalizeParameters = {}
         self.buscoSpecParameters = {}
         self.merqSpecParameters = {}
@@ -345,6 +360,7 @@ class CreateConfigurationFile(object):
         self.register_medaka(parser)
         self.register_pilon(parser)
         self.register_purgedups(parser)
+        self.register_scaffold10X(parser)
         self.register_finalize(parser)
         self.register_wildcards(parser)
 
@@ -390,6 +406,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--genomescope-path', dest="genomescope_path", metavar="genomescope_path", help='Path to genomescope executable. Default %s' % self.genomescope_path)
         general_group.add_argument('--no-purgedups', dest="run_purgedups", action="store_false", help='Give this option if you do not want to run Purgedups.')
         general_group.add_argument('--ploidy', type = int, dest="ploidy", metavar="ploidy", default=self.ploidy, help='Expected ploidy. Default %s' % self.ploidy) 
+        general_group.add_argument('--run-tigmint', dest="run_tigmint", action="store_true", help='Give this option if you want to run the scaffolding with 10X reads step.')
 
     def register_input(self, parser):
         """Register all input parameters with the given
@@ -405,12 +422,12 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--pe1', dest="pe1", help='File with the illumina paired-end fastqs, already trimmed,  pair 1.')
         input_group.add_argument('--pe2', dest="pe2", help='File with the illumina paired-end fastqs, already trimmed, pair 2.')
         input_group.add_argument('--processed-illumina', dest="processed_illumina", help='Directory to Processed illumina reads. Already there or to be produced by the pipeline.')
-        input_group.add_argument('--raw-10X', dest="raw_10X", help='Directory to mkfastq Raw 10X reads.')
+        input_group.add_argument('--raw-10X', dest="raw_10X",  nargs="+", type=json.loads, default=self.raw_10X, help='Dictionary with 10X raw read directories, it has to be the mkfastq dir. You must specify as well the sampleIDs from this run. Example: \'{\"mkfastq-dir\":\"sample1,sample2,sample3\"}\'...')
         input_group.add_argument('--processed-10X', dest="processed_10X", help='Directory to Processed 10X reads. Already there or to be produced by the pipeline.')
         input_group.add_argument('--10X', dest="r10X", help='File with barcoded 10X reads in fastq.gz format, concatenated.')
         input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the raw illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
-        input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\"=\"s04.2_p03.2\"}\' ...')
+        input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\":\"s04.2_p03.2\"}\' ...')
 
     def register_output(self, parser):
         """Register all output parameters with the given
@@ -546,6 +563,17 @@ class CreateConfigurationFile(object):
         purgedups_group.add_argument('--purgedups-module', dest="purgedups_module", metavar="purgedups_module", default = self.purgedups_module, help='Module in CNAG cluster with PURGEDUPS installation. Default %s' % self.purgedups_module)
         purgedups_group.add_argument('--purgedups-calcuts-opts', dest="calcuts_opts", metavar="calcuts_opts", default = self.calcuts_opts, help='Adjusted values to run calcuts for purgedups. Default %s' % self.calcuts_opts)
 
+    def register_scaffold10X(self, parser):
+        """Register all 10X scaffolding parameters with the given
+        argparse parser
+
+        parser -- the argparse parser
+        """
+        scaffold10X_group = parser.add_argument_group('Scaffold_with_10X')
+        scaffold10X_group.add_argument('--tigmint-cores', type = int, dest="tigmint_cores", metavar="tigmint_cores", default=self.tigmint_cores, help='Number of threads to run the 10X scaffolding step. Default %s' % self.tigmint_cores)
+        scaffold10X_group.add_argument('--tigmint-env', dest="tigmint_env", metavar="tigmint_env", default = self.tigmint_env, help='Path to the conda environment whet Tigmint, ARKS and LINKS are installed. Default %s' % self.tigmint_env)
+        scaffold10X_group.add_argument('--tigmint-opts', dest="tigmint_opts", metavar="tigmint_opts", default = self.tigmint_opts, help='Adjusted values to run the scaffolding with 10X reads.  Default %s' % self.tigmint_opts)
+
     def register_finalize(self, parser):
         """Register all finalize parameters with the given
         argparse parser
@@ -570,7 +598,7 @@ class CreateConfigurationFile(object):
         wildcards_group = parser.add_argument_group('Wildcards')
         wildcards_group.add_argument('--ont-list', dest="ONT_wildcards", metavar="ONT_wildcards", help='List with basename of the ONT fastqs that will be used. Default %s' % self.ONT_wildcards)
         wildcards_group.add_argument('--illumina-list', dest="illumina_wildcards", metavar="illumina_wildcards", help='List with basename of the illumina fastqs. Default %s' % self.illumina_wildcards)
-        wildcards_group.add_argument('--r10X-list', dest="r10X_wildcards", metavar="r10X_wildcards", help='List with basename of the raw 10X fastqs. For raw 10X we need to give this argument, for processed 10X reads, the pipeline can obtain it. Default %s' % self.r10X_wildcards)
+        wildcards_group.add_argument('--r10X-list', dest="r10X_wildcards", metavar="r10X_wildcards", help='List with basename of the raw 10X fastqs. Default %s' % self.r10X_wildcards)
 ####
 
     def check_parameters(self,args):
@@ -756,6 +784,11 @@ class CreateConfigurationFile(object):
         args.purgedups_queue = self.purgedups_queue
         args.purgedups_threads = self.purgedups_threads
 
+        args.tigmint_qos =  self.tigmint_qos
+        args.tigmint_time = self.tigmint_time 
+        args.tigmint_queue = self.tigmint_queue
+        args.tigmint_threads = self.tigmint_threads
+
         args.busco_qos =  self.busco_qos
         args.busco_time = self.busco_time 
         args.busco_queue = self.busco_queue
@@ -819,7 +852,8 @@ class CreateConfigurationFile(object):
                 print (args.ONT_reads + " not found")
                 sys.exit(-1)
 
-        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0:
+        args.r10X_reads = {}
+        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.merqury_db or args.run_tigmint == True:
           if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and args.raw_10X == None and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
@@ -846,7 +880,7 @@ class CreateConfigurationFile(object):
           elif args.r10X:
             args.r10X = os.path.abspath(args.r10X) 
             if not os.path.exists(args.r10X):
-              if args.raw_10X == None and args.processed_10X == None:
+              if len(raw_10X) == 0 and args.processed_10X == None:
                 parser.print_help()
                 print ("Illumina reads are not found and are needed")
                 sys.exit(-1)
@@ -869,18 +903,28 @@ class CreateConfigurationFile(object):
             elif args.illumina_wildcards == None:
               args.illumina_wildcards = get_wildcards(args.processed_illumina, args.illumina_wildcards, '.1.fastq.gz')
           else:
-            if args.raw_10X != None:
-              args.raw_10X = os.path.abspath(args.raw_10X) + "/"
-              if not os.path.exists(args.raw_10X):
-                parser.print_help()
-                print (args.raw_10X + " not found")
-                sys.exit(-1)
-              elif args.r10X_wildcards == None:
-                parser.print_help()
-                print ('If you want to process the 10X reads, you need to provide the 10X basenames in r10X-wildcards.')
-                sys.exit(-1)    
+            if len(args.raw_10X):
+             # print (args.raw_10X)
+
+              args.r10X_wildcards = ""
+
+              for my_dict in args.raw_10X:
+                for key in my_dict:
+              #    print (key)
+                  args.r10X_reads[os.path.abspath(key)] = my_dict[key]
+                  if args.r10X_wildcards:
+                    args.r10X_wildcards += ","
+                  args.r10X_wildcards += my_dict[key]
+                  if not os.path.exists(os.path.abspath(key)):
+                    parser.print_help()
+                    print (os.path.abspath(key) + " not found")
+                    sys.exit(-1)
+                  elif key == None:
+                    parser.print_help()
+                    print ('If you want to process the 10X reads with longranger, you need to provide the 10X basenames together with the directory')
+                    sys.exit(-1)    
               if args.processed_10X == None:
-                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads/"
+                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads"
             if args.processed_10X != None:
               args.processed_10X = os.path.abspath(args.processed_10X) + "/"
               if args.r10X_wildcards == None:
@@ -890,6 +934,26 @@ class CreateConfigurationFile(object):
                   sys.exit(-1)
                 else:
                   args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz') 
+          if args.merqury_db:
+            args.merqury_db = os.path.abspath(args.merqury_db)
+            if not os.path.exists(args.merqury_db):
+              if args.meryl_k == None:
+                parser.print_help()
+                print (args.merqury_db + " not found, the pipeline will create it but you need to provide the kmer value")
+                sys.exit(-1)             
+              elif args.pe1 != None or args.r10X != None or args.r10X_wildcards != None or args.illumina_wildcards != None:
+                print (args.merqury_db + " not found, the pipeline will create it")   
+              else:
+                print ('We cannot create ' + args.merqury_db + ' without illumina reads')
+
+        if args.run_tigmint == True and args.r10X == None:
+         # if args.processed_10X != None:   
+         #   args.r10X = args.processed_10X + "reads.illumina10X.barcoded.fastq.gz" 
+         # else:   
+          if args.processed_10X == None:
+            parser.print_help()
+            print ("10X reads are required to run the 10X scaffolding step")
+            sys.exit(-1) 
                  
         if args.other_flye_opts == None:
           args.other_flye_opts = self.other_flye_opts + " -g " + args.genome_size + " "
@@ -954,6 +1018,13 @@ class CreateConfigurationFile(object):
         if not os.path.exists(args.pilon_path):
           print (args.pilon_path + " not found")
 
+        if args.tigmint_env:
+          args.tigmint_env = os.path.abspath(args.tigmint_env)
+        else:
+          args.tigmint_env =  os.path.abspath(self.tigmint_env)
+        if not os.path.exists(args.tigmint_env):
+          print (args.tigmint_env + " not found")
+
         if args.busco_env:
           args.busco_env = os.path.abspath(args.busco_env)
         else:
@@ -973,44 +1044,7 @@ class CreateConfigurationFile(object):
         else:
           args.merqury_env =  os.path.abspath(self.merqury_env)
         if not os.path.exists(args.merqury_env):
-          print (args.merqury_env + " not found") 
-
-        if args.merqury_db:
-          args.merqury_db = os.path.abspath(args.merqury_db)
-          if not os.path.exists(args.merqury_db):
-            if args.meryl_k == None:
-              parser.print_help()
-              print (args.merqury_db + " not found, the pipeline will create it but you need to provide the kmer value")
-              sys.exit(-1)             
-            elif args.pe1 != None or args.r10X != None or args.r10X_wildcards != None or args.illumina_wildcards != None:
-              print (args.merqury_db + " not found, the pipeline will create it")   
-            elif args.illumina_dir != None:
-              args.illumina_wildcards = get_wildcards(args.illumina_dir, args.illumina_wildcards, '.1.fastq.gz')      
-            else:
-              print ('We cannot create ' + args.merqury_db + ' without illumina reads')
-
-            if args.raw_10X != None and args.r10X != None:
-              args.raw_10X = os.path.abspath(args.raw_10X) + "/"
-              if not os.path.exists(args.raw_10X):
-                parser.print_help()
-                print (args.raw_10X + " not found")
-                sys.exit(-1)
-              elif args.r10X_wildcards == None and args.processed_10X == None:
-                parser.print_help()
-                print ('If you want to process the 10X reads, you need to provide the 10X basenames in r10X-wildcards.')
-                sys.exit(-1)    
-              if args.processed_10X != None:
-                args.processed_10X = os.path.abspath(args.processed_10X) + "/"
-              else:
-                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads/"
-
-              if args.r10X_wildcards == None:
-                if not os.path.exists(args.processed_10X):
-                  parser.print_help()
-                  print (args.processed_10X + " not found")
-                  sys.exit(-1)
-                else:
-                  args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz')             
+          print (args.merqury_env + " not found")      
               
 
         args.assemblies={}
@@ -1080,6 +1114,8 @@ class CreateConfigurationFile(object):
                   cstep = float(nstep) + 1 + paths
                   args.assemblies_cur[args.assemblies[m] + p + "/" + bpol + "." +  pol_bases[p] + ".fasta"] = "s0" + str(cstep) + "_p" + nstep
                   paths += 0.1
+
+  
 ###
 
     def storeGeneralParameters(self,args):
@@ -1122,6 +1158,7 @@ class CreateConfigurationFile(object):
         self.generalParameters["genomescope_path"] = args.genomescope_path
         self.generalParameters["ploidy"] = args.ploidy
         self.generalParameters["run_purgedups"] = args.run_purgedups
+        self.generalParameters["run_tigmint"] = args.run_tigmint
         self.allParameters["Parameters"] = self.generalParameters
 
     def storeallSpecParameters(self,args):
@@ -1148,7 +1185,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["ILLUMINA_pe1"] = args.pe1
         self.inputParameters["ILLUMINA_pe2"] = args.pe2
         self.inputParameters["processed_illumina"] = args.processed_illumina
-        self.inputParameters["raw_10X"] = args.raw_10X
+        self.inputParameters["raw_10X"] = args.r10X_reads
         self.inputParameters["processed_10X"] = args.processed_10X
         self.inputParameters["ILLUMINA_10X"] = args.r10X
         self.inputParameters["illumina_dir"] = args.illumina_dir
@@ -1478,6 +1515,28 @@ class CreateConfigurationFile(object):
         self.purgedupsSpecParameters["threads"] = args.purgedups_threads
         self.allParameters ["purge_dups"] = self.purgedupsSpecParameters
 
+
+    def storescaffold10XParameters(self,args):
+        """Updates 10X scaffolding parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.scaffold10XParameters["tigmint_cores"] = args.tigmint_cores
+        self.scaffold10XParameters["tigmint_env"] = args.tigmint_env
+        self.scaffold10XParameters["tigmint_options"] = args.tigmint_opts
+        self.allParameters ["scaffolding_10X"] = self.scaffold10XParameters
+
+    def storescaffold10XSpecParameters(self,args):
+        """Updates 10X scaffolding cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.scaffold10XSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base_in}"
+        self.scaffold10XSpecParameters["qos"] = args.tigmint_qos
+        self.scaffold10XSpecParameters["time"] = args.tigmint_time
+        self.scaffold10XSpecParameters["queue"] = args.tigmint_queue
+        self.allParameters ["scaffolding_10X"] = self.scaffold10XSpecParameters
+
     def storeFinalizeParameters(self,args):
         """Updates finalize parameters to the map of parameters to be store in a JSON file
 
@@ -1606,6 +1665,7 @@ configManager.storeRaconParameters(args)
 configManager.storeMedakaParameters(args)
 configManager.storePilonParameters(args)
 configManager.storePurgedupsParameters(args)
+configManager.storescaffold10XParameters(args)
 configManager.storeFinalizeParameters(args)
 configManager.storeWildcardParameters(args)
 
@@ -1646,6 +1706,8 @@ if args.nextpolish_ill_rounds > 0:
   specManager.storenextpolishsrSpecParameters(args)
 if args.run_purgedups == True:
   specManager.storepurgedupsSpecParameters(args)
+if args.run_tigmint == True:
+  specManager.storescaffold10XSpecParameters(args)
 if args.intermediate_buscos == True or args.final_buscos == True:
   specManager.storebuscoSpecParameters(args)
 if args.merqury_db:

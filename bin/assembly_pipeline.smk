@@ -122,19 +122,19 @@ if config["Parameters"]["run_flye"] == True:
 if config["Parameters"]["run_nextdenovo"] == True:
  use rule nextdenovo from assembly_workflow with:
   input:
-    reads = ONT_filtered,
-    config = config["Parameters"]["ndconfFile"]
+    reads = ONT_filtered
   output:
     assembly = nextdenovo_assembly
   params:
     outdir = nextdenovo_dir,
     module = config["Nextdenovo"]["Nextdenovo module"],
+    config = config["Parameters"]["ndconfFile"]
   log:
     nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.out",
     nextdenovo_dir + "logs/" + str(date) + ".j%j.nextdenovo.err"
   threads: config["Nextdenovo"]["Nextdenovo cores"]
 
 ##Run after assembly steps
-include: "../modules/polish_assemblies.v03.smk"
-include: "../modules/postpolishing.smk"
+include: "../modules/polish_assemblies.v03.10X.dev.smk"
+include: "../modules/postpolishing.dev.smk"
 
