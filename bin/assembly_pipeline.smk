@@ -135,6 +135,6 @@ if config["Parameters"]["run_nextdenovo"] == True:
   threads: config["Nextdenovo"]["Nextdenovo cores"]
 
 ##Run after assembly steps
-include: "../modules/polish_assemblies.v03.smk"
-include: "../modules/postpolishing.smk"
+include: "../modules/polish_assemblies.v03.10X.dev.smk"
+include: "../modules/postpolishing.dev.smk"
 
