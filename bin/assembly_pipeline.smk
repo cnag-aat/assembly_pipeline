@@ -52,8 +52,13 @@ rule all:
 fastqs = {}
 ont_reads = ""
 ONT_filtered = ""
+ont_fastqs = {}
+kraken_ins = {}
 if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextdenovo"] == True:
   ONT_filtered = config["Inputs"]["ONT_filtered"]
+  ont_fastqs["filtered_ont"] = ONT_filtered
+  if config["Parameters"]["run_kraken2"] == True:
+    kraken_ins[os.path.dirname(ONT_filtered)] = ONT_filtered
   if not os.path.exists(ONT_filtered):
     if not os.path.exists(config["Outputs"]["filtlong_dir"] + "logs"):
       os.makedirs(config["Outputs"]["filtlong_dir"]  + "logs")
@@ -68,9 +73,9 @@ if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextden
           fastqs["ont."+i].append(ont_dir + file + "." + i)
     else:
       ont_reads = config["Inputs"]["ONT_reads"] 
+  ont_fastqs["raw_ont"] = ont_reads
 
 if len(fastqs) > 0:
-
  use rule concat_reads from preprocess_workflow with:
   input:
     fastqs = lambda wildcards: fastqs[wildcards.ext]
@@ -107,6 +112,42 @@ if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs
     conda:
       '../envs/filtlong0.2.1.yaml'
     threads: config["Parameters"]["concat_cores"]  
+
+#EVALUATE INPUT READS
+
+use rule nanostats from preprocess_workflow with:
+  input:
+    fastq = lambda wildcards: ont_fastqs[wildcards.prefix]
+  output:
+    stats = config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/NanoStats.txt",
+  params:
+    outdir = config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/"
+  log:
+    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.NanoStats.{prefix}.out",
+    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.NanoStats.{prefix}.err"
+  benchmark:
+    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".NanoStats.{prefix}.benchmark.txt"
+  conda:
+    '../envs/nanoplot1.40.0.yaml'
+  threads: config["Parameters"]["concat_cores"]
+
+use rule Kraken2 from preprocess_workflow with: 
+  input:
+    read = lambda wildcards: kraken_ins[wildcards.dir],
+   # database = config["Kraken2"]["database"]
+  output:
+    report = "{dir}/kraken2.report",
+  params:
+    additional = config["Kraken2"]["additional_opts"]
+  log:
+    "{dir}/logs" + str(date) + ".j%j.kraken.out",
+    "{dir}/logs/" + str(date) + ".j%j.kraken.err",
+  benchmark:
+    "{dir}/logs/" + str(date) + ".j%j.kraken.benchmark.txt",
+  conda:
+    '../envs/kraken2.1.2.yaml'
+  threads: config["Kraken2"]["threads"]
+
 
 ##Run assemblers
 if config["Parameters"]["run_flye"] == True:

@@ -327,9 +327,6 @@ rule all_polishing:
 fastqs = {}
 if rr > 0 or mr > 0 or nor or hr >0:
   ONT_filtered = config["Inputs"]["ONT_filtered"]
-  if not os.path.exists(ONT_filtered):
-    if not os.path.exists(config["Outputs"]["filtlong_dir"] + "logs"):
-      os.makedirs(config["Outputs"]["filtlong_dir"]  + "logs")
 
 if rr > 0 or mr > 0 or nor or hr >0 or config["Parameters"]["run_purgedups"] == True:
   #  if config["Inputs"]["ONT_reads"] == None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
@@ -477,25 +474,6 @@ if len(fastqs) > 0:
     "{dir}logs/" + str(date) + ".j%j.concat.{ext}.out",
     "{dir}logs/" + str(date) + ".j%j.concat.{ext}.err"
   threads: config["Parameters"]["concat_cores"]  
-
-if config["Inputs"]["ONT_filtered"] !=None and not os.path.exists(config["Inputs"]["ONT_filtered"]):
-  extra_filtlong_opts = config["Filtlong"]["options"]
-  if extra_filtlong_opts == None:
-    extra_filtlong_opts = ""
-  use rule filtlong from preprocess_workflow with:
-    input:
-      reads = ont_reads
-    output:
-      outreads = ONT_filtered
-    params:
-      path = config["Filtlong"]["Filtlong path"],
-      minlen = config["Filtlong"]["Filtlong minlen"],
-      min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
-      opts = extra_filtlong_opts
-    log:
-      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.out",
-      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.err"
-    threads: config["Parameters"]["concat_cores"] 
 
 if config["Finalize"]["Merqury db"]:
   if not os.path.exists(config["Finalize"]["Merqury db"]):

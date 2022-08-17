@@ -59,7 +59,8 @@ class CreateConfigurationFile(object):
         self.longranger_cores = 8                                                                 #Number of threads to run longranger   
         self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2"   
         self.genomescope_path = "/home/devel/jgomez/bin/genomescope2.0/genomescope2.0"
-        self.ploidy = 2   
+        self.ploidy = 2
+        self.run_kraken2 = False
 
         #ALL SPEC PARAMETERS
         self.all_qos = "test"
@@ -85,6 +86,23 @@ class CreateConfigurationFile(object):
         self.concat_reads_time = "10:00:00"
         self.concat_reads_queue = "genD"
         self.concat_reads_mem = "100"
+
+        #NANOPLOT SPEC PARAMETERS
+        self.nanoplot_qos = "normal"
+        self.nanoplot_time = "6:00:00"
+        self.nanoplot_queue = "genD"
+        self.nanoplot_mem = "100"
+
+        #KRAKEN PARAMETERS
+        self.kraken2_db = ""  
+        self.kraken2_threads = 16
+        self.additional_kraken2_opts = ""
+
+        #KRAKEN SPEC PARAMETERS
+        self.kraken2_qos = "vlong"
+        self.kraken2_time = "48:00:00"
+        self.kraken2_queue = "genD"
+        self.kraken2_mem = "1000"
 
         #BUILD MERYL SPEC PARAMETERS
         self.build_meryl_qos = "normal"
@@ -154,7 +172,6 @@ class CreateConfigurationFile(object):
         self.nextdenovo_task = "all"
         self.nextdenovo_rewrite = "yes"
         self.nextdenovo_parallel_jobs = 18
-      #  self.nextdenovo_tmp = "$TMPDIR"
         self.nextdenovo_minreadlen = "1k"
         self.nextdenovo_seeddepth = 45
         self.nextdenovo_seedcutoff = 0
@@ -311,6 +328,9 @@ class CreateConfigurationFile(object):
         self.trimgaloreParameters = {}
         self.trimgaloreSpecParameters = {}
         self.concatreadsSpecParameters = {}
+        self.nanoplotSpecParameters = {}
+        self.kraken2Parameters = {}
+        self.kraken2SpecParameters = {}
         self.buildmerylSpecParameters = {}
         self.concatmerylSpecParameters = {}
         self.filtlongParameters = {}
@@ -353,6 +373,7 @@ class CreateConfigurationFile(object):
         self.register_input(parser)
         self.register_output(parser)
         self.register_filtlong(parser)
+        self.register_kraken2(parser)
         self.register_trimgalore(parser)
         self.register_flye(parser)
         self.register_nextdenovo(parser)
@@ -408,6 +429,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--no-purgedups', dest="run_purgedups", action="store_false", help='Give this option if you do not want to run Purgedups.')
         general_group.add_argument('--ploidy', type = int, dest="ploidy", metavar="ploidy", default=self.ploidy, help='Expected ploidy. Default %s' % self.ploidy) 
         general_group.add_argument('--run-tigmint', dest="run_tigmint", action="store_true", help='Give this option if you want to run the scaffolding with 10X reads step.')
+        general_group.add_argument('--run-kraken2', dest="run_kraken2", action="store_true", help='Give this option if you want to run Kraken2 on the input reads.')
 
     def register_input(self, parser):
         """Register all input parameters with the given
@@ -466,6 +488,17 @@ class CreateConfigurationFile(object):
         trimgalore_group = parser.add_argument_group('Trim_Galore')
         trimgalore_group.add_argument('--trim-galore-opts', dest="trim_galore_opts", metavar="trim_galore_opts", default=self.trim_galore_opts, help='Optional parameters for the rule trim_galore. Default %s' % self.trim_galore_opts)
         trimgalore_group.add_argument('--trim-Illumina-cores', type = int, dest="Trim_Illumina_cores", metavar="Trim_Illumina_cores", default=self.Trim_Illumina_cores, help='Number of threads to run the Illumina trimming step. Default %s' % self.Trim_Illumina_cores)
+
+    def register_kraken2(self, parser):
+        """Register all Kraken2 parameters with the given
+        argparse parser
+
+        parser -- the argparse parser
+        """
+        kraken2_group = parser.add_argument_group('Kraken2')
+        kraken2_group.add_argument('--kraken2-db', dest="kraken2_db", metavar="kraken2_db", default=self.kraken2_db, help='Database to be used for running Kraken2. Default %s' % self.kraken2_db)
+        kraken2_group.add_argument('--kraken2-opts', dest="additional_kraken2_opts", metavar="additional_kraken2_opts", default=self.additional_kraken2_opts, help='Optional parameters for the rule Kraken2. Default %s' % self.additional_kraken2_opts)
+        kraken2_group.add_argument('--kraken2-cores', type = int, dest="kraken2_threads", metavar="kraken2_threads", default=self.kraken2_threads, help='Number of threads to run the Kraken2 step. Default %s' % self.kraken2_threads)
 
     def register_flye(self, parser):
         """Register all flye parameters with the given
@@ -702,8 +735,18 @@ class CreateConfigurationFile(object):
         args.concat_reads_qos =  self.concat_reads_qos
         args.concat_reads_time = self.concat_reads_time 
         args.concat_reads_queue = self.concat_reads_queue
-        args.concat_reads_mem =  self.concat_reads_mem      
-        
+        args.concat_reads_mem =  self.concat_reads_mem 
+
+        args.nanoplot_qos =  self.nanoplot_qos
+        args.nanoplot_time = self.nanoplot_time 
+        args.nanoplot_queue = self.nanoplot_queue
+        args.nanoplot_mem =  self.nanoplot_mem     
+
+        args.kraken2_qos = self.kraken2_qos
+        args.kraken2_time = self.kraken2_time 
+        args.kraken2_queue = self.kraken2_queue
+        args.kraken2_mem = self.kraken2_mem
+
         args.build_meryl_qos =  self.build_meryl_qos
         args.build_meryl_time = self.build_meryl_time 
         args.build_meryl_queue = self.build_meryl_queue
@@ -1150,6 +1193,7 @@ class CreateConfigurationFile(object):
         self.generalParameters["ploidy"] = args.ploidy
         self.generalParameters["run_purgedups"] = args.run_purgedups
         self.generalParameters["run_tigmint"] = args.run_tigmint
+        self.generalParameters["run_kraken2"] = args.run_kraken2
         self.allParameters["Parameters"] = self.generalParameters
 
     def storeallSpecParameters(self,args):
@@ -1241,6 +1285,40 @@ class CreateConfigurationFile(object):
         self.concatreadsSpecParameters["queue"] = args.concat_reads_queue
         self.concatreadsSpecParameters["mem"] = args.concat_reads_mem
         self.allParameters ["concat_reads"] = self.concatreadsSpecParameters
+
+    def storenanoplotSpecParameters(self,args):
+        """Updates Nanoplot cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.nanoplotSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_{wildcards.prefix}"
+        self.nanoplotSpecParameters["qos"] = args.nanoplot_qos
+        self.nanoplotSpecParameters["time"] = args.nanoplot_time
+        self.nanoplotSpecParameters["queue"] = args.nanoplot_queue
+        self.nanoplotSpecParameters["mem"] = args.nanoplot_mem
+        self.allParameters ["nanostats"] = self.nanoplotSpecParameters
+
+    def storekraken2Parameters(self,args):
+        """Updates Kraken2 parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.kraken2Parameters["database"] = args.kraken2_db
+        self.kraken2Parameters["threads"] = args.kraken2_threads
+        self.kraken2Parameters["additional_opts"] = args.additional_kraken2_opts
+        self.allParameters ["Kraken2"] = self.kraken2Parameters
+
+    def storekraken2SpecParameters(self,args):
+        """Updates Kraken2 cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.kraken2SpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_{wildcards.prefix}"
+        self.kraken2SpecParameters["qos"] = args.kraken2_qos
+        self.kraken2SpecParameters["time"] = args.kraken2_time
+        self.kraken2SpecParameters["queue"] = args.kraken2_queue
+        self.kraken2SpecParameters["mem"] = args.kraken2_mem
+        self.allParameters ["kraken2"] = self.kraken2SpecParameters
 
     def storebuildmerylSpecParameters(self,args):
         """Updates build meryl cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1608,7 +1686,6 @@ class CreateConfigurationFile(object):
           print ("Need to select proper read type for running Nextdenovo")
 
         nextdenovo_config.set('General',  'workdir', args.nextdenovo_dir)
-     #   nextdenovo_config.set('General',  'usetempdir', args.nextdenovo_tmp)
         nextdenovo_config.set('General',  'input_fofn', args.nextdenovo_dir + 'long_reads.fofn')
 
         nextdenovo_config.add_section('correct_option')
@@ -1649,6 +1726,7 @@ configManager.storeGeneralParameters(args)
 configManager.storeInputParameters(args)
 configManager.storeOutputParameters(args)
 configManager.storeTrimgaloreParameters(args)
+configManager.storekraken2Parameters(args)
 configManager.storeFiltlongParameters(args)
 configManager.storeFlyeParameters(args)
 configManager.storeNextdenovoParameters(args)
@@ -1671,6 +1749,9 @@ if args.illumina_wildcards != None or args.ONT_wildcards != None or args.r10X_wi
 if args.ONT_wildcards != None or args.ONT_reads != None:
   if not os.path.exists(args.ONT_filtered):
     specManager.storefiltlongSpecParameters(args)
+  specManager.storenanoplotSpecParameters(args)
+if args.run_kraken2 == True:
+  specManager.storekraken2SpecParameters(args)
 if args.run_flye == True:
   specManager.storeflyeSpecParameters(args)
 if args.run_nextdenovo == True:

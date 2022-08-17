@@ -130,3 +130,48 @@ rule filtlong:
  #   "module purge; module load PIGZ/2.3.3 gcc/4.9.3;"
     "filtlong --version;"
     "filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"
+
+rule nanostats:
+  input:
+    fastq = "reads.ont.fastq.gz"
+  output:
+    stats = "nanostats_out/NanoStats.txt",
+  params:
+    outdir = "nanostats_out/",
+  log:
+    "{dir}logs/" + str(date) + ".NanoStats.out",
+    "{dir}logs/" + str(date) + ".NanoStats.err"
+  benchmark:
+    "{dir}logs/" + str(date) + ".NanoStats.benchmark.txt"
+  threads: 4
+  conda:
+    '../envs/nanoplot1.40.0'
+  shell:
+    "mkdir -p {params.outdir}; "
+    "cd {params.outdir}; "
+    "NanoPlot -t {threads} --plots dot --fastq {input.fastq} -o .; "
+
+rule Kraken2:
+  input:
+    read = "reads.fastq.gz",
+  #  database = "minikraken2_v1_8GB"
+  output:
+    report = "kraken2.report",
+   # abundance =  "bracken_abundance.txt",
+   # tophits =  "bracken_abundance.tophits"
+  params:
+   # kmers = "minikraken2_v1_8GB/database200mers.kmer_distrib",
+    additional = ""
+  log:
+    "{dir}/logs/" + str(date) + ".kraken.out",
+    "{dir}/logs/" + str(date) + ".kraken.err",
+  benchmark:
+    "{dir}/logs/" + str(date) + ".kraken.benchmark.txt",
+  threads: 4
+  conda:
+    '../envs/kraken2.1.2.yaml'
+  shell:
+     "kraken2 --threads {threads} --db   --use-names --report {output.report} {params.additional} {input.read}; "
+    # "wait; "
+     #"est_abundance.py -i {output.report} -k {params.kmers} -l S -t 10 -o {output.abundance}; "
+     #"bracken-top-hits.v01.pl -f {output.abundance} > {output.tophits}; "
