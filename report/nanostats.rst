@@ -1,0 +1,1 @@
+{{ snakemake.rule }} was run on {{ snakemake.input.fastq }} with {{ snakemake.threads }} threads. 

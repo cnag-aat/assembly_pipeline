@@ -3,8 +3,6 @@ import re
 import os
 
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
-#keepfiles = False
-#scripts_dir = os.path.dirname(sys.argv[0]) + "/../scripts/" 
 
 if not os.path.exists("logs"):
   os.makedirs("logs")

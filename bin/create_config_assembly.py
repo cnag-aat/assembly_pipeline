@@ -27,11 +27,11 @@ class CreateConfigurationFile(object):
         self.configFile = "assembly.config"                                                       #Name of the json configuration file to be created
         self.specFile = "assembly.spec"                                                           #Name of the spec file to be created
         self.ndconfFile = "nextdenovo.config"                                                     #Name of the nextdenovo config file to be created
-        self.logs_dir = "logs/"                                                                   #Directory to keep all the log files
         self.concat_cores = 4                                                                     #Number of threads to concatenate the reads and to run filtlong
         self.keepintermediate = False                                                             #Set this to True if you do not want intermediate files to be removed
         self.lr_type  = "nano-raw"                                                                #Type of long reads (options are flye read-type options)
         self.base_name = None                                                                     #Base name for the project
+        self.species = None                                                                       #Name of the species to be assembled
         self.genome_size = None							                  #Estimated genome size
         self.preprocess_ont_step = "02.1"                                                         #Step directory for preprocessing ont
         self.preprocess_10X_step = "02.2"
@@ -152,7 +152,7 @@ class CreateConfigurationFile(object):
 
         #FILTLONG SPEC PARAMETERS
         self.filtlong_qos = "normal"
-        self.filtlong_time = "15:00:00"
+        self.filtlong_time = "10:00:00"
         self.filtlong_queue = "genD"
         self.filtlong_mem = "100"
 
@@ -396,11 +396,11 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--configFile', dest="configFile", metavar="configFile", help='Configuration JSON to be generated. Default %s' % self.configFile)
         general_group.add_argument('--specFile', dest="specFile", metavar="specFile", help='Cluster specifications JSON  fileto be generated. Default %s' % self.specFile)
         general_group.add_argument('--ndconfFile', dest="ndconfFile", metavar="ndconfFile", help='Name pf the nextdenovo config file. Default %s' % self.ndconfFile)
-        general_group.add_argument('--logs-dir', dest="logs_dir", metavar="logs_dir", help='Directory to keep all the log files. Default %s' % self.logs_dir)
         general_group.add_argument('--concat-cores', type = int, dest="concat_cores", metavar="concat_cores", default=self.concat_cores, help='Number of threads to concatenate reads and to run filtlong. Default %s' % self.concat_cores)
         general_group.add_argument('--genome-size', dest="genome_size", metavar="genome_size", help='Approximate genome size. Example: 615m or 2.6g. Default %s' % self.genome_size)
         general_group.add_argument('--lr-type', dest="lr_type", metavar="lr_type", default=self.lr_type, choices=['pacbio-raw', 'pacbio-corr', 'pacbio-hifi', 'nano-raw', 'nano-corr', 'nano-hq', 'subassemblies'],  help='Type of long reads (options are flye read-type options). Default %s' % self.lr_type)
         general_group.add_argument('--basename', dest="base_name", metavar="base_name", help='Base name for the project. Default %s' % self.base_name)
+        general_group.add_argument('--species', dest="species", metavar="species", help='Name of the species to be assembled. Default %s' % self.species)
         general_group.add_argument('--keep-intermediate', dest="keepintermediate", action="store_true", help='Set this to True if you do not want intermediate files to be removed. Default %s' % self.keepintermediate)
         general_group.add_argument('--preprocess-lr-step', dest="preprocess_ont_step", default=self.preprocess_ont_step, help='Step for preprocessing long-reads. Default %s' % self.preprocess_ont_step)
         general_group.add_argument('--preprocess-10X-step', dest="preprocess_10X_step", default=self.preprocess_10X_step, help='Step for preprocessing 10X reads. Default %s' % self.preprocess_10X_step)
@@ -664,11 +664,6 @@ class CreateConfigurationFile(object):
         if not os.path.exists(args.scripts_dir):
           print (args.scripts_dir + " not found")
 
-        if args.logs_dir:
-          args.logs_dir = os.path.abspath(args.logs_dir) + "/"
-        else:
-          args.logs_dir = args.pipeline_workdir  + self.logs_dir 
-
         if args.eval_dir:
           args.eval_dir = os.path.abspath(args.eval_dir) + "/"
         else:
@@ -677,6 +672,11 @@ class CreateConfigurationFile(object):
         if args.base_name == None:
           parser.print_help()
           print ("You need to provide a base name for the project")
+          sys.exit(-1)   
+
+        if args.species == None:
+          parser.print_help()
+          print ("You need to provide the species name")
           sys.exit(-1)   
 
         if args.stats_out == None:
@@ -1160,11 +1160,11 @@ class CreateConfigurationFile(object):
         self.generalParameters["configFile"] = args.configFile
         self.generalParameters["specFile"] = args.specFile
         self.generalParameters["ndconfFile"] = args.ndconfFile
-        self.generalParameters["logs_dir"] = args.logs_dir
         self.generalParameters["lr_type"] = args.lr_type
         self.generalParameters["concat_cores"] = args.concat_cores
         self.generalParameters["keep_intermediate"] = args.keepintermediate
         self.generalParameters["base_name"] = args.base_name
+        self.generalParameters["species"] = args.species
         self.generalParameters["genome_size"] = args.genome_size
         self.generalParameters["preprocess_ont_step"] = args.preprocess_ont_step
         self.generalParameters["preprocess_illumina_step"] = args.preprocess_illumina_step
@@ -1296,7 +1296,7 @@ class CreateConfigurationFile(object):
         self.nanoplotSpecParameters["time"] = args.nanoplot_time
         self.nanoplotSpecParameters["queue"] = args.nanoplot_queue
         self.nanoplotSpecParameters["mem"] = args.nanoplot_mem
-        self.allParameters ["nanostats"] = self.nanoplotSpecParameters
+        self.allParameters ["nanoplot"] = self.nanoplotSpecParameters
 
     def storekraken2Parameters(self,args):
         """Updates Kraken2 parameters to the map of parameters to be store in a JSON file

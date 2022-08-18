@@ -169,9 +169,6 @@ def get_targets(assembly):
 working_dir = config["Outputs"]["base_dir"]
 eval_dir = config["Outputs"]["eval_dir"]
 scripts_dir = config["Inputs"]["scripts_dir"]
-logs_dir = config["Parameters"]["logs_dir"]
-if not os.path.exists(logs_dir):
-  os.makedirs(logs_dir)
 shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
 
 rr = config["Parameters"]["racon_rounds"]
