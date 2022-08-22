@@ -35,7 +35,7 @@ if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextden
   if config["Inputs"]["ONT_dir"] and config["Wildcards"]["ONT_wildcards"].split(','):
     targets.append(nanostats_dir + "/nanostats/raw_ont/NanoStats.txt")
     if config["Parameters"]["run_kraken2"] == True:
-      targets.append(nanostats_dir + "/Kraken/raw_ont/" + krakendb + "/rawont_"+krakendb+".kraken2.report.txt")
+      targets.append(nanostats_dir + "/Kraken/raw_ont/" + krakendb + "/raw_ont_"+krakendb+".kraken2.report.txt")
     
   if config["Parameters"]["run_flye"] == True:
     targets.append(flye_assembly)

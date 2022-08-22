@@ -48,7 +48,7 @@ if config["Parameters"]["run_kraken2"] == True:
   if not os.path.exists(logs):
       os.makedirs(logs)
   if ont_reads != "":
-    kraken_ins[os.path.dirname(ONT_filtered) + "/Kraken/raw_ont/"+dbname+"/rawont_"+dbname] = ont_reads
+    kraken_ins[os.path.dirname(ONT_filtered) + "/Kraken/raw_ont/"+dbname+"/raw_ont_"+dbname] = ont_reads
     logs = os.path.dirname(ont_reads)+"/Kraken/raw_ont/"+dbname + "/raw_ont_"+dbname+"_logs"
     if not os.path.exists(logs):
       os.makedirs(logs)
@@ -140,7 +140,7 @@ use rule Kraken2 from preprocess_workflow with:
     "{base}_logs/" + str(date) + ".j%j.kraken.out",
     "{base}_logs/" + str(date) + ".j%j.kraken.err",
   benchmark:
-     "{base}logs/" + str(date) + ".j%j.kraken.benchmark.txt",
+     "{base}_logs/" + str(date) + ".j%j.kraken.benchmark.txt",
   conda:
     '../envs/kraken2.1.2.yaml'
   threads: config["Kraken2"]["threads"]

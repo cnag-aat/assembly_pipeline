@@ -251,12 +251,12 @@ if config["Parameters"]["run_purgedups"] == True:
     minimap2[base_postpolish] = i
 
 assemblies4Busco = []
-if config["Finalize"]["intermediate BUSCOs"] == True or config["Finalize"]["final BUSCOs"] == True:
+if config["Finalize"]["intermediate Evaluations"] == True or config["Finalize"]["final Evaluations"] == True:
   targets.append(config["Outputs"]["stats_out"])
-if config["Finalize"]["intermediate BUSCOs"] == True:
+if config["Finalize"]["intermediate Evaluations"] == True:
   for i in intermediateassemblies:
     assemblies4Busco.append(i)
-if config["Finalize"]["final BUSCOs"] == True:
+if config["Finalize"]["final Evaluations"] == True:
   for i in terminalassemblies:
     assemblies4Busco.append(i)
   for i in inputs:
@@ -287,7 +287,7 @@ assemblies4Merqury = []
 if config["Finalize"]["Merqury db"] != None:
   if not os.path.exists(config["Finalize"]["Merqury db"]):
     targets.append(config["Finalize"]["Merqury db"])
-  if config["Finalize"]["final BUSCOs"] == True:
+  if config["Finalize"]["final Evaluations"] == True:
     for i in terminalassemblies:
       assemblies4Merqury.append(i)
     for i in inputs:
