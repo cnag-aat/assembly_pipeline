@@ -94,7 +94,8 @@ class CreateConfigurationFile(object):
         self.nanoplot_mem = "100"
 
         #KRAKEN PARAMETERS
-        self.kraken2_db = ""  
+        self.kraken2_db = None  
+        self.kraken2_kmers = None
         self.kraken2_threads = 16
         self.additional_kraken2_opts = ""
 
@@ -289,18 +290,25 @@ class CreateConfigurationFile(object):
         self.tigmint_threads = self.tigmint_cores    
 
         #FINALIZE PARAMETERS
-        self.busco_env = "/scratch/project/devel/aateam/src/BUSCO/busco_v5.2.2/" 
-        self.intermediate_buscos = False                                                          #Set this to true if you want BUSCO to be run on each intermediate assembly  
-        self.final_buscos = True                                                                  #Set this to true if you want BUSCO to be run on each of the final assemblies     
+        self.intermediate_evals = False                                                          #Set this to true if you want evaluations to be run on each intermediate assembly  
+        self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
         self.busco_lineage = None                                                                 #Path to the lineage directory to run Busco with
         self.merqury_db = None
         self.merqury_env = "/home/devel/fcruz/.conda/envs/merqury_v1.1/"
         self.meryl_k = None 
 
+        
+        #STATS SPEC PARAMETERS
+        self.stats_qos = "test"
+        self.stats_time = "0:10:00"
+        self.stats_queue = "genD"  
+        self.stats_mem = "100"
+        
         #BUSCO SPEC PARAMETERS
-        self.busco_qos = "normal"
+        self.busco_qos = "short"
         self.busco_time = "6:00:00"
-        self.busco_queue = "genB,main"  
+        self.busco_queue = "genD"  
+        self.busco_mem = "100"
 
         #MERQURY SPEC PARAMETERS
         self.merq_qos = "normal"
@@ -359,6 +367,7 @@ class CreateConfigurationFile(object):
         self.scaffold10XParameters = {}
         self.scaffold10XSpecParameters = {}
         self.finalizeParameters = {}
+        self.statsSpecParameters = {}
         self.buscoSpecParameters = {}
         self.merqSpecParameters = {}
         self.finSpecParameters = {}
@@ -497,6 +506,7 @@ class CreateConfigurationFile(object):
         """
         kraken2_group = parser.add_argument_group('Kraken2')
         kraken2_group.add_argument('--kraken2-db', dest="kraken2_db", metavar="kraken2_db", default=self.kraken2_db, help='Database to be used for running Kraken2. Default %s' % self.kraken2_db)
+        kraken2_group.add_argument('--kraken2-kmer', dest="kraken2_kmers", metavar="kraken2_kmers", default=self.kraken2_kmers, help='Database to be used for running Kraken2. Default %s' % self.kraken2_kmers)
         kraken2_group.add_argument('--kraken2-opts', dest="additional_kraken2_opts", metavar="additional_kraken2_opts", default=self.additional_kraken2_opts, help='Optional parameters for the rule Kraken2. Default %s' % self.additional_kraken2_opts)
         kraken2_group.add_argument('--kraken2-cores', type = int, dest="kraken2_threads", metavar="kraken2_threads", default=self.kraken2_threads, help='Number of threads to run the Kraken2 step. Default %s' % self.kraken2_threads)
 
@@ -612,9 +622,8 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         finalize_group = parser.add_argument_group('Finalize')
-        finalize_group.add_argument('--intermediate-evals', dest="intermediate_buscos", action="store_true", help='If specified, run evaluations on intermediate assemblies. Default %s' % self.intermediate_buscos)
-        finalize_group.add_argument('--no-final-evals', dest="final_buscos", action="store_false", help='If specified, do not run evaluations on final assemblies. Default %s' % self.final_buscos)
-        finalize_group.add_argument('--busco-env', dest="busco_env", metavar="busco_env", help='Conda environment to run BUSCO. Default %s' % self.busco_env)
+        finalize_group.add_argument('--intermediate-evals', dest="intermediate_evals", action="store_true", help='If specified, run evaluations on intermediate assemblies. Default %s' % self.intermediate_evals)
+        finalize_group.add_argument('--no-final-evals', dest="final_evals", action="store_false", help='If specified, do not run evaluations on final assemblies. Default %s' % self.final_evals)
         finalize_group.add_argument('--busco-lin', dest="busco_lineage", metavar="busco_lineage", help='Path to the lineage directory to run Busco with. Default %s' % self.busco_lineage)
         finalize_group.add_argument('--merqury-env', dest="merqury_env", metavar="merqury_env", help='Conda environment to run merqury. Default %s' % self.merqury_env)
         finalize_group.add_argument('--merqury-db', dest="merqury_db", metavar="merqury_db", help='Meryl database. Default %s' % self.merqury_db)
@@ -820,9 +829,16 @@ class CreateConfigurationFile(object):
         args.tigmint_queue = self.tigmint_queue
         args.tigmint_threads = self.tigmint_threads
 
+
+        args.stats_qos =  self.stats_qos
+        args.stats_time = self.stats_time 
+        args.stats_queue = self.stats_queue
+        args.stats_mem = self.stats_mem
+
         args.busco_qos =  self.busco_qos
         args.busco_time = self.busco_time 
         args.busco_queue = self.busco_queue
+        args.busco_mem = self.busco_mem
 
         args.merq_qos =  self.merq_qos
         args.merq_time = self.merq_time 
@@ -843,6 +859,7 @@ class CreateConfigurationFile(object):
           args.minimap_time = "15:00:00"
           args.hypo_time = "10:00:00"
           args.busco_time = "24:00:00"
+          args.busco_qos = "long"
           args.merq_time = "6:00:00"
           args.pilon_cores = 20
 
@@ -855,16 +872,16 @@ class CreateConfigurationFile(object):
           args.nextdenovo_mem = 100
 
         if args.run_flye == True or args.run_nextdenovo == True or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups != None:
-          if args.filtlong_dir == None:
-            args.filtlong_dir = args.pipeline_workdir + "s" + args.preprocess_ont_step + "_p01.1_Filtlong/"
-          else:
-            args.filtlong_dir = os.path.abspath(args.filtlong_dir) + "/" 
           if args.ONT_filtered:
             args.ONT_filtered = os.path.abspath(args.ONT_filtered)
+            args.filtlong_dir = os.path.dirname(args.ONT_filtered) + "/"
           else:
+            if args.filtlong_dir == None:
+              args.filtlong_dir = args.pipeline_workdir + "s" + args.preprocess_ont_step + "_p01.1_Filtlong/"
+            else:
+              args.filtlong_dir = os.path.abspath(args.filtlong_dir) + "/" 
             args.ONT_filtered = args.filtlong_dir + "ont.filtlong.fastq.gz"
 
-        #  if not os.path.exists(args.ONT_filtered):
           if args.ONT_dir == None and args.ONT_reads == None and not os.path.exists(args.ONT_filtered):
             parser.print_help()
             print ("The long reads are needed")
@@ -988,12 +1005,28 @@ class CreateConfigurationFile(object):
             parser.print_help()
             print ("10X reads are required to run the 10X scaffolding step")
             sys.exit(-1) 
-                 
+
+        if args.run_kraken2 == True:
+          if args.kraken2_db == None or args.kraken2_kmers == None:
+            parser.print_help()
+            print ("Please, specify a kraken2 database and a kmer distribution file if you want to run Kraken2 and Bracken on the reads. Otherwise, do not use the --run-kraken parameter.")
+            sys.exit(-1)
+          else:
+            args.kraken2_db = os.path.abspath(args.kraken2_db)
+            args.kraken2_kmers = os.path.abspath(args.kraken2_kmers)
+            if not os.path.exists(args.kraken2_db):
+              parser.print_help()
+              print ("\n" + args.kraken2_db + " should exist and it does not.")
+              sys.exit(-1)
+            if not os.path.exists(args.kraken2_kmers):
+              parser.print_help()
+              print ("\n" + args.kraken2_kmers + " should exist and it does not.")
+              sys.exit(-1)
+
         if args.other_flye_opts == None:
           args.other_flye_opts = self.other_flye_opts + " -g " + args.genome_size + " "
         elif not re.match("-g ",args.other_flye_opts) and not re.match("--genome-size ", args.other_flye_opts):
           args.other_flye_opts += " -g " + args.genome_size + " "
-
 
         if args.flye_dir == None:
           args.flye_dir = args.pipeline_workdir + "s" + args.flye_step + "_p" + args.preprocess_ont_step + "_flye/"
@@ -1059,18 +1092,11 @@ class CreateConfigurationFile(object):
         if not os.path.exists(args.tigmint_env):
           print (args.tigmint_env + " not found")
 
-        if args.busco_env:
-          args.busco_env = os.path.abspath(args.busco_env)
-        else:
-          args.busco_env =  os.path.abspath(self.busco_env)
-        if not os.path.exists(args.busco_env):
-          print (args.busco_env + " not found")
-
         if args.busco_lineage:
           args.busco_lineage = os.path.abspath(args.busco_lineage)
           if not os.path.exists(args.busco_lineage):
             print (args.busco_lineage + " not found")
-        elif args.intermediate_buscos == True or args.final_buscos == True:
+        elif args.intermediate_evals == True or args.final_evals == True:
           print ("busco lineage is needed if you want to run Busco")
 
         if args.merqury_env:
@@ -1080,7 +1106,6 @@ class CreateConfigurationFile(object):
         if not os.path.exists(args.merqury_env):
           print (args.merqury_env + " not found")      
               
-
         args.assemblies={}
         if len(args.assembly_in):
           for my_dict in args.assembly_in:
@@ -1201,7 +1226,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.allSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_assembly_pipeline"
+        self.allSpecParameters["name"] = "{rule}_{base}_assembly_pipeline"
         self.allSpecParameters["qos"] = self.all_qos
         self.allSpecParameters["time"] = self.all_time
         self.allSpecParameters["queue"] = self.all_queue
@@ -1279,7 +1304,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.concatreadsSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_{wildcards.ext}"
+        self.concatreadsSpecParameters["name"] = "{rule}_{base}_{wildcards.ext}"
         self.concatreadsSpecParameters["qos"] = args.concat_reads_qos
         self.concatreadsSpecParameters["time"] = args.concat_reads_time
         self.concatreadsSpecParameters["queue"] = args.concat_reads_queue
@@ -1291,7 +1316,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.nanoplotSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_{wildcards.prefix}"
+        self.nanoplotSpecParameters["name"] = "{rule}_{base}_{wildcards.prefix}"
         self.nanoplotSpecParameters["qos"] = args.nanoplot_qos
         self.nanoplotSpecParameters["time"] = args.nanoplot_time
         self.nanoplotSpecParameters["queue"] = args.nanoplot_queue
@@ -1304,6 +1329,7 @@ class CreateConfigurationFile(object):
         args -- set of parsed arguments
         """
         self.kraken2Parameters["database"] = args.kraken2_db
+        self.kraken2Parameters["kmer_dist"] = args.kraken2_kmers
         self.kraken2Parameters["threads"] = args.kraken2_threads
         self.kraken2Parameters["additional_opts"] = args.additional_kraken2_opts
         self.allParameters ["Kraken2"] = self.kraken2Parameters
@@ -1313,12 +1339,12 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.kraken2SpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_{wildcards.prefix}"
+        self.kraken2SpecParameters["name"] = "{rule}_{base}_{params.prefix}"
         self.kraken2SpecParameters["qos"] = args.kraken2_qos
         self.kraken2SpecParameters["time"] = args.kraken2_time
         self.kraken2SpecParameters["queue"] = args.kraken2_queue
         self.kraken2SpecParameters["mem"] = args.kraken2_mem
-        self.allParameters ["kraken2"] = self.kraken2SpecParameters
+        self.allParameters ["Kraken2"] = self.kraken2SpecParameters
 
     def storebuildmerylSpecParameters(self,args):
         """Updates build meryl cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1358,7 +1384,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.filtlongSpecParameters["name"] = "{rule}_" + args.base_name + "_s" + args.preprocess_ont_step 
+        self.filtlongSpecParameters["name"] = "{rule}_s" + args.preprocess_ont_step 
         self.filtlongSpecParameters["qos"] = args.filtlong_qos
         self.filtlongSpecParameters["time"] = args.filtlong_time
         self.filtlongSpecParameters["mem"] = args.filtlong_mem
@@ -1380,7 +1406,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.flyeSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_s" + args.flye_step 
+        self.flyeSpecParameters["name"] = "{rule}_{base}_s" + args.flye_step 
         self.flyeSpecParameters["qos"] = args.flye_qos
         self.flyeSpecParameters["time"] = args.flye_time
         self.flyeSpecParameters["queue"] = args.flye_queue
@@ -1400,7 +1426,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.nextdenovoSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}_s" + args.nextdenovo_step 
+        self.nextdenovoSpecParameters["name"] = "{rule}_{base}_s" + args.nextdenovo_step 
         self.nextdenovoSpecParameters["qos"] = args.nextdenovo_qos
         self.nextdenovoSpecParameters["time"] = args.nextdenovo_time
         self.nextdenovoSpecParameters["queue"] = args.nextdenovo_queue
@@ -1612,24 +1638,37 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.finalizeParameters["intermediate BUSCOs"] = args.intermediate_buscos
-        self.finalizeParameters["final BUSCOs"] = args.final_buscos
-        self.finalizeParameters["BUSCO environment"] = args.busco_env
+        self.finalizeParameters["intermediate Evaluations"] = args.intermediate_evals
+        self.finalizeParameters["final Evaluations"] = args.final_evals
         self.finalizeParameters["BUSCO lineage"] = args.busco_lineage
         self.finalizeParameters["Merqury environment"] = args.merqury_env
         self.finalizeParameters["Merqury db"] = args.merqury_db
         self.finalizeParameters["Meryl K"] = args.meryl_k
         self.allParameters ["Finalize"] = self.finalizeParameters
 
+
+    def storestatsSpecParameters(self,args):
+        """Updates stats cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.statsSpecParameters["name"] = "{rule}_{base}.{params.outbase}"
+        self.statsSpecParameters["qos"] = args.stats_qos
+        self.statsSpecParameters["time"] = args.stats_time
+        self.statsSpecParameters["queue"] = args.stats_queue
+        self.statsSpecParameters["mem"] = args.stats_mem
+        self.allParameters ["get_stats"] = self.statsSpecParameters
+
     def storebuscoSpecParameters(self,args):
         """Updates busco cluster spec parameters to the map of parameters to be store in a JSON file
 
         args -- set of parsed arguments
         """
-        self.buscoSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}.{params.buscobase}"
+        self.buscoSpecParameters["name"] = "{rule}_{base}.{params.buscobase}"
         self.buscoSpecParameters["qos"] = args.busco_qos
         self.buscoSpecParameters["time"] = args.busco_time
         self.buscoSpecParameters["queue"] = args.busco_queue
+        self.buscoSpecParameters["mem"] = args.busco_mem
         self.allParameters ["run_busco"] = self.buscoSpecParameters
 
     def storemerqurySpecParameters(self,args):
@@ -1637,7 +1676,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.merqSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}.{wildcards.merqbase}"
+        self.merqSpecParameters["name"] = "{rule}_{base}.{wildcards.merqbase}"
         self.merqSpecParameters["qos"] = args.merq_qos
         self.merqSpecParameters["time"] = args.merq_time
         self.merqSpecParameters["queue"] = args.merq_queue
@@ -1648,7 +1687,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.finSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}"
+        self.finSpecParameters["name"] = "{rule}_{base}"
         self.finSpecParameters["qos"] = args.fin_qos
         self.finSpecParameters["time"] = args.fin_time
         self.finSpecParameters["queue"] = args.fin_queue
@@ -1781,8 +1820,9 @@ if args.run_purgedups == True:
   specManager.storepurgedupsSpecParameters(args)
 if args.run_tigmint == True:
   specManager.storescaffold10XSpecParameters(args)
-if args.intermediate_buscos == True or args.final_buscos == True:
+if args.intermediate_evals == True or args.final_evals == True:
   specManager.storebuscoSpecParameters(args)
+  specManager.storestatsSpecParameters(args)
 if args.merqury_db:
   if not os.path.exists(args.merqury_db):
     specManager.storebuildmerylSpecParameters(args)

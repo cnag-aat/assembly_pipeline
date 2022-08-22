@@ -156,24 +156,23 @@ rule nanoplot:
 rule Kraken2:
   input:
     read = "reads.fastq.gz",
-  #  database = "minikraken2_v1_8GB"
+    database = "/scratch/groups/assembly/shared/databases/kraken2/bacteria_db/",
+    kmers = "/scratch/groups/assembly/shared/databases/kraken2/bacteria_db/database100mers.kmer_distrib"
   output:
     report = "kraken2.report",
-   # abundance =  "bracken_abundance.txt",
-   # tophits =  "bracken_abundance.tophits"
+    readsout = "kraken2.seqs.out",
+    abundance =  "bracken_abundance.txt",
   params:
-   # kmers = "minikraken2_v1_8GB/database200mers.kmer_distrib",
-    additional = ""
+    additional = "",
+    prefix = "assembly"
   log:
-    "{dir}/logs/" + str(date) + ".kraken.out",
-    "{dir}/logs/" + str(date) + ".kraken.err",
+    "logs/" + str(date) + ".kraken.out",
+    "logs/" + str(date) + ".kraken.err",
   benchmark:
-    "{dir}/logs/" + str(date) + ".kraken.benchmark.txt",
+    "logs/" + str(date) + ".kraken.benchmark.txt",
   threads: 4
   conda:
     '../envs/kraken2.1.2.yaml'
   shell:
-     "kraken2 --threads {threads} --db   --use-names --report {output.report} {params.additional} {input.read}; "
-    # "wait; "
-     #"est_abundance.py -i {output.report} -k {params.kmers} -l S -t 10 -o {output.abundance}; "
-     #"bracken-top-hits.v01.pl -f {output.abundance} > {output.tophits}; "
+     "kraken2 --threads {threads} --db {input.database}  --use-names --report {output.report} {params.additional} {input.read} > {output.readsout}; "
+     "est_abundance.py -i {output.report} -k {input.kmers} -l S -t 10 -o {output.abundance}; "

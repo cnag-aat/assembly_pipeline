@@ -1,11 +1,41 @@
-name: /software/assembly/conda/ass_base
+name: null
 channels:
+  - conda-forge
+  - bioconda
   - defaults
 dependencies:
   - _libgcc_mutex=0.1=main
   - _openmp_mutex=5.1=1_gnu
+  - biopython=1.79=py310h6acc77f_1
+  - bzip2=1.0.8=h7f98852_4
+  - ca-certificates=2022.6.15=ha878542_0
+  - ld_impl_linux-64=2.36.1=hea4e1c9_2
+  - libblas=3.9.0=15_linux64_openblas
+  - libcblas=3.9.0=15_linux64_openblas
+  - libffi=3.3=h58526e2_2
   - libgcc-ng=11.2.0=h1234567_1
+  - libgfortran-ng=12.1.0=h69a702a_16
+  - libgfortran5=12.1.0=hdcd56e2_16
   - libgomp=11.2.0=h1234567_1
+  - liblapack=3.9.0=15_linux64_openblas
+  - libnsl=2.0.0=h7f98852_0
+  - libopenblas=0.3.20=pthreads_h78a6416_0
+  - libstdcxx-ng=12.1.0=ha89aaad_16
+  - libuuid=1.0.3=h7f8727e_2
+  - ncurses=6.3=h27087fc_1
+  - numpy=1.22.3=py310h4ef5377_2
+  - openssl=1.1.1q=h7f8727e_0
+  - perl=5.32.1=2_h7f98852_perl5
   - pigz=2.6=h27cfd23_0
+  - pip=22.2.2=pyhd8ed1ab_0
+  - python=3.10.4=h12debd9_0
+  - python_abi=3.10=2_cp310
+  - readline=8.1=h46c0cb4_0
+  - setuptools=65.1.1=py310hff52083_0
+  - sqlite=3.39.2=h5082296_0
+  - tk=8.6.12=h1ccaba5_0
+  - tzdata=2022c=h191b570_0
+  - wheel=0.37.1=pyhd8ed1ab_0
+  - xz=5.2.5=h7f8727e_1
   - zlib=1.2.12=h7f8727e_2
 prefix: /software/assembly/conda/ass_base

@@ -11,62 +11,80 @@ logs_dir = "logs/"
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
 
-rule finalize_assembly:
-  input: 
-    "assembly.fasta"
+rule finalize:
+  input:
+    assembly = "assembly.fasta",
+    buscos = "busco_short_summary.txt",
+    stats = "assembly.stats.txt"
   output:
-    "assembly.scaffolds.fa"
+    output = "stats.txt"
   params:
-    name = "assembly",
-    s2c = "",
-    outdir = os.getcwd(),
-    evaldir =os.getcwd() + "evaluations/",
-  threads: 2
+  log:
+    "logs/" + str(date) + ".j%j.finalize.out",
+    "logs/" + str(date) + ".j%j.finalize.err"
+  benchmark:
+    "logs/" + str(date) + ".finalize.benchmark.txt"
+  conda:
+    '../envs/ass_base.yaml'
+  threads: 1
   shell:
-    "mkdir -p {params.outdir};"
-    "cd {params.outdir};"
-    "{scripts_dir}scaffolds2contigs.pl -i {input} -name {params.name} {params.s2c};"
-    "ln -s {params.name}.scaffolds.fa {output};"
-    "mkdir -p {params.evaldir};"
-    "cd {params.evaldir};"
-    "mkdir -p stats; cd stats;"
-    "{scripts_dir}fastalength {final_assembly} | {scripts_dir}Nseries.pl > {params.name}.scaffolds.nseries.txt;"
-    "{scripts_dir}fastalength {params.outdir}{params.name}.contigs.fa | {scripts_dir}Nseries.pl > {params.name}.contigs.nseries.txt;"
+    "touch {output.output}"
+
+rule get_stats:
+  input:
+    assembly = "assembly.fasta"
+  output:
+    nseries =  "assembly.nseries.txt",
+    stats = "assembly.stats.txt",
+    gaps = "assembly.gaps.txt"
+  params:
+    outbase = "assembly",
+    scripts_dir = scripts_dir
+  log:
+    "logs/" + str(date) + ".j%j.assembly_stats.out",
+    "logs/" + str(date) + ".j%j.assembly_stats.err"
+  benchmark:
+    "logs/" + str(date) + ".assembly_stats.benchmark.txt"
+  conda:
+    "../envs/ass_base.yaml"
+  threads: 1
+  shell:
+    "{params.scripts_dir}fastalength {input.assembly} | {params.scripts_dir}Nseries.pl > {output.nseries};"
+    "{params.scripts_dir}fasta-stats.py -f {input.assembly} -s {output.stats} -r {output.gaps};"
 
 rule run_busco:
   input:
     assembly = os.getcwd() + "/assembly.fasta",
-    lineage = "/scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/vertebrata_odb10"
+    lineage = "scratch/groups/assembly/shared/databases/busco_v5/busco_v5_lineages/lineages/vertebrata_odb10"
   output:
     summary = os.getcwd() + "/busco/short_summary.txt",
     full = os.getcwd() + "/busco/full_table.tsv",
   params:
-    busco_env = "/scratch/project/devel/aateam/bin/busco_envs/busco_v4.0.6/",
     out_path = os.getcwd() + "/busco",
     odb = "vertebrata_odb10",
-    buscobase = "assembly"
-  threads: 8
+    buscobase = "assembly",
+    rmcmd = "echo 'Removing BUSCO run dir:{params.out_path}{params.buscobase}'; \
+            rm -r {params.out_path}{params.buscobase};" if keepfiles == True else "" 
   log:
-    "logs/" + date + ".busco.out",
-    "logs/" + date + ".busco.err",
-  run:
-    shell(
-      "module purge;"
-      "source ~jgomez/init_shell.sh;"
-      "conda activate {params.busco_env};"    
-      "cd {params.out_path};" 
-      "busco -i {input.assembly} -c {threads} -m genome --offline -o {params.buscobase} --out_path {params.out_path} -l {input.lineage};"
-      "conda deactivate;"
-      "rm -r busco_downloads;"
-      "mv {params.out_path}{params.buscobase}/run_{params.odb}/short_summary.txt {output.summary};"
-      "mv {params.out_path}{params.buscobase}/run_{params.odb}/full_table.tsv {output.full};"
-    )
-    if keepfiles == False:
-      shell(
-        "echo 'Removing BUSCO run dir:{params.out_path}{params.buscobase}';"
-        "module load bsc;"
-        "lrm -o {params.out_path}{params.buscobase}.rmlist.sh {params.out_path}{params.buscobase}; sh {params.out_path}{params.buscobase}.rmlist.sh;"
-      )
+    "logs/" + str(date) + ".busco.out",
+    "logs/" + str(date) + ".busco.err",
+  benchmark:
+    "{dir}/logs/" + str(date) + ".busco.benchmark.txt",
+  conda:
+    '../envs/busco5.4.0.yaml'
+  threads: 8
+  shell:
+    "cd {params.out_path};" 
+    "busco -i {input.assembly} -c {threads} -m genome --offline -o {params.buscobase} --out_path {params.out_path} -l {input.lineage};"
+    "mv {params.out_path}{params.buscobase}/run_{params.odb}/short_summary.txt {output.summary};"
+    "mv {params.out_path}{params.buscobase}/run_{params.odb}/full_table.tsv {output.full};"
+    "{params.rmcmd}"
+  
+  #if keepfiles == False:
+   #   shell(
+    #    "echo 'Removing BUSCO run dir:{params.out_path}{params.buscobase}';"
+     #   "rm -r {params.out_path}{params.buscobase};" 
+     # )
 
 rule run_merqury:
   input:
