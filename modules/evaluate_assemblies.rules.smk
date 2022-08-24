@@ -63,8 +63,8 @@ rule run_busco:
     out_path = os.getcwd() + "/busco",
     odb = "vertebrata_odb10",
     buscobase = "assembly",
-    rmcmd = "echo 'Removing BUSCO run dir:{params.out_path}{params.buscobase}'; \
-            rm -r {params.out_path}{params.buscobase};" if keepfiles == True else "" 
+    rmcmd = "echo 'Removing BUSCO run dir: busco'; \
+            rm -r busco;" if keepfiles == True else "" 
   log:
     "logs/" + str(date) + ".busco.out",
     "logs/" + str(date) + ".busco.err",

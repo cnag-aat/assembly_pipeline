@@ -46,11 +46,12 @@ for file in assemblies:
   if not os.path.exists(evalassdir + "stats"):
     os.makedirs(evalassdir + "stats")
   buscodir = evalassdir + "busco/"
-  if not os.path.exists(buscodir):
+  if not os.path.exists(buscodir) and config["Finalize"]["BUSCO lineage"]:
     os.makedirs(buscodir)
   in_files[evalassdir + ass_base] = file
   evals_dir[evalassdir + ass_base] = evalassdir
-  BuscoSummaries.append(buscodir + ass_base + ".short_summary.txt")
+  if config["Finalize"]["BUSCO lineage"]:
+    BuscoSummaries.append(buscodir + ass_base + ".short_summary.txt")
   StatsFiles.append(evalassdir + "stats/" + ass_base + ".stats.txt")
 
 #1- Run evaluations
@@ -98,8 +99,9 @@ if config["Finalize"]["BUSCO lineage"] != None:
       out_path = lambda wildcards: evals_dir[eval_dir + wildcards.dir +"/" + wildcards.buscobase],
       odb = os.path.basename(config["Finalize"]["BUSCO lineage"]),
       buscobase = lambda wildcards:  wildcards.buscobase,
-      rmcmd = "echo 'Removing BUSCO run dir:{params.out_path}{params.buscobase}'; \
-            rm -r {params.out_path}{params.buscobase};" if keepfiles == False else "" 
+      rmcmd =  lambda wildcards: "echo 'Removing BUSCO run dir'; rm -r " + \
+             evals_dir[eval_dir + wildcards.dir +"/" + wildcards.buscobase] + wildcards.buscobase + ";" \
+             if keepfiles == False else "" 
     log:
       eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.out",
       eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.err",
@@ -127,4 +129,3 @@ use rule finalize from eval_workflow with:
   conda:
     '../envs/ass_base.yaml'
   threads: 1
- 

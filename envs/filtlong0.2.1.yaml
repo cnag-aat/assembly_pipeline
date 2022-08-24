@@ -1,5 +1,6 @@
 name: null
 channels:
+  - conda-forge
   - bioconda
   - defaults
 dependencies:
@@ -9,5 +10,6 @@ dependencies:
   - libgcc-ng=11.2.0=h1234567_1
   - libgomp=11.2.0=h1234567_1
   - libstdcxx-ng=11.2.0=h1234567_1
+  - pigz=2.6=h27826a3_0
   - zlib=1.2.12=h7f8727e_2
 prefix: /software/assembly/conda/filtlong0.2.1

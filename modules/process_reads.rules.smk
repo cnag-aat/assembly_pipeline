@@ -127,7 +127,6 @@ rule filtlong:
   conda:
     '../envs/filtlong0.2.1.yaml'
   shell:
- #   "module purge; module load PIGZ/2.3.3 gcc/4.9.3;"
     "filtlong --version;"
     "filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads};"
 

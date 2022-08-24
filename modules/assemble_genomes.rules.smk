@@ -51,6 +51,7 @@ rule nextdenovo:
   shell:
     "mkdir -p {params.outdir};"
     "ls {input.reads} > {params.outdir}long_reads.fofn;"
+    "cp {params.config} {params.outdir};"
     "nextDenovo {params.config};"
     "ln -s {params.outdir}03.ctg_graph/nd.asm.fasta {output.assembly};"
 

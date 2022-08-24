@@ -40,6 +40,8 @@ if config["Inputs"]["ONT_dir"] and config["Wildcards"]["ONT_wildcards"]:
 
 if ont_reads != "":
   ont_fastqs["raw_ont"] = ont_reads
+  if not os.path.exists(ONT_filtered) and not os.path.exists(os.path.dirname(ONT_filtered) + "/logs"):
+    os.makedirs(os.path.dirname(ONT_filtered) + "/logs")
 
 if config["Parameters"]["run_kraken2"] == True:
   dbname = os.path.basename(config["Kraken2"]["database"])
@@ -121,26 +123,28 @@ use rule nanoplot from preprocess_workflow with:
     '../envs/nanoplot1.40.0.yaml'
   threads: config["Parameters"]["concat_cores"]
 
-use rule Kraken2 from preprocess_workflow with: 
-  input:
-    read = lambda wildcards: kraken_ins[wildcards.base],
-    database = config["Kraken2"]["database"],
-    kmers = config["Kraken2"]["kmer_dist"]
-  output:
-    report = report("{base}.kraken2.report.txt",
-             caption="../report/kraken.rst",
-             category = "Process reads",
-             subcategory = "Kraken reports"),
-    readsout = "{base}.kraken2.seqs.out",
-    abundance = "{base}.bracken_abundance.txt"
-  params:
-    additional = config["Kraken2"]["additional_opts"],
-    prefix = lambda wildcards: os.path.basename(wildcards.base)
-  log:
-    "{base}_logs/" + str(date) + ".j%j.kraken.out",
-    "{base}_logs/" + str(date) + ".j%j.kraken.err",
-  benchmark:
-     "{base}_logs/" + str(date) + ".j%j.kraken.benchmark.txt",
-  conda:
-    '../envs/kraken2.1.2.yaml'
-  threads: config["Kraken2"]["threads"]
+
+if config["Parameters"]["run_kraken2"] == True:
+  use rule Kraken2 from preprocess_workflow with: 
+    input:
+      read = lambda wildcards: kraken_ins[wildcards.base],
+      database = config["Kraken2"]["database"],
+      kmers = config["Kraken2"]["kmer_dist"]
+    output:
+      report = report("{base}.kraken2.report.txt",
+               caption="../report/kraken.rst",
+               category = "Process reads",
+               subcategory = "Kraken reports"),
+      readsout = "{base}.kraken2.seqs.out",
+      abundance = "{base}.bracken_abundance.txt"
+    params:
+      additional = config["Kraken2"]["additional_opts"],
+      prefix = lambda wildcards: os.path.basename(wildcards.base)
+    log:
+      "{base}_logs/" + str(date) + ".j%j.kraken.out",
+      "{base}_logs/" + str(date) + ".j%j.kraken.err",
+    benchmark:
+       "{base}_logs/" + str(date) + ".j%j.kraken.benchmark.txt",
+    conda:
+      '../envs/kraken2.1.2.yaml'
+    threads: config["Kraken2"]["threads"]
