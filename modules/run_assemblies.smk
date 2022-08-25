@@ -30,7 +30,11 @@ if config["Parameters"]["run_flye"] == True:
     input:
       reads = ONT_filtered,
     output:
-      assembly = flye_assembly
+      assembly = flye_assembly,
+      gfa = report(flye_dir + "assembly_graph.gfa.png",
+            caption="../report/flye.rst",
+            category = "Evaluate assemblies",
+            subcategory = flye_dir)
     params:
       outdir = flye_dir,
       readtype = config["Parameters"]["lr_type"],

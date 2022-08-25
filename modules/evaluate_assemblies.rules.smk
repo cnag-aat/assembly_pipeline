@@ -80,37 +80,29 @@ rule run_busco:
     "mv {params.out_path}{params.buscobase}/run_{params.odb}/full_table.tsv {output.full};"
     "{params.rmcmd}"
   
-  #if keepfiles == False:
-   #   shell(
-    #    "echo 'Removing BUSCO run dir:{params.out_path}{params.buscobase}';"
-     #   "rm -r {params.out_path}{params.buscobase};" 
-     # )
-
 rule run_merqury:
   input:
     meryl_db = os.getcwd() + "/database.meryl",
     assembly = os.getcwd() + "/assembly.fasta"
   output:
-    completeness = os.getcwd() + "/merqury_run/completeness.stats",
+    completeness = os.getcwd() + "/merqury_run/assembly.completeness.stats",
     hist = os.getcwd() + "/merqury_run/assembly.assembly.spectra-cn.hist",
+    false_dups = os.getcwd() + "/merqury_run/assembly.false_duplications.txt",
     plots = [os.getcwd() + "/merqury_run/assembly.spectra-cn.ln.png", os.getcwd() + "/merqury_run/assembly.spectra-cn.fl.png", os.getcwd() + "/merqury_run/assembly.spectra-cn.st.png"]
   params:
     out_pref = "assembly",
-    conda_env = "~fcruz/.conda/envs/merqury_v1.1/",
     directory = os.getcwd() + "/merqury_run",
   log:
     "logs/" + date + ".merqury.out",
     "logs/" + date + ".merqury.err",
-  threads: 1
+  conda:
+    "../envs/merqury1.3.yaml"
+  threads: 4
   shell:
-    "module purge;"
-    "source ~jgomez/init_shell.sh;"
-    "conda activate {params.conda_env};"
     "mkdir -p {params.directory}; cd {params.directory};"
     "merqury.sh {input.meryl_db} {input.assembly} {params.out_pref};"
-    "{params.conda_env}/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist;"
-    "conda deactivate;"
-
+    "$CONDA_PREFIX/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist;"
+    "$CONDA_PREFIX/share/merqury/eval/false_duplications.sh {output.hist} > {output.false_dups};"
 rule align_ont:
   input:
     genome = os.getcwd() + "/assembly.fasta",

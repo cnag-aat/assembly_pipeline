@@ -10,7 +10,6 @@ module eval_workflow:
 
 working_dir = config["Outputs"]["base_dir"]
 scripts_dir = config["Inputs"]["scripts_dir"]
-shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
 
 keepfiles = config["Parameters"]["keep_intermediate"]
 base = config["Parameters"]["base_name"]
@@ -35,6 +34,9 @@ in_files = {}
 evals_dir = {}
 BuscoSummaries = []
 StatsFiles = []
+MerqurySummaries = []
+MerquryQV = []
+
 for file in assemblies:
   ass_base = os.path.splitext(os.path.basename(file))[0]
   basedirname = os.path.basename(os.path.dirname(file))
@@ -48,10 +50,20 @@ for file in assemblies:
   buscodir = evalassdir + "busco/"
   if not os.path.exists(buscodir) and config["Finalize"]["BUSCO lineage"]:
     os.makedirs(buscodir)
+  merqdir = evalassdir + "merqury/" + ass_base 
+  if not os.path.exists(merqdir) and config["Finalize"]["Merqury db"]:
+    os.makedirs(merqdir)
+  
   in_files[evalassdir + ass_base] = file
   evals_dir[evalassdir + ass_base] = evalassdir
+
   if config["Finalize"]["BUSCO lineage"]:
     BuscoSummaries.append(buscodir + ass_base + ".short_summary.txt")
+
+  if config["Finalize"]["Merqury db"]:
+    MerqurySummaries.append(merqdir + "/" + ass_base + ".completeness.stats")
+    MerquryQV.append(merqdir + "/" + ass_base + ".qv")
+
   StatsFiles.append(evalassdir + "stats/" + ass_base + ".stats.txt")
 
 #1- Run evaluations
@@ -111,12 +123,51 @@ if config["Finalize"]["BUSCO lineage"] != None:
       '../envs/busco5.4.0.yaml'
     threads: config["Parameters"]["busco_cores"]
 
+if  config["Finalize"]["Merqury db"] != None:
+
+  use rule run_merqury from eval_workflow with:
+    input:
+      meryl_db = config["Finalize"]["Merqury db"],
+      assembly = lambda wildcards: in_files[eval_dir + wildcards.dir +"/" + wildcards.merqbase],
+    output:
+      completeness = report (eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.completeness.stats",
+                     caption="../report/merqury.rst",
+                     category = "Evaluate assemblies",
+                     subcategory = "{dir}"),
+      qv = report(eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.qv",
+           caption="../report/merqury.rst",
+           category = "Evaluate assemblies",
+           subcategory = "{dir}"),
+      hist = eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.{merqbase}.spectra-cn.hist",
+      false_dups = report(eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.false_duplications.txt",
+           caption="../report/merqury.rst",
+           category = "Evaluate assemblies",
+           subcategory = "{dir}"),
+      plots = report ([eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.spectra-cn.ln.png", eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.spectra-cn.fl.png", eval_dir + "{dir}/merqury/{merqbase}/{merqbase}.spectra-cn.st.png"],
+              caption="../report/merqury.rst",
+              category = "Evaluate assemblies",
+              subcategory = "{dir}"),
+    params:
+      out_pref = "{merqbase}",
+      directory= eval_dir + "{dir}/merqury/{merqbase}",
+    log:
+      eval_dir + "{dir}/logs/" + str(date) + ".j%j.merqury.{merqbase}.out",
+      eval_dir + "{dir}/logs/" + str(date) + ".j%j.merqury.{merqbase}.err"
+    benchmark:
+      eval_dir + "{dir}/logs/" + str(date) + ".merqury.{merqbase}.benchmark.txt"
+    conda:
+      "../envs/merqury1.3.yaml"
+    threads: 
+      config["Finalize"]["Meryl threads"]
+
 use rule finalize from eval_workflow with:
   input:
     #assembly = lambda wildcards: expand(in_files[eval_dir + wildcards.dir + "/" + wildcards.buscobase]),
     assembly = assemblies,
     buscos = BuscoSummaries,
-    stats= StatsFiles
+    stats= StatsFiles,
+    merqs= MerqurySummaries,
+    qv = MerquryQV
     #buscos = rules.run_busco.output.summary,
     #stats = rules.get_stats.output.stats
   output:

@@ -12,6 +12,7 @@ rule flye:
     reads = os.getcwd() + "/ontreads.fastq.gz",
   output:
     assembly = os.getcwd() + "/flye/flye.assembly.fasta",
+    gfa = os.getcwd() + "flye/assembly_graph.gfa.png"
   params:
     outdir = os.getcwd() + "/flye/",
     readtype = "nano-raw",
@@ -31,6 +32,7 @@ rule flye:
     "echo 'Running command: flye --{params.readtype} {input.reads} -o {params.outdir}out -t {threads} -i {params.pol_iterations} {params.other_flye_opts}';"
     "flye --{params.readtype} {input.reads} -o {params.outdir}out -t {threads} -i {params.pol_iterations} {params.other_flye_opts};"
     "ln -s {params.outdir}out/assembly.fasta {output.assembly};"
+    "Bandage image {params.outdir}out/assembly_graph.gfa {output.gfa};"
 
 rule nextdenovo:
   input:

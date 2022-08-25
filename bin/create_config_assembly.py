@@ -57,8 +57,8 @@ class CreateConfigurationFile(object):
         self.hypo_cores = 24                                                                      #Number of threads to tun the hypo step
         self.busco_cores = 16                                                                     #Number of threads to tun the BUSCO    
         self.longranger_cores = 8                                                                 #Number of threads to run longranger   
-        self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2"   
-        self.genomescope_path = "/home/devel/jgomez/bin/genomescope2.0/genomescope2.0"
+        self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2" 
+        self.genomescope_additional = ""  
         self.ploidy = 2
         self.run_kraken2 = False
 
@@ -79,7 +79,8 @@ class CreateConfigurationFile(object):
         #TRIMGALORE SPEC PARAMETERS
         self.trimgalore_qos = "normal"
         self.trimgalore_time = "3:00:00"
-        self.trimgalore_queue = "genB,main"
+        self.trimgalore_queue = "genD"
+        self.trimgalore_mem = "100"
 
         #CONCAT READS SPEC PARAMETERS
         self.concat_reads_qos = "normal"
@@ -107,14 +108,22 @@ class CreateConfigurationFile(object):
 
         #BUILD MERYL SPEC PARAMETERS
         self.build_meryl_qos = "normal"
-        self.build_meryl_time = "10:00:00"
-        self.build_meryl_queue = "genB,main"
-        self.build_meryl_threads = 4
+        self.build_meryl_time = "6:00:00"
+        self.build_meryl_queue = "genD"
+        self.build_meryl_mem = "1000"
 
         #CONCAT MERYL SPEC PARAMETERS
         self.concat_meryl_qos = "normal"
-        self.concat_meryl_time = "10:00:00"
-        self.concat_meryl_queue = "genB,main"
+        self.concat_meryl_time = "6:00:00"
+        self.concat_meryl_queue = "genD"
+        self.concat_meryl_mem = "1000"
+
+
+        #GENOMESCOPE2 SPEC PARAMETERS
+        self.genomescope_qos = "short"
+        self.genomescope_time = "1:00:00"
+        self.genomescope_queue = "genD"
+        self.genomescope_mem = "100"
 
         #INPUT PARAMETERS
         self.scripts_dir = os.path.dirname(sys.argv[0]) + "/../scripts/"                          #Directory with the different scripts for the pipeline
@@ -294,10 +303,9 @@ class CreateConfigurationFile(object):
         self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
         self.busco_lineage = None                                                                 #Path to the lineage directory to run Busco with
         self.merqury_db = None
-        self.merqury_env = "/home/devel/fcruz/.conda/envs/merqury_v1.1/"
-        self.meryl_k = None 
+        self.meryl_k = None
+        self.meryl_threads = 4
 
-        
         #STATS SPEC PARAMETERS
         self.stats_qos = "test"
         self.stats_time = "0:10:00"
@@ -313,7 +321,8 @@ class CreateConfigurationFile(object):
         #MERQURY SPEC PARAMETERS
         self.merq_qos = "normal"
         self.merq_time = "3:00:00"
-        self.merq_queue = "genB,main"  
+        self.merq_queue = "genD"
+        self.merq_mem = "100"          
 
         #FINALIZE SPEC PARAMETERS
         self.fin_qos = "short"
@@ -341,6 +350,7 @@ class CreateConfigurationFile(object):
         self.kraken2SpecParameters = {}
         self.buildmerylSpecParameters = {}
         self.concatmerylSpecParameters = {}
+        self.genomescopeSpecParameters = {}
         self.filtlongParameters = {}
         self.filtlongSpecParameters = {}
         self.flyeParameters = {}
@@ -434,7 +444,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--hypo-rounds', type = int, dest="hypo_rounds", metavar="hypo_rounds", default=self.hypo_rounds, help='Number of rounds to run the Hypostep. Default %s' % self.hypo_rounds)
         general_group.add_argument('--longranger-cores', type = int, dest="longranger_cores", metavar="longranger_cores", default=self.longranger_cores, help='Number of threads to run longranger. Default %s' % self.longranger_cores)
         general_group.add_argument('--longranger-path', dest="longranger_path", metavar="longranger_path", help='Path to longranger executable. Default %s' % self.longranger_path)
-        general_group.add_argument('--genomescope-path', dest="genomescope_path", metavar="genomescope_path", help='Path to genomescope executable. Default %s' % self.genomescope_path)
+        general_group.add_argument('--genomescope-opts', dest="genomescope_additional", metavar="genomescope_additional", help='Additional options to run Genomescope2 with. Default %s' % self.genomescope_additional)
         general_group.add_argument('--no-purgedups', dest="run_purgedups", action="store_false", help='Give this option if you do not want to run Purgedups.')
         general_group.add_argument('--ploidy', type = int, dest="ploidy", metavar="ploidy", default=self.ploidy, help='Expected ploidy. Default %s' % self.ploidy) 
         general_group.add_argument('--run-tigmint', dest="run_tigmint", action="store_true", help='Give this option if you want to run the scaffolding with 10X reads step.')
@@ -625,9 +635,9 @@ class CreateConfigurationFile(object):
         finalize_group.add_argument('--intermediate-evals', dest="intermediate_evals", action="store_true", help='If specified, run evaluations on intermediate assemblies. Default %s' % self.intermediate_evals)
         finalize_group.add_argument('--no-final-evals', dest="final_evals", action="store_false", help='If specified, do not run evaluations on final assemblies. Default %s' % self.final_evals)
         finalize_group.add_argument('--busco-lin', dest="busco_lineage", metavar="busco_lineage", help='Path to the lineage directory to run Busco with. Default %s' % self.busco_lineage)
-        finalize_group.add_argument('--merqury-env', dest="merqury_env", metavar="merqury_env", help='Conda environment to run merqury. Default %s' % self.merqury_env)
         finalize_group.add_argument('--merqury-db', dest="merqury_db", metavar="merqury_db", help='Meryl database. Default %s' % self.merqury_db)
         finalize_group.add_argument('--meryl-k', dest="meryl_k", metavar="meryl_k", type = int, help='Kmer length to build the meryl database. Default %s' % self.meryl_k)
+        finalize_group.add_argument('--meryl-threads', dest="meryl_threads", metavar="meryl_threads", type = int, default = self.meryl_threads, help='Number of threads to run meryl and merqury. Default %s' % self.meryl_threads)
 
     def register_wildcards(self, parser):
         """Register all wildcards parameters with the given
@@ -700,13 +710,6 @@ class CreateConfigurationFile(object):
         if not os.path.exists(args.longranger_path):
           print (args.longranger_path + " not found")
 
-        if args.genomescope_path:
-          args.genomescope_path = os.path.abspath(args.genomescope_path)
-        else:
-          args.genomescope_path =  os.path.abspath(self.genomescope_path)
-        if not os.path.exists(args.genomescope_path):
-          print (args.genomescope_path + " not found")
-
         if args.genome_size == None:
           parser.print_help()
           print ("You need to provide a genome size estimate")
@@ -740,6 +743,7 @@ class CreateConfigurationFile(object):
         args.trimgalore_qos = self.trimgalore_qos
         args.trimgalore_time = self.trimgalore_time
         args.trimgalore_queue = self.trimgalore_queue
+        args.trimgalore_mem = self.trimgalore_mem
 
         args.concat_reads_qos =  self.concat_reads_qos
         args.concat_reads_time = self.concat_reads_time 
@@ -759,11 +763,18 @@ class CreateConfigurationFile(object):
         args.build_meryl_qos =  self.build_meryl_qos
         args.build_meryl_time = self.build_meryl_time 
         args.build_meryl_queue = self.build_meryl_queue
-        args.build_meryl_threads = self.build_meryl_threads
+        args.build_meryl_mem = self.build_meryl_mem
 
         args.concat_meryl_qos =  self.concat_meryl_qos
         args.concat_meryl_time = self.concat_meryl_time 
         args.concat_meryl_queue = self.concat_meryl_queue
+        args.concat_meryl_mem = self.concat_meryl_mem
+
+
+        args.genomescope_qos =  self.genomescope_qos
+        args.genomescope_time = self.genomescope_time 
+        args.genomescope_queue = self.genomescope_queue
+        args.genomescope_mem = self.genomescope_mem
 
         args.flye_qos =  self.flye_qos
         args.flye_time = self.flye_time 
@@ -843,6 +854,7 @@ class CreateConfigurationFile(object):
         args.merq_qos =  self.merq_qos
         args.merq_time = self.merq_time 
         args.merq_queue = self.merq_queue
+        args.merq_mem = self.merq_mem
 
         args.fin_qos =  self.fin_qos
         args.fin_time = self.fin_time 
@@ -905,7 +917,7 @@ class CreateConfigurationFile(object):
 
         args.r10X_reads = {}
         if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.merqury_db or args.run_tigmint == True:
-          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and args.raw_10X == None and args.processed_10X == None:
+          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
             sys.exit(-1)
@@ -1099,13 +1111,6 @@ class CreateConfigurationFile(object):
         elif args.intermediate_evals == True or args.final_evals == True:
           print ("busco lineage is needed if you want to run Busco")
 
-        if args.merqury_env:
-          args.merqury_env = os.path.abspath(args.merqury_env)
-        else:
-          args.merqury_env =  os.path.abspath(self.merqury_env)
-        if not os.path.exists(args.merqury_env):
-          print (args.merqury_env + " not found")      
-              
         args.assemblies={}
         if len(args.assembly_in):
           for my_dict in args.assembly_in:
@@ -1214,7 +1219,7 @@ class CreateConfigurationFile(object):
         self.generalParameters["busco_cores"] = args.busco_cores
         self.generalParameters["longranger_cores"] = args.longranger_cores
         self.generalParameters["longranger_path"] = args.longranger_path
-        self.generalParameters["genomescope_path"] = args.genomescope_path
+        self.generalParameters["genomescope_additional_options"] = args.genomescope_additional
         self.generalParameters["ploidy"] = args.ploidy
         self.generalParameters["run_purgedups"] = args.run_purgedups
         self.generalParameters["run_tigmint"] = args.run_tigmint
@@ -1293,10 +1298,11 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.trimgaloreSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.file}"
+        self.trimgaloreSpecParameters["name"] = "{rule}_{base}_{wildcards.file}"
         self.trimgaloreSpecParameters["qos"] = args.trimgalore_qos
         self.trimgaloreSpecParameters["time"] = args.trimgalore_time
         self.trimgaloreSpecParameters["queue"] = args.trimgalore_queue
+        self.trimgaloreSpecParameters["mem"] = args.trimgalore_mem
         self.allParameters ["trim_galore"] = self.trimgaloreSpecParameters
 
     def storeconcatreadsSpecParameters(self,args):
@@ -1355,7 +1361,7 @@ class CreateConfigurationFile(object):
         self.buildmerylSpecParameters["qos"] = args.build_meryl_qos
         self.buildmerylSpecParameters["time"] = args.build_meryl_time
         self.buildmerylSpecParameters["queue"] = args.build_meryl_queue
-        self.buildmerylSpecParameters["threads"] = args.build_meryl_threads
+        self.buildmerylSpecParameters["mem"] = args.build_meryl_mem
         self.allParameters ["build_meryl_db"] = self.buildmerylSpecParameters
 
     def storeconcatmerylSpecParameters(self,args):
@@ -1367,7 +1373,21 @@ class CreateConfigurationFile(object):
         self.concatmerylSpecParameters["qos"] = args.concat_meryl_qos
         self.concatmerylSpecParameters["time"] = args.concat_meryl_time
         self.concatmerylSpecParameters["queue"] = args.concat_meryl_queue
+        self.concatmerylSpecParameters["mem"] = args.concat_meryl_mem
         self.allParameters ["concat_meryl"] = self.concatmerylSpecParameters
+
+    def storegenomescopeSpecParameters(self,args):
+        """Updates genomescope cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.genomescopeSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}"
+        self.genomescopeSpecParameters["qos"] = args.genomescope_qos
+        self.genomescopeSpecParameters["time"] = args.genomescope_time
+        self.genomescopeSpecParameters["queue"] = args.genomescope_queue
+        self.genomescopeSpecParameters["mem"] = args.genomescope_mem
+        self.allParameters ["genomescope2"] = self.genomescopeSpecParameters
+
 
     def storeFiltlongParameters(self,args):
         """Updates filtlong parameters to the map of parameters to be store in a JSON file
@@ -1641,11 +1661,10 @@ class CreateConfigurationFile(object):
         self.finalizeParameters["intermediate Evaluations"] = args.intermediate_evals
         self.finalizeParameters["final Evaluations"] = args.final_evals
         self.finalizeParameters["BUSCO lineage"] = args.busco_lineage
-        self.finalizeParameters["Merqury environment"] = args.merqury_env
         self.finalizeParameters["Merqury db"] = args.merqury_db
         self.finalizeParameters["Meryl K"] = args.meryl_k
+        self.finalizeParameters["Meryl threads"] = args.meryl_threads
         self.allParameters ["Finalize"] = self.finalizeParameters
-
 
     def storestatsSpecParameters(self,args):
         """Updates stats cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1680,6 +1699,7 @@ class CreateConfigurationFile(object):
         self.merqSpecParameters["qos"] = args.merq_qos
         self.merqSpecParameters["time"] = args.merq_time
         self.merqSpecParameters["queue"] = args.merq_queue
+        self.merqSpecParameters["mem"] = args.merq_mem
         self.allParameters ["run_merqury"] = self.merqSpecParameters
 
     def storefinalizeSpecParameters(self,args):
@@ -1827,6 +1847,7 @@ if args.merqury_db:
   if not os.path.exists(args.merqury_db):
     specManager.storebuildmerylSpecParameters(args)
     specManager.storeconcatmerylSpecParameters(args)
+    specManager.storegenomescopeSpecParameters(args)
   specManager.storemerqurySpecParameters(args)
 specManager.storefinalizeSpecParameters(args)
 

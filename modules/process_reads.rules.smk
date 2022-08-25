@@ -16,16 +16,15 @@ rule trim_galore:
     outdir = "illumina_trim",
     opts = "--gzip -q 20 --paired --retain_unpaired",
   threads: 4
+  conda:
+    "../envs/trim_galore0.6.7.yaml"
   shell:
-    "source ~jgomez/init_shell.sh;"
-    "conda activate ~jgomez/conda_environments/preprocess_illumina;"
     "mkdir -p {params.outdir};"
     "cd {params.outdir}; "
     "trim_galore -j {threads} {params.opts} {input.read1} {input.read2} ;"
     "b=`basename {input.read1} .1.fastq.gz`;"
     "ln -s $b.1_val_1.fq.gz {output.trim1};"
     "ln -s $b.2_val_2.fq.gz {output.trim2};"
-    "conda deactivate;"
 
 rule concat_reads:
   input:
@@ -49,37 +48,45 @@ rule build_meryl_db:
   output:
      out_dir = directory("meryl_db.meryl")
   params:
-    environment = "~fcruz/.conda/envs/merqury_v1.1/",
     kmer = 21
+  conda:
+    "../envs/merqury1.3.yaml"
   threads: 4
   shell:
-    "source ~jgomez/init_shell.sh;"
-    "conda activate {params.environment};"
     "meryl k={params.kmer} count output {output.out_dir} {input.fastq};"
-    "conda deactivate;"
 
 rule concat_meryl:
   input:
     input_run = "meryl_db"
   output:
-    meryl_all = directory("meryl_db_all")
+    meryl_all = directory("meryl_db_all"),
+    histogram = "meryl.hist"
   params:
-    environment = "~fcruz/.conda/envs/merqury_v1.1/;",
     kmer = 21,
-    genomescope_path = "/home/devel/jgomez/bin/genomescope2.0/genomescope2.0/",
-    ploidy = 2,
+  conda:
+    "../envs/merqury1.3.yaml"
   threads: 4
   shell:
-    "source ~jgomez/init_shell.sh;"
-    "conda activate {params.environment};"
     "meryl union-sum output {output.meryl_all} {input.input_run};"
-    "d=`dirname {output.meryl_all}`;"
-    "meryl histogram {output.meryl_all} > $d/meryl.hist;"
-    "conda deactivate;"
-    "module purge; module load gcc/6.3.0 R/3.6.0 mkl/12.1.6 PYTHON/3.6.0;"
-    "export PATH={params.genomescope_path}:$PATH;"
-    "export R_LIBS_USER=\"/home/devel/jgomez/R_libs\";"
-    "genomescope.R -i $d/meryl.hist -o $d/out_k{params.kmer}/ -p {params.ploidy} -k {params.kmer};"
+    "meryl histogram {output.meryl_all} > {output.histogram};"
+
+rule genomescope2:
+  input:
+    histogram = "meryl.hist"
+  output:
+    outdir = os.getcwd(),
+    summary = "summary.txt",
+    log_plot = "log_plot.png",
+    transformed_linear = "transformed_linear_plot.png"
+  params:
+    ploidy = 2,
+    kmer = 21,
+    opts = ""
+  conda:
+    "../envs/genomescope2.0.yaml"
+  threads: 1
+  shell:
+    "genomescope2 -i {input.histogram} -o {output.outdir} -p {params.ploidy} -k {params.kmer} {params.opts};"
 
 rule long_ranger:
   input: 

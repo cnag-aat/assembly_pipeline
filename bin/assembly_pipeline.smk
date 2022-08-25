@@ -9,7 +9,6 @@ date = datetime.now().strftime('%Y%m%d.%H%M%S')
 
 working_dir = config["Outputs"]["base_dir"]
 scripts_dir = config["Inputs"]["scripts_dir"]
-shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
 logs_dir = working_dir + "logs/"
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
@@ -23,14 +22,27 @@ flye_dir = config["Outputs"]["flye_dir"]
 nextdenovo_dir = config["Outputs"]["nextdenovo_dir"]
 flye_assembly = config["Outputs"]["flye_out"]
 nextdenovo_assembly = config["Outputs"]["nextdenovo_out"]
+
 targets = []
+
 krakendb = ""
+if config["Parameters"]["run_kraken2"] == True:
+  krakendb = os.path.basename(config["Kraken2"]["database"])
+
+if config["Parameters"]["run_kraken2"] == True:
+  if config["Inputs"]["processed_illumina"]:
+    targets.append(os.path.dirname(os.path.dirname(config["Inputs"]["processed_illumina"]))+ "/Kraken/" + krakendb + "/illumina_" + krakendb+".kraken2.report.txt")
+
+if config["Finalize"]["Merqury db"]:
+  merqury_db = config["Finalize"]["Merqury db"]
+  genomescope_dir = os.path.dirname(merqury_db) + "/genomescope2_k" + str(config["Finalize"]["Meryl K"]),
+  targets.append(genomescope_dir)
+
 if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextdenovo"] == True:
   ONT_filtered = config["Inputs"]["ONT_filtered"]
   nanostats_dir = os.path.dirname(ONT_filtered)
   targets.append(nanostats_dir + "/nanostats/filtered_ont/NanoStats.txt")
   if config["Parameters"]["run_kraken2"] == True:
-    krakendb = os.path.basename(config["Kraken2"]["database"])
     targets.append(nanostats_dir + "/Kraken/filtered_ont/" + krakendb + "/filtlong_"+krakendb+".kraken2.report.txt")
   if config["Inputs"]["ONT_dir"] and config["Wildcards"]["ONT_wildcards"].split(','):
     targets.append(nanostats_dir + "/nanostats/raw_ont/NanoStats.txt")

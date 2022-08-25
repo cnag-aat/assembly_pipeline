@@ -1,0 +1,1 @@
+{{ snakemake.rule }} was run on {{ snakemake.input.read2 }} with {{ snakemake.threads }} threads. 
