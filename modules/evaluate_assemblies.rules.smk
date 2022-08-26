@@ -103,6 +103,7 @@ rule run_merqury:
     "merqury.sh {input.meryl_db} {input.assembly} {params.out_pref};"
     "$CONDA_PREFIX/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist;"
     "$CONDA_PREFIX/share/merqury/eval/false_duplications.sh {output.hist} > {output.false_dups};"
+    
 rule align_ont:
   input:
     genome = os.getcwd() + "/assembly.fasta",
@@ -110,50 +111,33 @@ rule align_ont:
   output:
     mapping = "minimap2.bam"
   params:
-    env = "/scratch/project/devel/aateam/src/RACON/v1.4.20_conda_env/",
     align_opts = "ax map-ont",
-    tmp = "minimap2.sam"
-  log:
-    "logs/" + date + ".minimap2.out",
-    "logs/" + date + ".minimap2.err",
+    tmp = "minimap2.sam",
+    compress_cmd = lambda wildcards : "samtools view -Sb " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext + ".tmp | " \
+                   "samtools sort -@ " + str(config["Parameters"]["minimap2_cores"]) +" -o " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext +";" +\
+                   "samtools index " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext 
+  conda:
+    "../envs/minimap2.24.yaml"
   threads: 4
-  run:
-    shell(
-      "module purge; source ~jgomez/init_shell.sh; conda activate {params.env};" 
-      "minimap2 -{params.align_opts} -t {threads} {input.genome} {input.reads} > {params.tmp};"
-      "conda deactivate;"
-    )
-    if params.align_opts == "ax map-ont":
-      shell(
-        "module purge;"
-        "module load SAMTOOLS/1.12;"
-        "samtools view -Sb {params.tmp}| samtools sort -@ {threads} -o {output.mapping} -;"
-        "samtools index {output.mapping};"
-        "rm {params.tmp};"
-      )
-    elif params.align_opts == "x map-ont":
-      shell (
-        "gzip -c {params.tmp} > {output.mapping};"
-        "rm {params.tmp};"
-      )
+  shell:
+    "minimap2 -{params.align_opts} -t {threads} {input.genome} {input.reads} > {params.tmp};"
+    "{params.compress_cmd};"
+    "rm {params.tmp};"
 
 rule align_illumina:
   input:
     genome = os.getcwd() + "/assembly.fasta",
     reads = [os.getcwd() + "/reads.illumina.1.fastq.gz", os.getcwd() + "/reads.illumina.2.fastq.gz"]
- #   pe1 = os.getcwd() + "/reads.illumina.1.fastq.gz",
-  #  pe2 = os.getcwd() + "/reads.illumina.2.fastq.gz",
   output:
-    mapping = "illumina.bam"
+    mapping = "illumina.bam",
+    stats = "illumina.stats.txt"
   params:
     options = ""
-  log:
-    "logs/" + date + ".bwa2.out",
-    "logs/" + date + ".bwa2.err",
+  conda:
+    "../envs/bwa-mem2.2.1.yaml"
   threads: 4
   shell:
-    "module purge;"
-    "module load SAMTOOLS/1.12 bwa java/1.8.0u31 PILON/1.21;"
-    "bwa index {input.genome};"
-    "bwa mem -Y {params.options} -t {threads} {input.genome} {input.reads} | samtools view -Sb - | samtools sort -@ {threads} -o {output.mapping} -;"
+    "bwa-mem2 index {input.genome};"
+    "bwa-mem2 mem -Y {params.options} -t {threads} {input.genome} {input.reads} | samtools view -Sb - | samtools sort -@ {threads} -o {output.mapping} -;"
     "samtools index {output.mapping};"
+    "samtools stats -@ {threads} {output.mapping} > {output.stats};"

@@ -203,12 +203,14 @@ class CreateConfigurationFile(object):
         #MINIMAP2 SPEC PARAMETERS
         self.minimap_qos = "normal"
         self.minimap_time = "6:00:00"
-        self.minimap_queue = "genB,main"
-
+        self.minimap_queue = "genD"
+        self.minimap_mem = "100"
+        
         #BWA SPEC PARAMETERS
         self.bwa_qos = "normal"
-        self.bwa_time = "12:00:00"
-        self.bwa_queue = "genB,main"
+        self.bwa_time = "6:00:00"
+        self.bwa_queue = "genD"
+        self.bwa_mem = "100"
 
         #HYPO PARAMETERS
         self.hypo_env = "/scratch/project/devel/aateam/src/HyPo/HyPov1_conda_env/"   
@@ -223,7 +225,6 @@ class CreateConfigurationFile(object):
 
         #RACON PARAMETERS
         self.racon_dir = "/scratch/project/devel/aateam/src/RACON/v1.4.21_github/"
-        self.minimap_env = "/scratch/project/devel/aateam/src/RACON/v1.4.20_conda_env"
         self.racon_opts = None                                                                    #Extra options to run Racon_wrapper
 
         #RACON SPEC PARAMETERS
@@ -431,7 +432,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--racon-cores', type = int, dest="racon_cores", metavar="racon_cores", default=self.racon_cores, help='Number of threads to run the racon step. Default %s' % self.racon_cores)
         general_group.add_argument('--nextpolish-cores', type = int, dest="nextpolish_cores", metavar="nextpolish_cores", default=self.nextpolish_cores, help='Number of threads to run the nextpolish step. Default %s' % self.nextpolish_cores)
         general_group.add_argument('--minimap2-cores', type = int, dest="minimap2_cores", metavar="minimap2_cores", default=self.minimap2_cores, help='Number of threads to run the alignment with minimap2. Default %s' % self.minimap2_cores)
-        general_group.add_argument('--bwa-cores', type = int, dest="bwa_cores", metavar="bwa_cores", default=self.bwa_cores, help='Number of threads to run the alignments with BWA-Mem. Default %s' % self.bwa_cores)
+        general_group.add_argument('--bwa-cores', type = int, dest="bwa_cores", metavar="bwa_cores", default=self.bwa_cores, help='Number of threads to run the alignments with BWA-Mem2. Default %s' % self.bwa_cores)
         general_group.add_argument('--pilon-cores', type = int, dest="pilon_cores", metavar="pilon_cores", default=self.pilon_cores, help='Number of threads to run the pilon step. Default %s' % self.pilon_cores)
         general_group.add_argument('--medaka-cores', type = int, dest="medaka_cores", metavar="medaka_cores", default=self.medaka_cores, help='Number of threads to run the medaka step. Default %s' % self.medaka_cores)
         general_group.add_argument('--hypo-cores', type = int, dest="hypo_cores", metavar="hypo_cores", default=self.hypo_cores, help='Number of threads to run the hypo step. Default %s' % self.hypo_cores)
@@ -574,7 +575,6 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         racon_group = parser.add_argument_group('Racon')
-        racon_group.add_argument('--minimap-env', dest="minimap_env", metavar="minimap_env", help='Conda environment to run Minimap2. Default %s' % self.minimap_env)
         racon_group.add_argument('--racon-dir', dest="racon_dir", metavar="racon_dir", help='Directory with Racon installation. Default %s' % self.racon_dir)
         racon_group.add_argument('--racon-opts', dest="racon_opts", metavar="racon_opts", default=self.racon_opts, help='Extra options to run Racon_wrapper(eg. --split 100000000) to split the assembly in chunks of specified size and decrease memory requirements. Do racon_wrapper -h for more info.')
 
@@ -789,10 +789,12 @@ class CreateConfigurationFile(object):
         args.minimap_qos =  self.minimap_qos
         args.minimap_time = self.minimap_time 
         args.minimap_queue = self.minimap_queue
+        args.minimap_mem = self.minimap_mem
 
         args.bwa_qos =  self.bwa_qos
         args.bwa_time = self.bwa_time 
         args.bwa_queue = self.bwa_queue
+        args.bwa_mem = self.bwa_mem
 
         args.hypo_qos =  self.hypo_qos
         args.hypo_time = self.hypo_time 
@@ -868,7 +870,8 @@ class CreateConfigurationFile(object):
           args.flye_qos = "marathon"
           args.flye_time = "150:00:00"
           args.bwa_time = "24:00:00"
-          args.minimap_time = "15:00:00"
+          args.bwa_qos = "long"
+          args.minimap_time = "12:00:00"
           args.hypo_time = "10:00:00"
           args.busco_time = "24:00:00"
           args.busco_qos = "long"
@@ -1065,13 +1068,6 @@ class CreateConfigurationFile(object):
           args.racon_dir =  os.path.abspath(self.racon_dir) + "/"
         if not os.path.exists(args.racon_dir):
           print (args.racon_dir + " not found")
-
-        if args.minimap_env:
-          args.minimap_env = os.path.abspath(args.minimap_env)
-        else:
-          args.minimap_env =  os.path.abspath(self.minimap_env)
-        if not os.path.exists(args.minimap_env):
-          print (args.minimap_env + " not found")
 
         if args.medaka_env:
           args.medaka_env = os.path.abspath(args.medaka_env)
@@ -1462,6 +1458,7 @@ class CreateConfigurationFile(object):
         self.minimapSpecParameters["qos"] = args.minimap_qos
         self.minimapSpecParameters["time"] = args.minimap_time
         self.minimapSpecParameters["queue"] = args.minimap_queue
+        self.minimapSpecParameters["mem"] = args.minimap_mem
         self.allParameters ["align_ont"] = self.minimapSpecParameters
 
     def storebwaSpecParameters(self,args):
@@ -1473,6 +1470,7 @@ class CreateConfigurationFile(object):
         self.bwaSpecParameters["qos"] = args.bwa_qos
         self.bwaSpecParameters["time"] = args.bwa_time
         self.bwaSpecParameters["queue"] = args.bwa_queue
+        self.bwaSpecParameters["mem"] = args.bwa_mem
         self.allParameters ["align_illumina"] = self.bwaSpecParameters
 
     def storeHypoParameters(self,args):
@@ -1502,7 +1500,6 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.raconParameters["Minimap environment"] = args.minimap_env
         self.raconParameters["Racon dir"] = args.racon_dir
         self.raconParameters["options"] = args.racon_opts
         self.allParameters ["Racon"] = self.raconParameters

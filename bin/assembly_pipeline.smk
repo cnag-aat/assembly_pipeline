@@ -72,6 +72,6 @@ rule all:
 include: "../modules/preprocess_reads.smk"
 include: "../modules/run_assemblies.smk"
 include: "../modules/assembly_evaluation.smk"
+include: "../modules/polish_assemblies.v04.smk"
 
-#include: "../modules/polish_assemblies.v03.smk"
 #include: "../modules/postpolishing.smk"

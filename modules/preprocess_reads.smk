@@ -85,7 +85,6 @@ if config["Parameters"]["run_kraken2"] == True:
     if not os.path.exists(logs):
       os.makedirs(logs)
     
-
 genomescope_dir = ""
 if config["Finalize"]["Merqury db"]:
   genomescope_dir = os.path.dirname(config["Finalize"]["Merqury db"]) + "/genomescope2_k" + str(config["Finalize"]["Meryl K"])

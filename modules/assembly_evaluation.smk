@@ -124,7 +124,6 @@ if config["Finalize"]["BUSCO lineage"] != None:
     threads: config["Parameters"]["busco_cores"]
 
 if  config["Finalize"]["Merqury db"] != None:
-
   use rule run_merqury from eval_workflow with:
     input:
       meryl_db = config["Finalize"]["Merqury db"],
