@@ -15,6 +15,7 @@ if not os.path.exists(logs_dir):
 
 keepfiles = config["Parameters"]["keep_intermediate"]
 base = config["Parameters"]["base_name"]
+eval_dir = config["Outputs"]["eval_dir"]
 
 ##0. Define path for files and variables
 
@@ -58,8 +59,9 @@ if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextden
     if not os.path.exists(nextdenovo_dir + "logs"):
       os.makedirs(nextdenovo_dir + "logs")
 
-if config["Finalize"]["intermediate Evaluations"] == True or config["Finalize"]["final Evaluations"] == True:
+if config["Finalize"]["final Evaluations"] == True:
   targets.append(config["Outputs"]["stats_out"])
+ # targets.append(base + ".report.zip")
 
 #1- Define rule all
 rule all:
@@ -71,7 +73,6 @@ rule all:
 
 include: "../modules/preprocess_reads.smk"
 include: "../modules/run_assemblies.smk"
-include: "../modules/assembly_evaluation.smk"
 include: "../modules/polish_assemblies.v04.smk"
-
-#include: "../modules/postpolishing.smk"
+include: "../modules/postpolishing.smk"
+include: "../modules/assembly_evaluation.smk"

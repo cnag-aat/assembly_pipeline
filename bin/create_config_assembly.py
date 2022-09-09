@@ -167,7 +167,7 @@ class CreateConfigurationFile(object):
         self.filtlong_mem = "100"
 
         #FLYE PARAMETERS
-        self.flye_cores = 24	                                                                  #Number of threads to run Flye
+        self.flye_cores = 72	                                                                  #Number of threads to run Flye
         self.flye_pol_it = 2				      			                  #Number of polishing iterations to use with FLYE
         self.other_flye_opts = " --scaffold "                                                     #include here genome size in pipeline											
 
@@ -213,15 +213,16 @@ class CreateConfigurationFile(object):
         self.bwa_mem = "100"
 
         #HYPO PARAMETERS
-        self.hypo_env = "/scratch/project/devel/aateam/src/HyPo/HyPov1_conda_env/"   
         self.ill_cov = 0                                                                          #Approximate short read coverage for hypo
         self.hypo_processes = 6                                                                   #Number of contigs to be processed in parallel by hypo
+        self.hypo_lr = True                                                                       #Set this to true if you want to run hypo with both long and short reads
         self.hypo_opts = None                                                                     #Extra options to run Hypo 
 
         #HYPO SPEC PARAMETERS
         self.hypo_qos = "normal"
         self.hypo_time = "6:00:00"
-        self.hypo_queue = "main"
+        self.hypo_queue = "genD"
+        self.hypo_mem = "1000"
 
         #RACON PARAMETERS
         self.racon_dir = "/scratch/project/devel/aateam/src/RACON/v1.4.21_github/"
@@ -279,14 +280,13 @@ class CreateConfigurationFile(object):
 
         #PURGEDUPS PARAMETERS
         self.purgedups_cores = 8 
-        self.purgedups_module = "PURGEDUPS/1.2.5"                                                 #Module in CNAG cluster with PURGEDUPS installation
         self.calcuts_opts = None                                                                  #Adjusted values to run calcuts for purgedups
 
         #PURGEDUPS SPEC PARAMETERS
         self.purgedups_qos = "normal"
         self.purgedups_time = "1:00:00"
-        self.purgedups_queue = "main"
-        self.purgedups_threads = self.purgedups_cores
+        self.purgedups_queue = "genD"
+        self.purgedups_mem = "100"
 
         #10X SCAFFOLDING PARAMETERS
         self.tigmint_env = "/scratch/project/devel/aateam/src/TIGMINT/tigmint_conda_env/"         #conda environment with TIGMINT, ARCS and ARKS installed
@@ -300,7 +300,6 @@ class CreateConfigurationFile(object):
         self.tigmint_threads = self.tigmint_cores    
 
         #FINALIZE PARAMETERS
-        self.intermediate_evals = False                                                          #Set this to true if you want evaluations to be run on each intermediate assembly  
         self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
         self.busco_lineage = None                                                                 #Path to the lineage directory to run Busco with
         self.merqury_db = None
@@ -382,6 +381,7 @@ class CreateConfigurationFile(object):
         self.buscoSpecParameters = {}
         self.merqSpecParameters = {}
         self.finSpecParameters = {}
+        self.repSpecParameters = {}
         self.wildcardParameters = {}
 
 ####
@@ -563,9 +563,9 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         hypo_group = parser.add_argument_group('Hypo')
-        hypo_group.add_argument('--hypo-env', dest="hypo_env", metavar="hypo_env", help='Conda environment to run Hypo. Default %s' % self.hypo_env)
         hypo_group.add_argument('--sr-cov', dest="ill_cov", metavar="ill_cov", default= self.ill_cov, type=int, help='Approximate short read coverage for hypo Default %s' % self.ill_cov)
         hypo_group.add_argument('--hypo-proc', dest="hypo_processes", metavar="hypo_processes", default=self.hypo_processes, type = int, help='Number of contigs to be processed in parallel by HyPo. Default %s' % self.hypo_processes)
+        hypo_group.add_argument('--hypo-no-lr', dest="hypo_lr", default=self.hypo_lr, action= "store_false", help='Set this to false if you don¡t want to run hypo with long reads. Default %s' % self.hypo_lr)
         hypo_group.add_argument('--hypo-opts', dest="hypo_opts", metavar="hypo_opts", default=self.hypo_opts, help='Additional options to run Hypo. Default %s' % self.hypo_opts)
 
     def register_racon(self, parser):
@@ -611,7 +611,6 @@ class CreateConfigurationFile(object):
         """
         purgedups_group = parser.add_argument_group('Purge_dups')
         purgedups_group.add_argument('--purgedups-cores', type = int, dest="purgedups_cores", metavar="purgedups_cores", default=self.purgedups_cores, help='Number of threads to run purgedups. Default %s' % self.purgedups_cores)
-        purgedups_group.add_argument('--purgedups-module', dest="purgedups_module", metavar="purgedups_module", default = self.purgedups_module, help='Module in CNAG cluster with PURGEDUPS installation. Default %s' % self.purgedups_module)
         purgedups_group.add_argument('--purgedups-calcuts-opts', dest="calcuts_opts", metavar="calcuts_opts", default = self.calcuts_opts, help='Adjusted values to run calcuts for purgedups. Default %s' % self.calcuts_opts)
 
     def register_scaffold10X(self, parser):
@@ -632,7 +631,6 @@ class CreateConfigurationFile(object):
         parser -- the argparse parser
         """
         finalize_group = parser.add_argument_group('Finalize')
-        finalize_group.add_argument('--intermediate-evals', dest="intermediate_evals", action="store_true", help='If specified, run evaluations on intermediate assemblies. Default %s' % self.intermediate_evals)
         finalize_group.add_argument('--no-final-evals', dest="final_evals", action="store_false", help='If specified, do not run evaluations on final assemblies. Default %s' % self.final_evals)
         finalize_group.add_argument('--busco-lin', dest="busco_lineage", metavar="busco_lineage", help='Path to the lineage directory to run Busco with. Default %s' % self.busco_lineage)
         finalize_group.add_argument('--merqury-db', dest="merqury_db", metavar="merqury_db", help='Meryl database. Default %s' % self.merqury_db)
@@ -799,6 +797,7 @@ class CreateConfigurationFile(object):
         args.hypo_qos =  self.hypo_qos
         args.hypo_time = self.hypo_time 
         args.hypo_queue = self.hypo_queue
+        args.hypo_mem = self.hypo_mem
 
         args.racon_qos =  self.racon_qos
         args.racon_time = self.racon_time 
@@ -835,7 +834,7 @@ class CreateConfigurationFile(object):
         args.purgedups_qos =  self.purgedups_qos
         args.purgedups_time = self.purgedups_time 
         args.purgedups_queue = self.purgedups_queue
-        args.purgedups_threads = self.purgedups_threads
+        args.purgedups_mem = self.purgedups_mem
 
         args.tigmint_qos =  self.tigmint_qos
         args.tigmint_time = self.tigmint_time 
@@ -869,6 +868,7 @@ class CreateConfigurationFile(object):
           args.concat_cores = 16
           args.flye_qos = "marathon"
           args.flye_time = "150:00:00"
+          args.flye_cores = 128
           args.bwa_time = "24:00:00"
           args.bwa_qos = "long"
           args.minimap_time = "12:00:00"
@@ -885,6 +885,7 @@ class CreateConfigurationFile(object):
           args.nextdenovo_qos = "long"
           args.nextdenovo_time = "24:00:00"
           args.nextdenovo_mem = 100
+          args.flye_cores = 20
 
         if args.run_flye == True or args.run_nextdenovo == True or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups != None:
           if args.ONT_filtered:
@@ -1055,13 +1056,6 @@ class CreateConfigurationFile(object):
           args.nextdenovo_dir = os.path.abspath(args.nextdenovo_dir) + "/" 
         args.nextdenovo_out = args.nextdenovo_dir + "nextdenovo.assembly.fasta"
 
-        if args.hypo_env:
-          args.hypo_env = os.path.abspath(args.hypo_env)
-        else:
-          args.hypo_env =  os.path.abspath(self.hypo_env)
-        if not os.path.exists(args.hypo_env):
-          print (args.hypo_env + " not found")
-
         if args.racon_dir:
           args.racon_dir = os.path.abspath(args.racon_dir) + "/"
         else:
@@ -1104,7 +1098,7 @@ class CreateConfigurationFile(object):
           args.busco_lineage = os.path.abspath(args.busco_lineage)
           if not os.path.exists(args.busco_lineage):
             print (args.busco_lineage + " not found")
-        elif args.intermediate_evals == True or args.final_evals == True:
+        elif args.final_evals == True:
           print ("busco lineage is needed if you want to run Busco")
 
         args.assemblies={}
@@ -1478,9 +1472,9 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.hypoParameters["environment"] = args.hypo_env
         self.hypoParameters["illumina coverage"] = args.ill_cov
         self.hypoParameters["processes"] = args.hypo_processes
+        self.hypoParameters["long_reads"] = args.hypo_lr
         self.hypoParameters["options"] = args.hypo_opts
         self.allParameters ["Hypo"] = self.hypoParameters
 
@@ -1493,6 +1487,7 @@ class CreateConfigurationFile(object):
         self.hypoSpecParameters["qos"] = args.hypo_qos
         self.hypoSpecParameters["time"] = args.hypo_time
         self.hypoSpecParameters["queue"] = args.hypo_queue
+        self.hypoSpecParameters["mem"] = args.hypo_mem
         self.allParameters ["hypo"] = self.hypoSpecParameters
 
     def storeRaconParameters(self,args):
@@ -1612,7 +1607,6 @@ class CreateConfigurationFile(object):
         args -- set of parsed arguments
         """
         self.purgedupsParameters["purgedups_cores"] = args.purgedups_cores
-        self.purgedupsParameters["purgedups_module"] = args.purgedups_module
         self.purgedupsParameters["calcuts_options"] = args.calcuts_opts
         self.allParameters ["Purge_dups"] = self.purgedupsParameters
 
@@ -1625,7 +1619,7 @@ class CreateConfigurationFile(object):
         self.purgedupsSpecParameters["qos"] = args.purgedups_qos
         self.purgedupsSpecParameters["time"] = args.purgedups_time
         self.purgedupsSpecParameters["queue"] = args.purgedups_queue
-        self.purgedupsSpecParameters["threads"] = args.purgedups_threads
+        self.purgedupsSpecParameters["mem"] = args.purgedups_mem
         self.allParameters ["purge_dups"] = self.purgedupsSpecParameters
 
 
@@ -1655,7 +1649,6 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.finalizeParameters["intermediate Evaluations"] = args.intermediate_evals
         self.finalizeParameters["final Evaluations"] = args.final_evals
         self.finalizeParameters["BUSCO lineage"] = args.busco_lineage
         self.finalizeParameters["Merqury db"] = args.merqury_db
@@ -1709,6 +1702,17 @@ class CreateConfigurationFile(object):
         self.finSpecParameters["time"] = args.fin_time
         self.finSpecParameters["queue"] = args.fin_queue
         self.allParameters ["finalize"] = self.finSpecParameters
+
+    def storeget_reportSpecParameters(self,args):
+        """Updates finalize cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.repSpecParameters["name"] = "{rule}_{base}"
+        self.repSpecParameters["qos"] = args.fin_qos
+        self.repSpecParameters["time"] = args.fin_time
+        self.repSpecParameters["queue"] = args.fin_queue
+        self.allParameters ["get_report"] = self.repSpecParameters
        
     def storeWildcardParameters(self,args):
         """Updates wildcard parameters to the map of parameters to be store in a JSON file
@@ -1837,17 +1841,17 @@ if args.run_purgedups == True:
   specManager.storepurgedupsSpecParameters(args)
 if args.run_tigmint == True:
   specManager.storescaffold10XSpecParameters(args)
-if args.intermediate_evals == True or args.final_evals == True:
-  specManager.storebuscoSpecParameters(args)
-  specManager.storestatsSpecParameters(args)
 if args.merqury_db:
   if not os.path.exists(args.merqury_db):
     specManager.storebuildmerylSpecParameters(args)
     specManager.storeconcatmerylSpecParameters(args)
     specManager.storegenomescopeSpecParameters(args)
   specManager.storemerqurySpecParameters(args)
+if args.final_evals:
+  specManager.storestatsSpecParameters(args)
+  specManager.storebuscoSpecParameters(args)
 specManager.storefinalizeSpecParameters(args)
-
+specManager.storeget_reportSpecParameters(args)
 #4. Store JSON file
 with open(args.configFile, 'w') as of:
     json.dump(configManager.allParameters, of, indent=2)

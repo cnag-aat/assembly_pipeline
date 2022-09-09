@@ -3,17 +3,8 @@ import os
 import re
 import subprocess
 
-date = datetime.now().strftime('%Y%m%d.%H%M%S')
-
 module eval_workflow:
   snakefile: "../modules/evaluate_assemblies.rules.smk"
-
-working_dir = config["Outputs"]["base_dir"]
-scripts_dir = config["Inputs"]["scripts_dir"]
-
-keepfiles = config["Parameters"]["keep_intermediate"]
-base = config["Parameters"]["base_name"]
-eval_dir = config["Outputs"]["eval_dir"]
 
 ##0. Define path for files and variables
 
@@ -23,12 +14,10 @@ assemblies = []
 if config["Finalize"]["final Evaluations"] == True:
   for i in inputs:
     assemblies.append(i)
-  if config["Parameters"]["run_flye"] == True:
-    flye_assembly = config["Outputs"]["flye_out"]
-    assemblies.append(flye_assembly)
-  if config["Parameters"]["run_nextdenovo"] == True:
-    nextdenovo_assembly = config["Outputs"]["nextdenovo_out"]
-    assemblies.append(nextdenovo_assembly)
+  for i in polished:
+    assemblies.append(i)   
+  for i in postpolish:
+    assemblies.append(i)
 
 in_files = {}
 evals_dir = {}
@@ -36,12 +25,13 @@ BuscoSummaries = []
 StatsFiles = []
 MerqurySummaries = []
 MerquryQV = []
+MerquryDups = []
 
 for file in assemblies:
   ass_base = os.path.splitext(os.path.basename(file))[0]
   basedirname = os.path.basename(os.path.dirname(file))
-  #if basedirname == "hypo" or basedirname == "rmp" or basedirname == "nextpolish":
-   #   basedirname = os.path.basename(os.path.dirname(os.path.dirname(busco)))
+  if basedirname == "hypo" or basedirname == "rmp" or basedirname == "nextpolish":
+    basedirname = os.path.basename(os.path.dirname(os.path.dirname(file)))
   evalassdir =  eval_dir + basedirname + "/"
   if not os.path.exists(evalassdir + "logs/"):
     os.makedirs(evalassdir + "logs/")
@@ -63,10 +53,59 @@ for file in assemblies:
   if config["Finalize"]["Merqury db"]:
     MerqurySummaries.append(merqdir + "/" + ass_base + ".completeness.stats")
     MerquryQV.append(merqdir + "/" + ass_base + ".qv")
+    MerquryDups.append(merqdir + "/" + ass_base + ".false_duplications.txt")
 
   StatsFiles.append(evalassdir + "stats/" + ass_base + ".stats.txt")
 
-#1- Run evaluations
+#1- Perform alignments
+
+if len(bwa) > 0:
+  use rule align_illumina from eval_workflow with:
+    input:
+      genome = lambda wildcards: bwa[wildcards.name],
+      reads = [pe1_reads, pe2_reads] 
+    output:
+      mapping = "{directory}/mappings/{name}_bwa.bam",
+      stats = report("{directory}/{name}_bwa.stats.txt",
+              caption = "../report/bwa.rst",
+              category = "Read Mapping",
+              subcategory = "{name}_bwa")
+    log:
+      "{directory}/logs/" + str(date) + ".j%j.bwa.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.bwa.{name}.err",
+    benchmark:
+      "{directory}/logs/" + str(date) + ".bwa.{name}.benchmark.txt",
+    conda:
+      "../envs/bwa-mem2.2.1.yaml"
+    threads: config["Parameters"]["BWA_cores"]
+
+if len(minimap2) > 0:
+  use rule align_ont from eval_workflow with:
+    input:
+      genome = lambda wildcards: minimap2[wildcards.name],
+      reads = lambda wildcards: ont_reads if wildcards.ext == "minimap2.allreads.paf.gz" else ONT_filtered,
+    output:
+      mapping = "{directory}/mappings/{name}_{ext}"
+    params:
+      align_opts = lambda wildcards:"ax map-ont" if wildcards.ext == "minimap2.bam" else "x map-ont",
+      tmp = "{directory}/mappings/{name}_{ext}.tmp",
+      compress_cmd = lambda wildcards : "samtools view -Sb " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext + ".tmp | " \
+                     "samtools sort -@ " + str(config["Parameters"]["minimap2_cores"]) +" -o " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext +";" +\
+                     "samtools index " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext  \
+                     if wildcards.ext == "minimap2.bam" else \
+                     "gzip -c " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext + ".tmp > " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext         
+    wildcard_constraints:
+      ext = "minimap2.(.+)"
+    log:
+      "{directory}/logs/" + str(date) + ".j%j.{ext}.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.{ext}.{name}.err",
+    benchmark:
+      "{directory}/logs/" + str(date) + ".{ext}.{name}.benchmark.txt",
+    conda:
+      "../envs/minimap2.24.yaml"
+    threads: config["Parameters"]["minimap2_cores"]
+
+#2- Run evaluations
 
 use rule get_stats from eval_workflow with:
   input:
@@ -118,7 +157,7 @@ if config["Finalize"]["BUSCO lineage"] != None:
       eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.out",
       eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.err",
     benchmark:
-      eval_dir + "{dir}/logs/" + str(date) + ".j%j.busco.{buscobase}.benchmark.txt"
+      eval_dir + "{dir}/logs/" + str(date) + ".busco.{buscobase}.benchmark.txt"
     conda:
       '../envs/busco5.4.0.yaml'
     threads: config["Parameters"]["busco_cores"]
@@ -159,18 +198,36 @@ if  config["Finalize"]["Merqury db"] != None:
     threads: 
       config["Finalize"]["Meryl threads"]
 
+#Run final job of the pipeline
+rmcmd = ""
+if keepfiles == False:
+  rmcmd = "echo 'Pipeline has been completed succesffully, we are now going to delete temporary files:';"
+  if config["Inputs"]["processed_illumina"] != None:
+    t = config["Inputs"]["processed_illumina"]
+    rmcmd += "echo 'Deleting fastqs in " + t + "'; rm " + t + "*.gz;"
+    if config["Finalize"]["Merqury db"] != None:
+      t = os.path.dirname(config["Finalize"]["Merqury db"]) + "/tmp_meryl/"
+      if (os.path.exists(t)):
+        rmcmd += "echo 'Deleting " + t + "'; rm -r " + t + ";"
+  for i in inputs:
+    rundir = inputs[i]
+    rmcmd += "echo 'Deleting mappings in " + rundir + "mappings'; rm -r " + rundir +  "mappings;"
+    if os.path.exists(rundir + "hypo/aux"):
+      rmcmd += "echo 'Deleting " + rundir + "hypo/aux;'; rm -r " + rundir + "/hypo/aux;"
+
 use rule finalize from eval_workflow with:
   input:
-    #assembly = lambda wildcards: expand(in_files[eval_dir + wildcards.dir + "/" + wildcards.buscobase]),
     assembly = assemblies,
     buscos = BuscoSummaries,
     stats= StatsFiles,
-    merqs= MerqurySummaries,
-    qv = MerquryQV
-    #buscos = rules.run_busco.output.summary,
-    #stats = rules.get_stats.output.stats
+    merqs=MerquryQV,
   output:
-    output = config["Outputs"]["stats_out"]
+    output = report(config["Outputs"]["stats_out"],
+             caption="../report/final.rst",
+             category = "Final Table"),
+  params:
+    scripts_dir = scripts_dir,
+    rmcmd = rmcmd,
   log:
     logs_dir + str(date) + ".j%j.finalize.out",
     logs_dir + str(date) + ".j%j.finalize.err"
@@ -179,3 +236,18 @@ use rule finalize from eval_workflow with:
   conda:
     '../envs/ass_base.yaml'
   threads: 1
+  
+# use rule get_report from eval_workflow with:
+#   input:
+#     stats = config["Outputs"]["stats_out"],
+#     config = config["Parameters"]["configFile"]
+#   output:
+#     report = base + ".report.zip"
+#   log:
+#     logs_dir + str(date) + ".j%j.get_report.out",
+#     logs_dir + str(date) + ".j%j.get_report.err"
+#   benchmark:
+#     logs_dir + str(date) + ".get_report.benchmark.txt"
+#   conda:
+#     '../envs/ass_base.yaml'
+#   threads: 1

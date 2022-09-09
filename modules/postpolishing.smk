@@ -3,54 +3,24 @@ import os
 import re
 import subprocess
 
-date = datetime.now().strftime('%Y%m%d.%H%M%S')
-
 module purging_workflow:
   snakefile: "../modules/purging.rules.smk"
-module eval_workflow:
-  snakefile: "../modules/evaluate_assemblies.rules.smk"
-module preprocess_workflow:
-  snakefile: "../modules/process_reads.rules.smk"
-
-working_dir = config["Outputs"]["base_dir"]
-eval_dir = config["Outputs"]["eval_dir"]
-scripts_dir = config["Inputs"]["scripts_dir"]
-logs_dir = working_dir + "logs"
-if not os.path.exists(logs_dir):
-  os.makedirs(logs_dir)
-
-shell.prefix( "export PATH=" + scripts_dir + ":$PATH;")
-keepfiles = config["Parameters"]["keep_intermediate"]
-base = config["Parameters"]["base_name"]
 
 ##0. Define path for files and variables
-targets_purgedups = []
 input_assemblies = {}
+postpolish = []
 if config["Parameters"]["run_purgedups"] == True:
-  if config["Inputs"]["ONT_reads"] != None:
-    ont_reads = config["Inputs"]["ONT_reads"]
-  elif config["Outputs"]["filtlong_dir"] != None:
-    ont_reads = config["Outputs"]["filtlong_dir"] + "reads.ont.fastq.gz"
-
   for i in config["Inputs"]["Assemblies for postpolishing"]:
     input_assemblies[working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/"] = i
-    base = os.path.splitext(os.path.basename(i))[0]
-    targets_purgedups.append( working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base + ".purged.fa")
-   # print (targets_purgedups)
+    base_postpolish = os.path.splitext(os.path.basename(i))[0]
     if not os.path.exists(working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/logs"):
       os.makedirs(working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/logs")
     mappings_dir = working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/mappings"
     if not os.path.exists(mappings_dir):
-      os.makedirs(mappings_dir)
-
-#1- Define rule all
-rule all_postpolishing:
-  input:
-    targets_purgedups
-  log:
-    logs_dir + str(date) + ".rule_all.out",
-    logs_dir + str(date) + ".rule_all.err"
-
+      os.makedirs(mappings_dir)    
+    postpolish.append(i)
+    postpolish.append( working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base_postpolish + ".purged.fa")
+    minimap2[base_postpolish] = i
 
 #1- Run purgedups 
 if config["Parameters"]["run_purgedups"] == True:
@@ -64,14 +34,21 @@ if config["Parameters"]["run_purgedups"] == True:
       reads = ont_reads,
       mapping = "{dir}/mappings/{base_in}_minimap2.allreads.paf.gz"
     output:
-      assembly_out = "{dir}/{base_in}.purged.fa" 
+      assembly_out = "{dir}/{base_in}.purged.fa",
+      plot = report ("{dir}/{base_in}.PB.cov.png",
+             caption="../report/purgedups.rst",
+             category = "Purgedups")
     params:
-      module = config["Purge_dups"]["purgedups_module"],
+      scripts_dir = scripts_dir,
       base = "{base_in}",
       dir = "{dir}",
       calcuts_opts = calcuts
     log:
       "{dir}/logs/" + str(date) + ".j%j.{base_in}.purge_dups.out",
-      "{dir}/logs/" + str(date) + ".j%j.{base_in}.purge_dups.err",
+      "{dir}/logs/" + str(date) + ".j%j.{base_in}.purge_dups.err"
+    benchmark:
+      "{dir}/logs/" + str(date) + ".{base_in}.purge_dups.benchmark.txt"
+    conda:
+      "../envs/purge_dups1.2.6.yaml"
     threads: config["Purge_dups"]["purgedups_cores"]
 

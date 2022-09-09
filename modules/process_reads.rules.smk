@@ -3,7 +3,6 @@ import re
 import os
 
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
-keepfiles = False
 
 rule trim_galore:
   input:

@@ -3,32 +3,39 @@ import re
 import os
 
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
+scripts_dir = ""
 keepfiles = False
-scripts_dir = os.path.dirname(sys.argv[0]) + "/../scripts/"  
-
-shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
-logs_dir = "logs/"
-if not os.path.exists(logs_dir):
-  os.makedirs(logs_dir)
 
 rule finalize:
   input:
     assembly = "assembly.fasta",
     buscos = "busco_short_summary.txt",
-    stats = "assembly.stats.txt"
+    stats = "assembly.stats.txt",
+    merqs= "assembly.qv",
   output:
-    output = "stats.txt"
+    output = "stats.txt",
   params:
-  log:
-    "logs/" + str(date) + ".j%j.finalize.out",
-    "logs/" + str(date) + ".j%j.finalize.err"
-  benchmark:
-    "logs/" + str(date) + ".finalize.benchmark.txt"
+    scripts_dir = "../scripts/",
+    rmcmd = "",
   conda:
     '../envs/ass_base.yaml'
   threads: 1
   shell:
-    "touch {output.output}"
+    "{params.scripts_dir}get_final_tbl_mult.py -s {input.stats} -b {input.buscos} -m {input.merqs} > {output.output};"
+    "{params.rmcmd}"
+    "echo 'Pipeline completed';"
+
+# rule get_report:
+#   input:
+#     stats = "stats,txt",
+#     config = "assembly_pipeline.config"
+#   output:
+#     report = "{base}.report.zip"
+#   conda:
+#     '../envs/ass_base.yaml'
+#   threads: 1
+#   shell:
+#     "snakemake --snakefile /software/assembly/pipelines/Assembly_pipeline/v2.0/assembly_pipeline/bin/assembly_pipeline.smk --configfile {input.config} --report {output.report};"
 
 rule get_stats:
   input:
