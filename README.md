@@ -91,7 +91,6 @@ If you want to improve an already polished assembly, you can give it to the pipe
 
 
 
-```
 # Description of implemented rules
 
 1- Preprocessing:
@@ -181,7 +180,6 @@ java {params.java_opts} -jar {params.path} --genome {input.assembly} --frags {in
 - **Nseries:** This is run during the *finalize* on all the assemblies that are evaluated. After it, that rule combines the statistics produced by all the evaluation rules. 
 
 # Description of all options
-
 ```
 bin/create_config_assembly.py -h
 usage: create_configuration_file [-h] [--configFile configFile] [--specFile specFile] [--ndconfFile ndconfFile] [--concat-cores concat_cores] [--genome-size genome_size] [--lr-type lr_type] [--basename base_name] [--species species] [--keep-intermediate]
@@ -443,4 +441,3 @@ Wildcards:
   --r10X-list r10X_wildcards
                         List with basename of the raw 10X fastqs. Default None
 ```
-
