@@ -1,10 +1,7 @@
 # assembly_pipeline
- Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed using Snakemake v6.0.5, which can be loaded in the cluster by doing:
- ```bash
- conda activate /home/devel/jgomez/conda_environments/snakemake
- ```
+ Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed for Snakemake v6.0.5.
 
-Currently it can take ONT reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups and evaluations. By default it will preprocess the reads, run Flye + Hypo + purge_dups and evaluate the resulting assemblies with BUSCO, MERQURY and Nseries. 
+It accepts Oxford Nanopore Technologies (ONT) reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups, 10X scaffodling and different evaluation steps. By default it will preprocess the reads, run Flye + Hypo + purge_dups and evaluate the resulting assemblies with BUSCO, MERQURY, Nseries and assembly_stats. 
 It needs a config file and a spec file (json file with instructions on which resources should slurm use for each of the jobs). Both files are created by the script "create_config_assembly.py" that is located in the bin directory. To check all the options accepted by the script, do:
 
 ```
@@ -13,7 +10,9 @@ bin/create_config_assembly.py -h
 
 Once the 2 config files are produced, the pipeline can be launched using snakemake like this:
 
-``snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np ``
+``snakemake --notemp -j 999 --snakefile assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec  -np ``
+
+If you are using an HPC cluster, please check how should you run snakemake to launch the jobs to the cluster. 
 
 # How to provide input data:
 
@@ -91,74 +90,6 @@ If you want to improve an already polished assembly, you can give it to the pipe
                         '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}' ...``
 
 
-# Run examples
-
-We will show several examples on how can we use the pipeline. For this purpose, we will use data from a project that has been assembled recently.
-
-### 1- Complete run with default parameters on the EASI/dependence-cattlemites project. 
-For this project we have 10X and ONT data (also HiC but this is not implemented here yet).  We'll preprocess the reads, do an assembly with Flye and polish it with Hypo. As for evaluations, we'll run merqury, busco and nseries. 
-
-![](https://github.com/cnag-aat/assembly_pipeline/blob/main/imgs/run1.dependence_test.dag.png)
-
-When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
-
-``` 
-/scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py --configFile run1.dependence_test.config --specFile run1.dependence_test.spec  --basename test --genome-size 68m --ont-reads /scratch/devel/talioto/denovo_assemblies/EASI/dependence_cattlemites/s01.1_p0.0_raw_reads/ont/AR8331/AR8331.0.EASI_41.EASI_42.EASI_41.FAP94258.1.fastq.gz --raw-10X /scratch/project/production/fastq/H7YGVDSX2/4/fastq/ --r10X-list "H7YGVDSX2_1_SI-GA-B9,H7YGVDSX2_4_SI-GA-B9,H7YGVDSX2_2_SI-GA-B9,H7YGVDSX2_3_SI-GA-B9" --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/arthropoda_odb10 --merqury-db dependence.meryl --meryl-k 18 --no-purgedups
-Genome size is 68.0 megabases
-/scratch/devel/jgomez/test_assembly_pipeline/dependence.meryl not found, the pipeline will create it
-```
-
-```
-snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile run1.dependence_test.config --is --cluster-conf run1.dependence_test.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np
-Building DAG of jobs...
-Job counts:
-        count   jobs
-        1       align_illumina
-        1       align_ont
-        1       all
-        4       build_meryl_db
-        1       concat_meryl
-        1       concat_reads
-        1       filtlong
-        1       finalize
-        1       flye
-        1       hypo
-        4       long_ranger
-        2       run_busco
-        2       run_merqury
-        21
-```
-
-This run was launched at 8:10h PM and it completed at 6:30h AM the day after, taking in total around 10h30 for a genome of around 70Mb. 
-
-### 1- Complete run with default parameters on the MARTINEZPAU solea senegalensis project. 
-For this project we have illumina paired-end and ONT data.  We'll preprocess the reads, do an assembly with Flye, polish it with Hypo and run purgedups. As for evaluations, we'll run merqury, busco and nseries. 
-
-![](https://github.com/cnag-aat/assembly_pipeline/blob/main/imgs/run1.sole.dag.png)
-
-When we run the create_config_assembly.py script it'll guide us on which options shall we give to it, in case we miss anything required. For several options, there are default parameters. It's recommended to check those values in the config files, at least during the first runs of the pipeline. 
-
-```
-/scratch/project/devel/aateam/src/assembly_pipeline/bin/create_config_assembly.py  --configFile run1.sole_trimgalore_test.config --specFile run1.sole_trimgalore_test.spec  --basename trimgalore_test  --genome-size 615m  --ont-reads /scratch/devel/talioto/denovo_assemblies/solea_senegalensis_MARTINEZPAU/s03.1_p02.1_polishing_with_racon_medaka/sole.R9.all.5kb.40Gbp.fastq.gz --busco-lin /scratch/project/devel/aateam/bin/busco_envs/lineages/odb10/vertebrata_odb10 --illumina-dir /scratch/devel/talioto/denovo_assemblies/solea_senegalensis_MARTINEZPAU/s01.2_preprocess_illumina_reads/reads/MARTINEZPAU_02/
-```
-
-```
-snakemake --notemp -j 999 --snakefile /scratch/project/devel/aateam/src/assembly_pipeline/bin/assembly_pipeline.smk --configfile run1.sole_trimgalore_test.config  --is --cluster-conf run1.sole_trimgalore_test.spec --cluster "python3 /home/devel/jgomez/Snakemake-CNAG/sbatch-cnag.py {dependencies}" -np
-Building DAG of jobs...
-Job counts:
-        count   jobs
-        1       align_illumina
-        2       align_ont
-        1       all
-        2       concat_reads
-        1       filtlong
-        1       finalize
-        1       flye
-        1       hypo
-        1       purge_dups
-        3       run_busco
-        40      trim_galore
-        54
 
 ```
 # Description of implemented rules
@@ -253,60 +184,27 @@ java {params.java_opts} -jar {params.path} --genome {input.assembly} --frags {in
 
 ```
 bin/create_config_assembly.py -h
-usage: create_configuration_file [-h] [--configFile configFile] [--specFile specFile] [--ndconfFile ndconfFile]
-                                 [--logs-dir logs_dir] [--concat-cores concat_cores] [--genome-size genome_size]
-                                 [--lr-type lr_type] [--basename base_name] [--keep-intermediate]
-                                 [--preprocess-lr-step PREPROCESS_ONT_STEP] [--preprocess-10X-step PREPROCESS_10X_STEP]
-                                 [--preprocess-illumina-step PREPROCESS_ILLUMINA_STEP] [--flye-step FLYE_STEP] [--no-flye]
-                                 [--nextdenovo-step NEXTDENOVO_STEP] [--run-nextdenovo] [--racon-cores racon_cores]
-                                 [--nextpolish-cores nextpolish_cores] [--minimap2-cores minimap2_cores]
-                                 [--bwa-cores bwa_cores] [--pilon-cores pilon_cores] [--medaka-cores medaka_cores]
-                                 [--hypo-cores hypo_cores] [--busco-cores busco_cores] [--racon-rounds racon_rounds]
-                                 [--pilon-rounds pilon_rounds] [--medaka-rounds medaka_rounds]
-                                 [--nextpolish-ont-rounds nextpolish_ont_rounds]
-                                 [--nextpolish-ill-rounds nextpolish_ill_rounds] [--hypo-rounds hypo_rounds]
-                                 [--longranger-cores longranger_cores] [--longranger-path longranger_path] [--no-purgedups]
-                                 [--scripts-dir SCRIPTS_DIR] [--ont-reads ONT_READS] [--ont-dir ONT_DIR]
-                                 [--ont-filt ONT_FILTERED] [--pe1 PE1] [--pe2 PE2] [--processed-illumina PROCESSED_ILLUMINA]
-                                 [--raw-10X RAW_10X] [--processed-10X PROCESSED_10X] [--10X R10X]
-                                 [--illumina-dir ILLUMINA_DIR] [--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]]
-                                 [--postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]]
-                                 [--pipeline-workdir PIPELINE_WORKDIR] [--filtlong-dir FILTLONG_DIR] [--flye-dir FLYE_DIR]
-                                 [--nextdenovo-dir NEXTDENOVO_DIR] [--flye-polishing-dir POLISH_FLYE_DIR]
-                                 [--nextdenovo-polishing-dir POLISH_NEXTDENOVO_DIR] [--eval-dir eval_dir]
-                                 [--stats-out stats_out] [--filtlong-path filtlong_path] [--filtlong-minlen filtlong_minlen]
-                                 [--filtlong-min-mean-q filtlong_min_mean_q] [--filtlong-opts filtlong_opts]
-                                 [--trim-galore-opts trim_galore_opts] [--trim-Illumina-cores Trim_Illumina_cores]
-                                 [--flye-env flye_env] [--flye-cores flye_cores] [--flye-polishing-iterations flye_pol_it]
-                                 [--other-flye-opts other_flye_opts] [--nextdenovo-module nextdenovo_module]
-                                 [--nextdenovo-cores nextdenovo_cores] [--nextdenovo-task nextdenovo_task]
-                                 [--nextdenovo-rewrite nextdenovo_rewrite]
-                                 [--nextdenovo-parallel_jobs nextdenovo_parallel_jobs]
-                                 [--nextdenovo-minreadlen nextdenovo_minreadlen]
-                                 [--nextdenovo-seeddepth nextdenovo_seeddepth]
-                                 [--nextdenovo-seedcutoff nextdenovo_seedcutoff]
-                                 [--nextdenovo-blocksize nextdenovo_blocksize]
-                                 [--nextdenovo-pa-correction  nextdenovo_pa_correction]
-                                 [--nextdenovo-minimap_raw nextdenovo_minimap_raw]
-                                 [--nextdenovo-minimap_cns nextdenovo_minimap_cns]
-                                 [--nextdenovo-minimap_map nextdenovo_minimap_map] [--nextdenovo-sort nextdenovo_sort]
-                                 [--nextdenovo-correction_opts nextdenovo_correction_opts]
-                                 [--nextdenovo-nextgraph_opt nextdenovo_nextgraph_opt] [--hypo-env hypo_env]
-                                 [--sr-cov ill_cov] [--hypo-proc hypo_processes] [--hypo-opts hypo_opts]
-                                 [--minimap-env minimap_env] [--racon-dir racon_dir] [--racon-opts racon_opts]
-                                 [--medaka-env medaka_env] [--medaka-workdir medaka_workdir] [--medaka-model medaka_model]
-                                 [--medaka-consensus-opts medaka_consensus_opts] [--pilon-path pilon_path]
-                                 [--pilon-opts pilon_opts] [--java-opts java_opts] [--pilon-subs pilon_subsampling]
-                                 [--pilon-chunks pilon_chunks] [--purgedups-cores purgedups_cores]
-                                 [--purgedups-module purgedups_module] [--purgedups-calcuts-opts calcuts_opts]
-                                 [--intermediate-evals] [--no-final-evals] [--busco-env busco_env]
-                                 [--busco-lin busco_lineage] [--merqury-env merqury_env] [--merqury-db merqury_db]
-                                 [--meryl-k meryl_k] [--ont-list ONT_wildcards] [--illumina-list illumina_wildcards]
-                                 [--r10X-list r10X_wildcards]
+usage: create_configuration_file [-h] [--configFile configFile] [--specFile specFile] [--ndconfFile ndconfFile] [--concat-cores concat_cores] [--genome-size genome_size] [--lr-type lr_type] [--basename base_name] [--species species] [--keep-intermediate]
+                                 [--preprocess-lr-step PREPROCESS_ONT_STEP] [--preprocess-10X-step PREPROCESS_10X_STEP] [--preprocess-illumina-step PREPROCESS_ILLUMINA_STEP] [--flye-step FLYE_STEP] [--no-flye] [--nextdenovo-step NEXTDENOVO_STEP] [--run-nextdenovo]
+                                 [--racon-cores racon_cores] [--nextpolish-cores nextpolish_cores] [--minimap2-cores minimap2_cores] [--bwa-cores bwa_cores] [--pilon-cores pilon_cores] [--medaka-cores medaka_cores] [--hypo-cores hypo_cores] [--busco-cores busco_cores]
+                                 [--racon-rounds racon_rounds] [--pilon-rounds pilon_rounds] [--medaka-rounds medaka_rounds] [--nextpolish-ont-rounds nextpolish_ont_rounds] [--nextpolish-ill-rounds nextpolish_ill_rounds] [--hypo-rounds hypo_rounds]
+                                 [--longranger-cores longranger_cores] [--longranger-path longranger_path] [--genomescope-opts genomescope_additional] [--no-purgedups] [--ploidy ploidy] [--run-tigmint] [--run-kraken2] [--scripts-dir SCRIPTS_DIR] [--ont-reads ONT_READS]
+                                 [--ont-dir ONT_DIR] [--ont-filt ONT_FILTERED] [--pe1 PE1] [--pe2 PE2] [--processed-illumina PROCESSED_ILLUMINA] [--raw-10X RAW_10X [RAW_10X ...]] [--processed-10X PROCESSED_10X] [--10X R10X] [--illumina-dir ILLUMINA_DIR]
+                                 [--assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]] [--postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]] [--pipeline-workdir PIPELINE_WORKDIR] [--filtlong-dir FILTLONG_DIR] [--flye-dir FLYE_DIR]
+                                 [--nextdenovo-dir NEXTDENOVO_DIR] [--flye-polishing-dir POLISH_FLYE_DIR] [--nextdenovo-polishing-dir POLISH_NEXTDENOVO_DIR] [--eval-dir eval_dir] [--stats-out stats_out] [--filtlong-minlen filtlong_minlen]
+                                 [--filtlong-min-mean-q filtlong_min_mean_q] [--filtlong-opts filtlong_opts] [--kraken2-db kraken2_db] [--kraken2-kmer kraken2_kmers] [--kraken2-opts additional_kraken2_opts] [--kraken2-cores kraken2_threads]
+                                 [--trim-galore-opts trim_galore_opts] [--trim-Illumina-cores Trim_Illumina_cores] [--flye-cores flye_cores] [--flye-polishing-iterations flye_pol_it] [--other-flye-opts other_flye_opts] [--nextdenovo-cores nextdenovo_cores]
+                                 [--nextdenovo-task nextdenovo_task] [--nextdenovo-rewrite nextdenovo_rewrite] [--nextdenovo-parallel_jobs nextdenovo_parallel_jobs] [--nextdenovo-minreadlen nextdenovo_minreadlen] [--nextdenovo-seeddepth nextdenovo_seeddepth]
+                                 [--nextdenovo-seedcutoff nextdenovo_seedcutoff] [--nextdenovo-blocksize nextdenovo_blocksize] [--nextdenovo-pa-correction  nextdenovo_pa_correction] [--nextdenovo-minimap_raw nextdenovo_minimap_raw]
+                                 [--nextdenovo-minimap_cns nextdenovo_minimap_cns] [--nextdenovo-minimap_map nextdenovo_minimap_map] [--nextdenovo-sort nextdenovo_sort] [--nextdenovo-correction_opts nextdenovo_correction_opts]
+                                 [--nextdenovo-nextgraph_opt nextdenovo_nextgraph_opt] [--sr-cov ill_cov] [--hypo-proc hypo_processes] [--hypo-no-lr] [--hypo-opts hypo_opts] [--racon-dir racon_dir] [--racon-opts racon_opts] [--medaka-env medaka_env]
+                                 [--medaka-workdir medaka_workdir] [--medaka-model medaka_model] [--medaka-consensus-opts medaka_consensus_opts] [--pilon-path pilon_path] [--pilon-opts pilon_opts] [--java-opts java_opts] [--pilon-subs pilon_subsampling]
+                                 [--pilon-chunks pilon_chunks] [--purgedups-cores purgedups_cores] [--purgedups-calcuts-opts calcuts_opts] [--tigmint-cores tigmint_cores] [--tigmint-opts tigmint_opts] [--no-final-evals] [--busco-lin busco_lineage]
+                                 [--merqury-db merqury_db] [--meryl-k meryl_k] [--meryl-threads meryl_threads] [--ont-list ONT_wildcards] [--illumina-list illumina_wildcards] [--r10X-list r10X_wildcards]
 
 Create a configuration json file for the assembly pipeline.
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
 
 General Parameters:
@@ -315,25 +213,25 @@ General Parameters:
   --specFile specFile   Cluster specifications JSON fileto be generated. Default assembly.spec
   --ndconfFile ndconfFile
                         Name pf the nextdenovo config file. Default nextdenovo.config
-  --logs-dir logs_dir   Directory to keep all the log files. Default logs/
   --concat-cores concat_cores
                         Number of threads to concatenate reads and to run filtlong. Default 4
   --genome-size genome_size
                         Approximate genome size. Example: 615m or 2.6g. Default None
   --lr-type lr_type     Type of long reads (options are flye read-type options). Default nano-raw
   --basename base_name  Base name for the project. Default None
+  --species species     Name of the species to be assembled. Default None
   --keep-intermediate   Set this to True if you do not want intermediate files to be removed. Default False
   --preprocess-lr-step PREPROCESS_ONT_STEP
-                        Step for preprocessing long-reads. Default 01.1
+                        Step for preprocessing long-reads. Default 02.1
   --preprocess-10X-step PREPROCESS_10X_STEP
-                        Step for preprocessing 10X reads. Default 01.2
+                        Step for preprocessing 10X reads. Default 02.2
   --preprocess-illumina-step PREPROCESS_ILLUMINA_STEP
-                        Step for preprocessing illumina reads. Default 01.2
+                        Step for preprocessing illumina reads. Default 02.2
   --flye-step FLYE_STEP
-                        Step for running flye. Default 02.1
+                        Step for running flye. Default 03.1
   --no-flye             Give this option if you do not want to run Flye.
   --nextdenovo-step NEXTDENOVO_STEP
-                        Step for running nextdenovo. Default 02.2
+                        Step for running nextdenovo. Default 03.2
   --run-nextdenovo      Give this option if you do want to run Nextdenovo.
   --racon-cores racon_cores
                         Number of threads to run the racon step. Default 16
@@ -342,7 +240,7 @@ General Parameters:
   --minimap2-cores minimap2_cores
                         Number of threads to run the alignment with minimap2. Default 16
   --bwa-cores bwa_cores
-                        Number of threads to run the alignments with BWA-Mem. Default 16
+                        Number of threads to run the alignments with BWA-Mem2. Default 16
   --pilon-cores pilon_cores
                         Number of threads to run the pilon step. Default 16
   --medaka-cores medaka_cores
@@ -367,7 +265,12 @@ General Parameters:
                         Number of threads to run longranger. Default 8
   --longranger-path longranger_path
                         Path to longranger executable. Default /scratch/project/devel/aateam/src/10X/longranger-2.2.2
+  --genomescope-opts genomescope_additional
+                        Additional options to run Genomescope2 with. Default
   --no-purgedups        Give this option if you do not want to run Purgedups.
+  --ploidy ploidy       Expected ploidy. Default 2
+  --run-tigmint         Give this option if you want to run the scaffolding with 10X reads step.
+  --run-kraken2         Give this option if you want to run Kraken2 on the input reads.
 
 Inputs:
   --scripts-dir SCRIPTS_DIR
@@ -381,45 +284,52 @@ Inputs:
   --pe2 PE2             File with the illumina paired-end fastqs, already trimmed, pair 2.
   --processed-illumina PROCESSED_ILLUMINA
                         Directory to Processed illumina reads. Already there or to be produced by the pipeline.
-  --raw-10X RAW_10X     Directory to mkfastq Raw 10X reads.
+  --raw-10X RAW_10X [RAW_10X ...]
+                        Dictionary with 10X raw read directories, it has to be the mkfastq dir. You must specify as well the sampleIDs from this run. Example: '{"mkfastq-dir":"sample1,sample2,sample3"}'...
   --processed-10X PROCESSED_10X
                         Directory to Processed 10X reads. Already there or to be produced by the pipeline.
   --10X R10X            File with barcoded 10X reads in fastq.gz format, concatenated.
   --illumina-dir ILLUMINA_DIR
                         Directory where the raw illumina fastqs are stored. Default None
   --assembly-in ASSEMBLY_IN [ASSEMBLY_IN ...]
-                        Dictionary with assemblies that need to be polished but not assembled and directory where they should
-                        be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...
+                        Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...
   --postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]
-                        Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and
-                        base step for the directory where the first postpolishing step should be run. Example:
-                        '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}' ...
+                        Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: '{"assembly1":"s04.1_p03.1"}'
+                        '{"assembly2":"s04.2_p03.2"}' ...
 
 Outputs:
   --pipeline-workdir PIPELINE_WORKDIR
-                        Base directory for the pipeline run. Default /scratch/project/devel/aateam/src/assembly_pipeline/
+                        Base directory for the pipeline run. Default /software/assembly/pipelines/Assembly_pipeline/v2.0/assembly_pipeline/
   --filtlong-dir FILTLONG_DIR
-                        Directory to process the ONT reads with filtlong. Default s01.1_p01.1_Filtlong
-  --flye-dir FLYE_DIR   Directory to run flye. Default s02.1_p01.1_flye/
+                        Directory to process the ONT reads with filtlong. Default s02.1_p01.1_Filtlong
+  --flye-dir FLYE_DIR   Directory to run flye. Default s03.1_p02.1_flye/
   --nextdenovo-dir NEXTDENOVO_DIR
-                        Directory to run nextdenovo. Default s02.2_p01.1_nextdenovo/
+                        Directory to run nextdenovo. Default s03.2_p02.1_nextdenovo/
   --flye-polishing-dir POLISH_FLYE_DIR
-                        Directory to polish the flye assembly. Default s03.1_p02.1_polishing/
+                        Directory to polish the flye assembly. Default s04.1_p03.1_polishing/
   --nextdenovo-polishing-dir POLISH_NEXTDENOVO_DIR
-                        Directory to run nextdenovo. Default s03.2_p02.2_polishing/
+                        Directory to run nextdenovo. Default s04.2_p03.2_polishing/
   --eval-dir eval_dir   Base directory for the evaluations. Default evaluations/
   --stats-out stats_out
                         Path to the file with the final statistics.
 
 Filtlong:
-  --filtlong-path filtlong_path
-                        Path to the filtlong software. Default /scratch/project/devel/aateam/bin/filtlong
   --filtlong-minlen filtlong_minlen
                         Minimum read length to use with Filtlong. Default 1000
   --filtlong-min-mean-q filtlong_min_mean_q
                         Minimum mean quality to use with Filtlong. Default 80
   --filtlong-opts filtlong_opts
                         Extra options to run Filtlong (eg. -t 4000000000)
+
+Kraken2:
+  --kraken2-db kraken2_db
+                        Database to be used for running Kraken2. Default None
+  --kraken2-kmer kraken2_kmers
+                        Database to be used for running Kraken2. Default None
+  --kraken2-opts additional_kraken2_opts
+                        Optional parameters for the rule Kraken2. Default
+  --kraken2-cores kraken2_threads
+                        Number of threads to run the Kraken2 step. Default 16
 
 Trim_Galore:
   --trim-galore-opts trim_galore_opts
@@ -428,68 +338,58 @@ Trim_Galore:
                         Number of threads to run the Illumina trimming step. Default 4
 
 Flye:
-  --flye-env flye_env   Conda environment to run FLYE. Default /home/devel/talioto/miniconda3/envs/flye-v2.8.3/
   --flye-cores flye_cores
-                        Number of threads to run FLYE. Default 24
+                        Number of threads to run FLYE. Default 72
   --flye-polishing-iterations flye_pol_it
                         Number of polishing iterations to use with FLYE. Default 2
   --other-flye-opts other_flye_opts
-                        Additional options to run Flye. Default None
+                        Additional options to run Flye. Default --scaffold
 
 Nextdenovo:
-  --nextdenovo-module nextdenovo_module
-                        Cluster module to run nextdenovo. Default NEXTDENOVO/2.4.0
   --nextdenovo-cores nextdenovo_cores
-                        Number of threads to run nextdenovo. Default 24
+                        Number of threads to run nextdenovo. Default 72
   --nextdenovo-task nextdenovo_task
                         Task need to run. Default all
   --nextdenovo-rewrite nextdenovo_rewrite
                         Overwrite existing directory. Default yes
   --nextdenovo-parallel_jobs nextdenovo_parallel_jobs
-                        Number of tasks used to run in parallel. Default 4
+                        Number of tasks used to run in parallel. Default 18
   --nextdenovo-minreadlen nextdenovo_minreadlen
                         Filter reads with length < minreadlen. Default 1k
   --nextdenovo-seeddepth nextdenovo_seeddepth
-                        Expected seed depth, used to calculate seed_cutoff, co-use with genome_size, you can try to set it
-                        30-45 to get a better assembly result. Default 45
+                        Expected seed depth, used to calculate seed_cutoff, co-use with genome_size, you can try to set it 30-45 to get a better assembly result. Default 45
   --nextdenovo-seedcutoff nextdenovo_seedcutoff
                         Minimum seed length, <=0 means calculate it automatically using bin/seq_stat. Default 0
   --nextdenovo-blocksize nextdenovo_blocksize
-                        Block size for parallel running, split non-seed reads into small files, the maximum size of each file
-                        is blocksize. Default 1g
+                        Block size for parallel running, split non-seed reads into small files, the maximum size of each file is blocksize. Default 1g
   --nextdenovo-pa-correction  nextdenovo_pa_correction
-                        number of corrected tasks used to run in parallel, each corrected task requires ~TOTAL_INPUT_BASES/4
-                        bytes of memory usage, overwrite parallel_jobs only for this step. Default 4
+                        number of corrected tasks used to run in parallel, each corrected task requires ~TOTAL_INPUT_BASES/4 bytes of memory usage, overwrite parallel_jobs only for this step. Default 96
   --nextdenovo-minimap_raw nextdenovo_minimap_raw
-                        minimap2 options, used to find overlaps between raw reads, see minimap2-nd for details. Default -t 6
-                        -x ava-ont
+                        minimap2 options, used to find overlaps between raw reads, see minimap2-nd for details. Default -t 30
   --nextdenovo-minimap_cns nextdenovo_minimap_cns
-                        minimap2 options, used to find overlaps between corrected reads. Default -t 6 -x ava-ont -k17 -w17
+                        minimap2 options, used to find overlaps between corrected reads. Default -t 30
   --nextdenovo-minimap_map nextdenovo_minimap_map
-                        minimap2 options, used to map reads back to the assembly. Default -t 6 -x ava-ont
+                        minimap2 options, used to map reads back to the assembly. Default -t 30
   --nextdenovo-sort nextdenovo_sort
                         sort options, see ovl_sort for details. Default -m 40g -t 20
   --nextdenovo-correction_opts nextdenovo_correction_opts
-                        Correction options. Default -p 6
+                        Correction options. Default -p 18
   --nextdenovo-nextgraph_opt nextdenovo_nextgraph_opt
                         nextgraph options, see nextgraph for details. Default -a 1
 
 Hypo:
-  --hypo-env hypo_env   Conda environment to run Hypo. Default /scratch/project/devel/aateam/src/HyPo/HyPov1_conda_env/
   --sr-cov ill_cov      Approximate short read coverage for hypo Default 0
   --hypo-proc hypo_processes
                         Number of contigs to be processed in parallel by HyPo. Default 6
+  --hypo-no-lr          Set this to false if you don¡t want to run hypo with long reads. Default True
   --hypo-opts hypo_opts
                         Additional options to run Hypo. Default None
 
 Racon:
-  --minimap-env minimap_env
-                        Conda environment to run Minimap2. Default /scratch/project/devel/aateam/src/RACON/v1.4.20_conda_env
   --racon-dir racon_dir
                         Directory with Racon installation. Default /scratch/project/devel/aateam/src/RACON/v1.4.21_github/
   --racon-opts racon_opts
-                        Extra options to run Racon_wrapper(eg. --split 100000000) to split the assembly in chunks of
-                        specified size and decrease memory requirements. Do racon_wrapper -h for more info.
+                        Extra options to run Racon_wrapper(eg. --split 100000000) to split the assembly in chunks of specified size and decrease memory requirements. Do racon_wrapper -h for more info.
 
 Medaka:
   --medaka-env medaka_env
@@ -516,23 +416,24 @@ Pilon:
 Purge_dups:
   --purgedups-cores purgedups_cores
                         Number of threads to run purgedups. Default 8
-  --purgedups-module purgedups_module
-                        Module in CNAG cluster with PURGEDUPS installation. Default PURGEDUPS/1.2.5
   --purgedups-calcuts-opts calcuts_opts
                         Adjusted values to run calcuts for purgedups. Default None
 
+Scaffold_with_10X:
+  --tigmint-cores tigmint_cores
+                        Number of threads to run the 10X scaffolding step. Default 12
+  --tigmint-opts tigmint_opts
+                        Adjusted values to run the scaffolding with 10X reads. Default None
+
 Finalize:
-  --intermediate-evals  If specified, run evaluations on intermediate assemblies. Default False
   --no-final-evals      If specified, do not run evaluations on final assemblies. Default True
-  --busco-env busco_env
-                        Conda environment to run BUSCO. Default /scratch/project/devel/aateam/bin/busco_envs/busco_v4.0.6/
   --busco-lin busco_lineage
                         Path to the lineage directory to run Busco with. Default None
-  --merqury-env merqury_env
-                        Conda environment to run merqury. Default /home/devel/fcruz/.conda/envs/merqury_v1.1/
   --merqury-db merqury_db
                         Meryl database. Default None
   --meryl-k meryl_k     Kmer length to build the meryl database. Default None
+  --meryl-threads meryl_threads
+                        Number of threads to run meryl and merqury. Default 4
 
 Wildcards:
   --ont-list ONT_wildcards
@@ -540,8 +441,6 @@ Wildcards:
   --illumina-list illumina_wildcards
                         List with basename of the illumina fastqs. Default None
   --r10X-list r10X_wildcards
-                        List with basename of the raw 10X fastqs. For raw 10X we need to give this argument, for processed
-                        10X reads, the pipeline can obtain it. Default None
-
+                        List with basename of the raw 10X fastqs. Default None
 ```
 
