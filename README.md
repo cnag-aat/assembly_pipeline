@@ -10,7 +10,7 @@ bin/create_config_assembly.py -h
 
 Once the 2 config files are produced, the pipeline can be launched using snakemake like this:
 
-``snakemake --notemp -j 999 --snakefile assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec  -np ``
+``snakemake --notemp -j 999 --snakefile assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec --use-conda --use.envmodules``
 
 If you are using an HPC cluster, please check how should you run snakemake to launch the jobs to the cluster. 
 
