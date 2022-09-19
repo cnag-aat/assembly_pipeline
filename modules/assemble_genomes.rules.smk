@@ -26,6 +26,8 @@ rule flye:
     "logs/" + str(date) + ".flye.benchmark.txt"
   conda:
     '../envs/flye2.9.1.yaml'
+  envmodules: 
+    'Mesa/21.1.7-GCCcore-11.2.0'
   shell:
     "mkdir -p {params.outdir}out;"
     "cd {params.outdir};"

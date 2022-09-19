@@ -1,5 +1,6 @@
 name: null
 channels:
+  - anaconda
   - conda-forge
   - bioconda
   - defaults
@@ -8,8 +9,8 @@ dependencies:
   - _openmp_mutex=4.5=2_gnu
   - bandage=0.8.1=h30c83c5_1
   - bzip2=1.0.8=h7f98852_4
-  - ca-certificates=2022.6.15=ha878542_0
-  - certifi=2019.11.28=py27h8c360ce_1
+  - ca-certificates=2022.07.19=h06a4308_0
+  - certifi=2020.6.20=pyhd3eb1b0_3
   - dbus=1.13.6=he372182_0
   - expat=2.4.8=h27087fc_0
   - flye=2.9.1=py27hd63410e_0
@@ -30,11 +31,13 @@ dependencies:
   - krb5=1.17.2=h926e7f8_0
   - ld_impl_linux-64=2.36.1=hea4e1c9_2
   - libclang=10.0.1=default_hde54327_1
+  - libdrm-cos6-x86_64=2.4.65=4
   - libedit=3.1.20191231=he28a2e2_2
   - libevent=2.1.10=h9b69904_4
   - libffi=3.2.1=he1b5a44_1007
   - libgcc=7.2.0=h69d50b8_2
   - libgcc-ng=12.1.0=h8d9b700_16
+  - libglu=9.0.0=hf484d3e_1
   - libgomp=12.1.0=h8d9b700_16
   - libiconv=1.16=h516909a_0
   - libllvm10=10.0.1=he513fc3_3
@@ -43,16 +46,19 @@ dependencies:
   - libpq=12.3=h255efa7_3
   - libstdcxx-ng=12.1.0=ha89aaad_16
   - libuuid=2.32.1=h7f98852_1000
+  - libx11-common-cos6-x86_64=1.6.4=4
+  - libx11-cos6-x86_64=1.6.4=4
   - libxcb=1.13=h7f98852_1004
   - libxkbcommon=0.10.0=he1b5a44_0
   - libxml2=2.9.10=h68273f3_2
   - libzlib=1.2.12=h166bdaf_2
+  - mesa-libgl-cos6-x86_64=11.0.7=4
   - mysql-common=8.0.30=haf5c9bc_0
   - mysql-libs=8.0.30=h28c427c_0
   - ncurses=6.3=h27087fc_1
   - nspr=4.32=h9c3ff4c_1
   - nss=3.78=h2350873_0
-  - openssl=1.1.1q=h166bdaf_0
+  - openssl=1.1.1q=h7f8727e_0
   - pcre=8.45=h9c3ff4c_0
   - pip=20.1.1=pyh9f0ad1d_0
   - pthread-stubs=0.4=h36c2ea0_1001

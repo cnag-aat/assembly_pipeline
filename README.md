@@ -10,9 +10,14 @@ bin/create_config_assembly.py -h
 
 Once the 2 config files are produced, the pipeline can be launched using snakemake like this:
 
-``snakemake --notemp -j 999 --snakefile assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec --use-conda --use.envmodules``
+``snakemake --notemp -j 999 --snakefile assembly_pipeline.smk --configfile assembly.config --is --cluster-conf assembly.spec --use-conda --use-envmodules``
 
 If you are using an HPC cluster, please check how should you run snakemake to launch the jobs to the cluster. 
+
+Most of the tools used will be installed via conda using the environments of the "envs" directory after providing the "--use-conda" option to snakemake. However, a few tools cannot be installed via conda and will have to be available in your PATH, or as a module in the cluster. Those tools are:
+
+- NextDenovo/2.5.0
+- NextPolish/1.4.1
 
 # How to provide input data:
 
