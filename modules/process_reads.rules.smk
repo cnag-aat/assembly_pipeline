@@ -96,23 +96,17 @@ rule long_ranger:
   params:
     path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2",
     outdir = "preprocess_10X_linkedreads/",
-    sample = "raw_10X"
+    sample = "raw_10X",
+    rmcmd = ""
   threads: 8
-  run:
-    shell(
+  shell:
       "export PATH={params.path}:$PATH;"
       "mkdir -p {params.outdir};"
       "cd {params.outdir};"
       "longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads};"
       "cp {params.sample}/outs/barcoded.fastq.gz {output.fastq_out};"
       "cp {params.sample}/outs/summary.csv {output.sum_out};"
-    )
-    if keepfiles == False:
-      shell(
-        "echo 'Removing longranger run dir:{params.outdir}{params.sample}';"
-        "module load bsc;"
-        "lrm -o {params.outdir}{params.sample}.rmlist.sh {params.outdir}{params.sample}; sh {params.outdir}{params.sample}.rmlist.sh;"
-      )
+      "{params.rmcmd}"
 
 rule filtlong:
   input:

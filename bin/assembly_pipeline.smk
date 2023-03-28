@@ -5,13 +5,18 @@ import subprocess
 
 report: "../report/workflow.rst"
 
+
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
 
 working_dir = config["Outputs"]["base_dir"]
+#shell.prefix("TMPDIR=" + working_dir + "tmp/; echo tmpdir is set to $TMPDIR;")
 scripts_dir = config["Inputs"]["scripts_dir"]
 logs_dir = working_dir + "logs/"
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
+
+#if not os.path.exists(working_dir + "tmp/"):
+#  os.makedirs(working_dir + "tmp/")
 
 keepfiles = config["Parameters"]["keep_intermediate"]
 base = config["Parameters"]["base_name"]
@@ -33,6 +38,8 @@ if config["Parameters"]["run_kraken2"] == True:
 if config["Parameters"]["run_kraken2"] == True:
   if config["Inputs"]["processed_illumina"]:
     targets.append(os.path.dirname(os.path.dirname(config["Inputs"]["processed_illumina"]))+ "/Kraken/" + krakendb + "/illumina_" + krakendb+".kraken2.report.txt")
+  if config["Inputs"]["processed_10X"]:
+    targets.append(os.path.dirname(os.path.dirname(config["Inputs"]["processed_10X"]))+ "/Kraken/" + krakendb + "/10X_" + krakendb+".kraken2.report.txt")
 
 if config["Finalize"]["Merqury db"]:
   merqury_db = config["Finalize"]["Merqury db"]
@@ -61,6 +68,7 @@ if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextden
 
 if config["Finalize"]["final Evaluations"] == True:
   targets.append(config["Outputs"]["stats_out"])
+
  # targets.append(base + ".report.zip")
 
 #1- Define rule all

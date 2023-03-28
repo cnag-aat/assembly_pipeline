@@ -162,6 +162,7 @@ def get_targets(assembly):
       hypo_srmap[hypo_dir + basename + ".hypo" + str(n) + ".fasta"] = mappings_dir + basename + ".hypo" + str(i) + "_bwa.bam"
     if config["Hypo"]["options"] != None:
       additional_hypo_opts = config["Hypo"]["options"]
+      
   for d in make_logs:
     if not os.path.exists(d + "logs"):
       os.makedirs(d+"logs")

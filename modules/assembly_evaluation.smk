@@ -19,6 +19,7 @@ if config["Finalize"]["final Evaluations"] == True:
   for i in postpolish:
     assemblies.append(i)
 
+#print (assemblies)
 in_files = {}
 evals_dir = {}
 BuscoSummaries = []
@@ -63,7 +64,7 @@ if len(bwa) > 0:
   use rule align_illumina from eval_workflow with:
     input:
       genome = lambda wildcards: bwa[wildcards.name],
-      reads = [pe1_reads, pe2_reads] 
+      reads = [pe1_reads, pe2_reads] if r10X_reads == None else r10X_reads
     output:
       mapping = "{directory}/mappings/{name}_bwa.bam",
       stats = report("{directory}/{name}_bwa.stats.txt",
@@ -130,7 +131,7 @@ use rule get_stats from eval_workflow with:
     eval_dir + "{dir}/logs/" + str(date) + ".j%j.get_stats.{buscobase}.out",
     eval_dir + "{dir}/logs/" + str(date) + ".j%j.get_stats.{buscobase}.err"
   benchmark:  
-    eval_dir + "{dir}/logs/" + str(date) + "get_stats.{buscobase}.benchmark.out",
+    eval_dir + "{dir}/logs/" + str(date) + ".get_stats.{buscobase}.benchmark.out",
   conda:
     '../envs/ass_base.yaml'
   threads: 1
@@ -204,7 +205,9 @@ if keepfiles == False:
   rmcmd = "echo 'Pipeline has been completed succesffully, we are now going to delete temporary files:';"
   if config["Inputs"]["processed_illumina"] != None:
     t = config["Inputs"]["processed_illumina"]
-    rmcmd += "echo 'Deleting fastqs in " + t + "'; rm " + t + "*.gz;"
+    illumina_list = config["Wildcards"]["illumina_wildcards"].split(',')
+    if os.path.exists(config["Inputs"]["processed_illumina"] + illumina_list[0] + ".1_val_1.fq.gz"):
+      rmcmd += "echo 'Deleting fastqs in " + t + "'; rm " + t + "*.gz;"
     if config["Finalize"]["Merqury db"] != None:
       t = os.path.dirname(config["Finalize"]["Merqury db"]) + "/tmp_meryl/"
       if (os.path.exists(t)):
@@ -220,7 +223,7 @@ use rule finalize from eval_workflow with:
     assembly = assemblies,
     buscos = BuscoSummaries,
     stats= StatsFiles,
-    merqs=MerquryQV,
+    merqs=MerquryQV
   output:
     output = report(config["Outputs"]["stats_out"],
              caption="../report/final.rst",

@@ -10,7 +10,6 @@ module assembly_workflow:
 
 working_dir = config["Outputs"]["base_dir"]
 scripts_dir = config["Inputs"]["scripts_dir"]
-shell.prefix("export PATH=" + scripts_dir + ":$PATH;")
 
 keepfiles = config["Parameters"]["keep_intermediate"]
 base = config["Parameters"]["base_name"]

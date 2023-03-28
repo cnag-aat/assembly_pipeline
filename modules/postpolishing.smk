@@ -5,10 +5,13 @@ import subprocess
 
 module purging_workflow:
   snakefile: "../modules/purging.rules.smk"
+module scaffolding_workflow:
+  snakefile: "../modules/scaffolding_rules.smk"
 
 ##0. Define path for files and variables
 input_assemblies = {}
 postpolish = []
+scripts_dir = config["Inputs"]["scripts_dir"]
 if config["Parameters"]["run_purgedups"] == True:
   for i in config["Inputs"]["Assemblies for postpolishing"]:
     input_assemblies[working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/"] = i
@@ -21,6 +24,25 @@ if config["Parameters"]["run_purgedups"] == True:
     postpolish.append(i)
     postpolish.append( working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base_postpolish + ".purged.fa")
     minimap2[base_postpolish] = i
+
+tigmint_assemblies = {}
+if config["Parameters"]["run_tigmint"] == True:
+  for i in config["Inputs"]["Assemblies for postpolishing"]:
+    step = config["Inputs"]["Assemblies for postpolishing"][i]
+    base = os.path.splitext(os.path.basename(i))[0]
+    assembly = i
+    if config["Parameters"]["run_purgedups"] == True:
+      pstep = step.split('_')[0]
+      nstep = pstep.replace('s','')
+      cstep = float(nstep) + 1
+      step = "s0" + str(cstep) + "_" + step.split('_')[0].replace('s','p')
+      assembly =  working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base + ".purged.fa"
+
+    tigmint_assemblies[working_dir + step + "_Scaffolding_tigmint_ARKS_LINKS/"] = assembly
+    base = os.path.splitext(os.path.basename(assembly))[0]
+    postpolish.append( working_dir + step + "_Scaffolding_tigmint_ARKS_LINKS/" + base + ".10X.scaffolds.fa")
+    if not os.path.exists(working_dir +step + "_Scaffolding_tigmint_ARKS_LINKS/logs"):
+      os.makedirs(working_dir + step + "_Scaffolding_tigmint_ARKS_LINKS/logs")
 
 #1- Run purgedups 
 if config["Parameters"]["run_purgedups"] == True:
@@ -51,4 +73,37 @@ if config["Parameters"]["run_purgedups"] == True:
     conda:
       "../envs/purge_dups1.2.6.yaml"
     threads: config["Purge_dups"]["purgedups_cores"]
+
+#2- Run tigmint
+if config["Parameters"]["run_tigmint"] == True:
+  tigmint_opts = ""
+  if config["scaffolding_10X"]["tigmint_options"] != None:
+    tigmint_opts = config["scaffolding_10X"]["tigmint_options"]
+
+  if config["Inputs"]["processed_10X"] != None or len(config["Inputs"]["raw_10X"])>0:
+    r10X_dir = config["Inputs"]["processed_10X"]
+    r10X_reads = r10X_dir + "reads.illumina10X.barcoded.fastq.gz"
+
+  use rule scaffolding_10X from scaffolding_workflow with:
+    input:
+      assembly = lambda wildcards: tigmint_assemblies[wildcards.dir + "/"],
+      reads = r10X_reads
+    output:
+      scaffolded = "{dir}/{base_in}.10X.scaffolds.fa"
+    params:
+      base = "{base_in}",
+      dir = "{dir}",
+      opts = tigmint_opts,
+      scripts_dir = scripts_dir,
+      rmcmd =  lambda wildcards: "echo 'Removing bam file'; "  \
+             "rm $base_ass.$base_reads.sortbx.bam;" \
+             "echo 'Removing tmp dir'; " \
+             "rm -r {params.dir}/tigmint_with_ARKS/tmp;"
+             if keepfiles == False else "" 
+    log:
+      "{dir}/logs/" + str(date) + ".j%j.{base_in}.10X_scaffolding.out",
+      "{dir}/logs/" + str(date) + ".j%j.{base_in}.10X_scaffolding.err",
+    benchmark:
+      "{dir}/logs/" + str(date) + ".{base_in}.10X_scaffolding.benchmark.txt",
+    threads: config["scaffolding_10X"]["tigmint_cores"]
 

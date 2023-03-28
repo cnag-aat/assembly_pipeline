@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 # read depth histogram plot
+#https://github.com/dfguan/purge_dups/blob/master/scripts/hist_plot.py
+
 
 import matplotlib as mpl
 mpl.use('Agg')

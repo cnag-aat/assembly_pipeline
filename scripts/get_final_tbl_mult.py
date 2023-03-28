@@ -14,16 +14,24 @@ parser.add_argument("-b", "--buscos", nargs="+",  help="List with busco short su
 parser.add_argument("-m", "--merqs", nargs="+",  help="List with merqury results from different assemblies")
 
 args = parser.parse_args()
-print("assembly\tcN50\tcL50\tsN50\tsL50\ttotal_len\ttotal_seq\tBUSCOv5\tQV\tMerqury_completeness\tFalse_duplications")
+
 buscos_dict = {}
 merqs_dict = {}
 for file in args.buscos:
   base_elements = os.path.basename(file).split('.')[:-2]
   base = ".".join(base_elements)
   buscos_dict[base] = file
-for file in args.merqs:
-  base = os.path.basename(os.path.dirname(file))
-  merqs_dict[base] = os.path.dirname(file)
+
+if args.merqs != None:
+  for file in args.merqs:
+    base = os.path.basename(os.path.dirname(file))
+    merqs_dict[base] = os.path.dirname(file)
+else:
+  args.merqs = "n"
+   # print("hello")
+#  print("assembly\tcN50\tcL50\tsN50\tsL50\ttotal_len\ttotal_seq\tBUSCOv5\tQV")
+#else:
+print("assembly\tcN50\tcL50\tsN50\tsL50\ttotal_len\ttotal_seq\tBUSCOv5\tQV\tMerqury_completeness\tFalse_duplications")
 
 assemblies={}
 for file in args.stats:
@@ -41,23 +49,27 @@ for file in args.stats:
           sn50 = line.split('\t')[-1].rstrip()
         if line.startswith('Scaffold L50'):
           sl50 = line.split('\t')[-1].rstrip()
-        if line.startswith('Scaffold num_bp'):
+        if line.startswith('Scaffold num_bp\t'):
           len = line.split('\t')[-1].rstrip()
         if line.startswith('Scaffold num_seq'):
           seqs = line.split('\t')[-1].rstrip()
     with open (buscos_dict[base], 'r') as busco_file:
       for line in busco_file:
         if line.startswith('	C:'):
-          busco = line.split('\s+')[-1].rstrip()
-    merqdir = merqs_dict[base]
-    with open (merqdir + "/" + base + ".qv", 'r') as merq_file:
-      for line in merq_file:
-        qv = line.split('\t')[3]
-    with open (merqdir + "/" + base + ".completeness.stats", 'r') as merq_file:
-      for line in merq_file:
-        completeness = line.split('\t')[4].rstrip()
-    with open (merqdir + "/" + base + ".false_duplications.txt", 'r') as merq_file:
-      for line in merq_file:
-        dup = line.split('\t')[9].rstrip()
-    assemblies[base] = ""
-    print(base,cn50,cl50,sn50,sl50,len,seqs,busco, qv, completeness, dup, sep="\t")
+          busco = line.split('\s+')[-1].rstrip().replace("	C:","C:")
+    if base in merqs_dict:
+      merqdir = merqs_dict[base]
+      with open (merqdir + "/" + base + ".qv", 'r') as merq_file:
+        for line in merq_file:
+          qv = line.split('\t')[3]
+      with open (merqdir + "/" + base + ".completeness.stats", 'r') as merq_file:
+        for line in merq_file:
+          completeness = line.split('\t')[4].rstrip()
+      with open (merqdir + "/" + base + ".false_duplications.txt", 'r') as merq_file:
+        for line in merq_file:
+          dup = line.split('\t')[9].rstrip()
+      assemblies[base] = ""
+      print(base,cn50,cl50,sn50,sl50,len,seqs,busco,qv,completeness,dup, sep="\t")
+    else:
+      assemblies[base] = ""
+      print(base,cn50,cl50,sn50,sl50,len,seqs,busco, sep="\t")

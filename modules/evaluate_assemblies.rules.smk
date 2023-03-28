@@ -59,10 +59,34 @@ rule get_stats:
     "{params.scripts_dir}fastalength {input.assembly} | {params.scripts_dir}Nseries.pl > {output.nseries};"
     "{params.scripts_dir}fasta-stats.py -f {input.assembly} -s {output.stats} -r {output.gaps};"
 
+rule run_merqury:
+  input:
+    meryl_db = os.getcwd() + "/database.meryl",
+    assembly = os.getcwd() + "/assembly.fasta"
+  output:
+    completeness = os.getcwd() + "/merqury_run/assembly.completeness.stats",
+    hist = os.getcwd() + "/merqury_run/assembly.assembly.spectra-cn.hist",
+    false_dups = os.getcwd() + "/merqury_run/assembly.false_duplications.txt",
+    plots = [os.getcwd() + "/merqury_run/assembly.spectra-cn.ln.png", os.getcwd() + "/merqury_run/assembly.spectra-cn.fl.png", os.getcwd() + "/merqury_run/assembly.spectra-cn.st.png"]
+  params:
+    out_pref = "assembly",
+    directory = os.getcwd() + "/merqury_run",
+  log:
+    "logs/" + date + ".merqury.out",
+    "logs/" + date + ".merqury.err",
+  conda:
+    "../envs/merqury1.3.yaml"
+  threads: 4
+  shell:
+    "mkdir -p {params.directory}; cd {params.directory};"
+    "merqury.sh {input.meryl_db} {input.assembly} {params.out_pref};"
+    "$CONDA_PREFIX/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist;"
+    "$CONDA_PREFIX/share/merqury/eval/false_duplications.sh {output.hist} > {output.false_dups};"
+
 rule run_busco:
   input:
     assembly = os.getcwd() + "/assembly.fasta",
-    lineage = "scratch/groups/assembly/shared/databases/busco_v5/busco_v5_lineages/lineages/vertebrata_odb10"
+    lineage = "/scratch/groups/assembly/shared/databases/busco_v5/busco_v5_lineages/lineages/vertebrata_odb10"
   output:
     summary = os.getcwd() + "/busco/short_summary.txt",
     full = os.getcwd() + "/busco/full_table.tsv",
@@ -87,29 +111,6 @@ rule run_busco:
     "mv {params.out_path}{params.buscobase}/run_{params.odb}/full_table.tsv {output.full};"
     "{params.rmcmd}"
   
-rule run_merqury:
-  input:
-    meryl_db = os.getcwd() + "/database.meryl",
-    assembly = os.getcwd() + "/assembly.fasta"
-  output:
-    completeness = os.getcwd() + "/merqury_run/assembly.completeness.stats",
-    hist = os.getcwd() + "/merqury_run/assembly.assembly.spectra-cn.hist",
-    false_dups = os.getcwd() + "/merqury_run/assembly.false_duplications.txt",
-    plots = [os.getcwd() + "/merqury_run/assembly.spectra-cn.ln.png", os.getcwd() + "/merqury_run/assembly.spectra-cn.fl.png", os.getcwd() + "/merqury_run/assembly.spectra-cn.st.png"]
-  params:
-    out_pref = "assembly",
-    directory = os.getcwd() + "/merqury_run",
-  log:
-    "logs/" + date + ".merqury.out",
-    "logs/" + date + ".merqury.err",
-  conda:
-    "../envs/merqury1.3.yaml"
-  threads: 4
-  shell:
-    "mkdir -p {params.directory}; cd {params.directory};"
-    "merqury.sh {input.meryl_db} {input.assembly} {params.out_pref};"
-    "$CONDA_PREFIX/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist;"
-    "$CONDA_PREFIX/share/merqury/eval/false_duplications.sh {output.hist} > {output.false_dups};"
     
 rule align_ont:
   input:
@@ -144,6 +145,9 @@ rule align_illumina:
     "../envs/bwa-mem2.2.1.yaml"
   threads: 4
   shell:
+    "echo 'this should be in the .out file';"
+    ">&2 echo 'this should be in the .err file';"
+    "env;"
     "bwa-mem2 index {input.genome};"
     "bwa-mem2 mem -Y {params.options} -t {threads} {input.genome} {input.reads} | samtools view -Sb - | samtools sort -@ {threads} -o {output.mapping} -;"
     "samtools index {output.mapping};"

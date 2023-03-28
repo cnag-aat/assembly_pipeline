@@ -30,3 +30,37 @@ rule hypo:
       "echo 'Illumina coverage is: '$coverage;"
       "echo 'Running: hypo -r @short_reads.list.txt -d {input.genome} -b {input.sr_bam} -c '$coverage' -s {params.genome_size}  -t {threads} -o {output.polished} -p {params.proc} {params.opts} {input.lr_bam}';"
       "hypo -r @short_reads.list.txt -d {input.genome} -b {input.sr_bam} -c $coverage -s {params.genome_size}  -t {threads} -o {output.polished} -p {params.proc} {params.opts} {input.lr_bam};"
+
+rule nextpolish_lr:
+  input:
+    genome = "assembly.fasta",
+    bam =  "assembly_minimap2.bam"
+  output:
+    polished = "assembly.nextpolish_ont1.fasta"
+  params:
+    lrtype = "ont",
+    path = "NEXTPOLISH/v1.4.0/NextPolish"
+  envmodules:
+    "NextPolish/1.4.1-GCC-11.2.0"
+  threads: 12
+  shell:
+    "cd {wildcards.directory}nextpolish;"
+    "echo {input.bam} > lgs.fofn;"
+    "python {params.path}/lib/nextpolish2.py -g {input.genome} -p {threads} -l lgs.fofn -r {params.lrtype} > {output.polished};"
+
+rule nextpolish_sr:
+  input: 
+    genome = "assembly.fasta",
+    bam =  "assembly_bwa.bam"
+  output:
+    polished = "assembly.nextpolish_ont2.nextpolish_ill1.fasta",
+  params:
+    task = 1,
+    path = "NEXTPOLISH/v1.4.0/NextPolish"
+  envmodules:
+    "NextPolish/1.4.1-GCC-11.2.0"
+  threads: 12
+  shell:
+    "cd {wildcards.directory}nextpolish;"
+    "samtools faidx {input.genome};"
+    "python {params.path}/lib/nextpolish1.py -g {input.genome}  -p {threads} -s {input.bam} -t {params.task} > {output.polished};"

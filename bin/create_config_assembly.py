@@ -32,7 +32,7 @@ class CreateConfigurationFile(object):
         self.lr_type  = "nano-raw"                                                                #Type of long reads (options are flye read-type options)
         self.base_name = None                                                                     #Base name for the project
         self.species = None                                                                       #Name of the species to be assembled
-        self.genome_size = None							                  #Estimated genome size
+        self.genome_size = None							                                                      #Estimated genome size
         self.preprocess_ont_step = "02.1"                                                         #Step directory for preprocessing ont
         self.preprocess_10X_step = "02.2"
         self.preprocess_illumina_step = "02.2"
@@ -69,8 +69,8 @@ class CreateConfigurationFile(object):
 
         #LONGRANGER SPEC PARAMETERS
         self.longranger_qos = "normal"
-        self.longranger_time = "8:00:00"
-        self.longranger_queue = "main"
+        self.longranger_time = "12:00:00"
+        self.longranger_queue = "genD"
 
         #TRIMGALORE PARAMETERS
         self.trim_galore_opts = "--gzip -q 20 --paired --retain_unpaired"
@@ -80,19 +80,19 @@ class CreateConfigurationFile(object):
         self.trimgalore_qos = "normal"
         self.trimgalore_time = "3:00:00"
         self.trimgalore_queue = "genD"
-        self.trimgalore_mem = "100"
+        self.trimgalore_mem = "50000"
 
         #CONCAT READS SPEC PARAMETERS
         self.concat_reads_qos = "normal"
         self.concat_reads_time = "10:00:00"
         self.concat_reads_queue = "genD"
-        self.concat_reads_mem = "100"
+        self.concat_reads_mem = "5000"
 
         #NANOPLOT SPEC PARAMETERS
         self.nanoplot_qos = "normal"
         self.nanoplot_time = "6:00:00"
         self.nanoplot_queue = "genD"
-        self.nanoplot_mem = "100"
+        self.nanoplot_mem = "10000"
 
         #KRAKEN PARAMETERS
         self.kraken2_db = None  
@@ -110,20 +110,20 @@ class CreateConfigurationFile(object):
         self.build_meryl_qos = "normal"
         self.build_meryl_time = "6:00:00"
         self.build_meryl_queue = "genD"
-        self.build_meryl_mem = "1000"
+        self.build_meryl_mem = "50G"
 
         #CONCAT MERYL SPEC PARAMETERS
         self.concat_meryl_qos = "normal"
         self.concat_meryl_time = "6:00:00"
         self.concat_meryl_queue = "genD"
-        self.concat_meryl_mem = "1000"
+        self.concat_meryl_mem = "10000"
 
 
         #GENOMESCOPE2 SPEC PARAMETERS
         self.genomescope_qos = "short"
         self.genomescope_time = "1:00:00"
         self.genomescope_queue = "genD"
-        self.genomescope_mem = "100"
+        self.genomescope_mem = "100G"
 
         #INPUT PARAMETERS
         self.scripts_dir = os.path.dirname(sys.argv[0]) + "/../scripts/"                          #Directory with the different scripts for the pipeline
@@ -164,10 +164,10 @@ class CreateConfigurationFile(object):
         self.filtlong_qos = "normal"
         self.filtlong_time = "10:00:00"
         self.filtlong_queue = "genD"
-        self.filtlong_mem = "100"
+        self.filtlong_mem = "10000"
 
         #FLYE PARAMETERS
-        self.flye_cores = 72	                                                                  #Number of threads to run Flye
+        self.flye_cores = 128	                                                                  #Number of threads to run Flye
         self.flye_pol_it = 2				      			                  #Number of polishing iterations to use with FLYE
         self.other_flye_opts = " --scaffold "                                                     #include here genome size in pipeline											
 
@@ -175,10 +175,10 @@ class CreateConfigurationFile(object):
         self.flye_qos = "vlong"
         self.flye_time = "48:00:00"
         self.flye_queue = "genD"
-        self.flye_mem = 1000
+        self.flye_mem = "1000G"
 
         #NEXTDENOVO PARAMETERS
-        self.nextdenovo_cores = 72	                                                          #Number of threads to run nextdenovo        
+        self.nextdenovo_cores = 128	                                                          #Number of threads to run nextdenovo        
         self.nextdenovo_task = "all"
         self.nextdenovo_rewrite = "yes"
         self.nextdenovo_parallel_jobs = 18
@@ -198,19 +198,19 @@ class CreateConfigurationFile(object):
         self.nextdenovo_qos = "vlong"
         self.nextdenovo_time = "48:00:00"
         self.nextdenovo_queue = "genD"
-        self.nextdenovo_mem = "1000"
+        self.nextdenovo_mem = "1000G"
 
         #MINIMAP2 SPEC PARAMETERS
         self.minimap_qos = "normal"
         self.minimap_time = "6:00:00"
         self.minimap_queue = "genD"
-        self.minimap_mem = "100"
+        self.minimap_mem = "500G"
         
         #BWA SPEC PARAMETERS
         self.bwa_qos = "normal"
         self.bwa_time = "6:00:00"
         self.bwa_queue = "genD"
-        self.bwa_mem = "100"
+        self.bwa_mem = "1000"
 
         #HYPO PARAMETERS
         self.ill_cov = 0                                                                          #Approximate short read coverage for hypo
@@ -222,7 +222,7 @@ class CreateConfigurationFile(object):
         self.hypo_qos = "normal"
         self.hypo_time = "6:00:00"
         self.hypo_queue = "genD"
-        self.hypo_mem = "1000"
+        self.hypo_mem = "250G"
 
         #RACON PARAMETERS
         self.racon_dir = "/scratch/project/devel/aateam/src/RACON/v1.4.21_github/"
@@ -270,14 +270,15 @@ class CreateConfigurationFile(object):
         #NEXTPOLISH LR SPEC PARAMETERS
         self.nextpolish_lr_qos = "normal"
         self.nextpolish_lr_time = "6:00:00"
-        self.nextpolish_lr_queue = "main"
-
+        self.nextpolish_lr_queue = "genD"
+        self.nextpolish_lr_mem = "500"
+        
         #NEXTPOLISH SR SPEC PARAMETERS
         self.nextpolish_sr_qos = "normal"
         self.nextpolish_sr_time = "6:00:00"
-        self.nextpolish_sr_queue = "main"
-        self.nextpolish_sr_threads = self.nextpolish_cores
-
+        self.nextpolish_sr_queue = "genD"
+        self.nextpolish_sr_mem = "2000"
+        
         #PURGEDUPS PARAMETERS
         self.purgedups_cores = 8 
         self.calcuts_opts = None                                                                  #Adjusted values to run calcuts for purgedups
@@ -286,18 +287,17 @@ class CreateConfigurationFile(object):
         self.purgedups_qos = "normal"
         self.purgedups_time = "1:00:00"
         self.purgedups_queue = "genD"
-        self.purgedups_mem = "100"
+        self.purgedups_mem = "200G"
 
         #10X SCAFFOLDING PARAMETERS
-        self.tigmint_env = "/scratch/project/devel/aateam/src/TIGMINT/tigmint_conda_env/"         #conda environment with TIGMINT, ARCS and ARKS installed
         self.tigmint_opts = None                                                                  #Additional option to give to the 10X scaffolding step
         self.tigmint_cores = 12
 
         #10X SCAFFOLDING SPEC PARAMETERS
-        self.tigmint_qos = "normal"
+        self.tigmint_qos = "long"
         self.tigmint_time = "24:00:00"
-        self.tigmint_queue = "genB,main"
-        self.tigmint_threads = self.tigmint_cores    
+        self.tigmint_queue = "genD"
+        self.tigmint_mem = 1024    
 
         #FINALIZE PARAMETERS
         self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
@@ -310,24 +310,25 @@ class CreateConfigurationFile(object):
         self.stats_qos = "test"
         self.stats_time = "0:10:00"
         self.stats_queue = "genD"  
-        self.stats_mem = "100"
+        self.stats_mem = "1000"
         
         #BUSCO SPEC PARAMETERS
         self.busco_qos = "short"
         self.busco_time = "6:00:00"
         self.busco_queue = "genD"  
-        self.busco_mem = "100"
+        self.busco_mem = "50G"
 
         #MERQURY SPEC PARAMETERS
         self.merq_qos = "normal"
         self.merq_time = "3:00:00"
         self.merq_queue = "genD"
-        self.merq_mem = "100"          
+        self.merq_mem = "100G"          
 
         #FINALIZE SPEC PARAMETERS
         self.fin_qos = "short"
         self.fin_time = "2:00:00"
-        self.fin_queue = "genD" 
+        self.fin_queue = "genD"
+        self.fin_mem = "1000" 
 
         #WILDCARDS
         self.ONT_wildcards = None
@@ -621,7 +622,6 @@ class CreateConfigurationFile(object):
         """
         scaffold10X_group = parser.add_argument_group('Scaffold_with_10X')
         scaffold10X_group.add_argument('--tigmint-cores', type = int, dest="tigmint_cores", metavar="tigmint_cores", default=self.tigmint_cores, help='Number of threads to run the 10X scaffolding step. Default %s' % self.tigmint_cores)
-        scaffold10X_group.add_argument('--tigmint-env', dest="tigmint_env", metavar="tigmint_env", default = self.tigmint_env, help='Path to the conda environment whet Tigmint, ARKS and LINKS are installed. Default %s' % self.tigmint_env)
         scaffold10X_group.add_argument('--tigmint-opts', dest="tigmint_opts", metavar="tigmint_opts", default = self.tigmint_opts, help='Adjusted values to run the scaffolding with 10X reads.  Default %s' % self.tigmint_opts)
 
     def register_finalize(self, parser):
@@ -823,13 +823,12 @@ class CreateConfigurationFile(object):
         args.nextpolish_lr_qos =  self.nextpolish_lr_qos
         args.nextpolish_lr_time = self.nextpolish_lr_time 
         args.nextpolish_lr_queue = self.nextpolish_lr_queue
-
+        args.nextpolish_lr_mem = self.nextpolish_lr_mem
+        
         args.nextpolish_sr_qos =  self.nextpolish_sr_qos
         args.nextpolish_sr_time = self.nextpolish_sr_time 
         args.nextpolish_sr_queue = self.nextpolish_sr_queue
-        args.nextpolish_sr_threads = self.nextpolish_sr_threads + 4
-        if args.nextpolish_sr_threads > 24:
-          args.nextpolish_sr_threads = 24
+        args.nextpolish_sr_mem = self.nextpolish_sr_mem
 
         args.purgedups_qos =  self.purgedups_qos
         args.purgedups_time = self.purgedups_time 
@@ -839,7 +838,7 @@ class CreateConfigurationFile(object):
         args.tigmint_qos =  self.tigmint_qos
         args.tigmint_time = self.tigmint_time 
         args.tigmint_queue = self.tigmint_queue
-        args.tigmint_threads = self.tigmint_threads
+        args.tigmint_mem = self.tigmint_mem
 
 
         args.stats_qos =  self.stats_qos
@@ -860,6 +859,7 @@ class CreateConfigurationFile(object):
         args.fin_qos =  self.fin_qos
         args.fin_time = self.fin_time 
         args.fin_queue = self.fin_queue
+        args.fin_mem = self.fin_mem
 
         if gsize > 500:
           args.java_opts = "Xmx150g"
@@ -869,6 +869,8 @@ class CreateConfigurationFile(object):
           args.flye_qos = "marathon"
           args.flye_time = "150:00:00"
           args.flye_cores = 128
+          args.nextdenovo_qos = "marathon"
+          args.nextdenovo_time = "150:00:00"
           args.bwa_time = "24:00:00"
           args.bwa_qos = "long"
           args.minimap_time = "12:00:00"
@@ -919,8 +921,10 @@ class CreateConfigurationFile(object):
                 print (args.ONT_reads + " not found")
                 sys.exit(-1)
 
+        if args.merqury_db:
+          args.merqury_db = os.path.abspath(args.merqury_db)
         args.r10X_reads = {}
-        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.merqury_db or args.run_tigmint == True:
+        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True:
           if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
@@ -1002,7 +1006,6 @@ class CreateConfigurationFile(object):
                 else:
                   args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz') 
           if args.merqury_db:
-            args.merqury_db = os.path.abspath(args.merqury_db)
             if not os.path.exists(args.merqury_db):
               if args.meryl_k == None:
                 parser.print_help()
@@ -1084,15 +1087,8 @@ class CreateConfigurationFile(object):
           args.pilon_path = os.path.abspath(args.pilon_path)
         else:
           args.pilon_path =  os.path.abspath(self.pilon_path)
-        if not os.path.exists(args.pilon_path):
-          print (args.pilon_path + " not found")
-
-        if args.tigmint_env:
-          args.tigmint_env = os.path.abspath(args.tigmint_env)
-        else:
-          args.tigmint_env =  os.path.abspath(self.tigmint_env)
-        if not os.path.exists(args.tigmint_env):
-          print (args.tigmint_env + " not found")
+        # if not os.path.exists(args.pilon_path):
+        #   print (args.pilon_path + " not found")
 
         if args.busco_lineage:
           args.busco_lineage = os.path.abspath(args.busco_lineage)
@@ -1150,9 +1146,9 @@ class CreateConfigurationFile(object):
                 base_tmp = ""
               if args.nextpolish_ont_rounds > 0:
                 base_tmp+= "nextpolish_ont" + str(args.nextpolish_ont_rounds)
-              if base_tmp != "":
-                base_tmp += "."
               if args.nextpolish_ill_rounds > 0:
+                if base_tmp != "":
+                  base_tmp += "."
                 base_tmp += "nextpolish_ill" + str(args.nextpolish_ill_rounds)
               if base_tmp != "":
                 pol_bases["nextpolish"] = base_tmp
@@ -1163,9 +1159,9 @@ class CreateConfigurationFile(object):
                 pstep = path.split('/')[-2].split('_')[0]
                 
                 nstep = pstep.replace('s','')
-                cstep = float(nstep) + 1 + paths
+                #cstep = float(nstep) + 1 + paths
                 for p in pol_bases:
-                  cstep = float(nstep) + 1 + paths
+                  cstep = round(float(nstep) + 1 + paths,1)
                   args.assemblies_cur[args.assemblies[m] + p + "/" + bpol + "." +  pol_bases[p] + ".fasta"] = "s0" + str(cstep) + "_p" + nstep
                   paths += 0.1
 
@@ -1394,7 +1390,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.filtlongSpecParameters["name"] = "{rule}_s" + args.preprocess_ont_step 
+        self.filtlongSpecParameters["name"] = "{rule}_{base}_s" + args.preprocess_ont_step 
         self.filtlongSpecParameters["qos"] = args.filtlong_qos
         self.filtlongSpecParameters["time"] = args.filtlong_time
         self.filtlongSpecParameters["mem"] = args.filtlong_mem
@@ -1587,6 +1583,7 @@ class CreateConfigurationFile(object):
         self.nextpolishlrSpecParameters["qos"] = args.nextpolish_lr_qos
         self.nextpolishlrSpecParameters["time"] = args.nextpolish_lr_time
         self.nextpolishlrSpecParameters["queue"] = args.nextpolish_lr_queue
+        self.nextpolishlrSpecParameters["mem"] = args.nextpolish_lr_mem
         self.allParameters ["nextpolish_lr"] = self.nextpolishlrSpecParameters
 
     def storenextpolishsrSpecParameters(self,args):
@@ -1598,7 +1595,7 @@ class CreateConfigurationFile(object):
         self.nextpolishsrSpecParameters["qos"] = args.nextpolish_sr_qos
         self.nextpolishsrSpecParameters["time"] = args.nextpolish_sr_time
         self.nextpolishsrSpecParameters["queue"] = args.nextpolish_sr_queue
-        self.nextpolishsrSpecParameters["threads"] = args.nextpolish_sr_threads
+        self.nextpolishsrSpecParameters["mem"] = args.nextpolish_sr_mem
         self.allParameters ["nextpolish_sr"] = self.nextpolishsrSpecParameters
 
     def storePurgedupsParameters(self,args):
@@ -1629,7 +1626,6 @@ class CreateConfigurationFile(object):
         args -- set of parsed arguments
         """
         self.scaffold10XParameters["tigmint_cores"] = args.tigmint_cores
-        self.scaffold10XParameters["tigmint_env"] = args.tigmint_env
         self.scaffold10XParameters["tigmint_options"] = args.tigmint_opts
         self.allParameters ["scaffolding_10X"] = self.scaffold10XParameters
 
@@ -1642,6 +1638,7 @@ class CreateConfigurationFile(object):
         self.scaffold10XSpecParameters["qos"] = args.tigmint_qos
         self.scaffold10XSpecParameters["time"] = args.tigmint_time
         self.scaffold10XSpecParameters["queue"] = args.tigmint_queue
+        self.scaffold10XSpecParameters["mem"] = args.tigmint_mem
         self.allParameters ["scaffolding_10X"] = self.scaffold10XSpecParameters
 
     def storeFinalizeParameters(self,args):
@@ -1701,6 +1698,7 @@ class CreateConfigurationFile(object):
         self.finSpecParameters["qos"] = args.fin_qos
         self.finSpecParameters["time"] = args.fin_time
         self.finSpecParameters["queue"] = args.fin_queue
+        self.finSpecParameters["mem"] = args.fin_mem
         self.allParameters ["finalize"] = self.finSpecParameters
 
     def storeget_reportSpecParameters(self,args):
@@ -1742,6 +1740,8 @@ class CreateConfigurationFile(object):
             nextdenovo_config.set('General', 'input_type', 'raw')
           else:
             nextdenovo_config.set('General', 'input_type', 'corrected')
+        elif re.search("hifi", args.lr_type):
+          nextdenovo_config.set('General', 'read_type', 'hifi')
         else:
           print ("Need to select proper read type for running Nextdenovo")
 

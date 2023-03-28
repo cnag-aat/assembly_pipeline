@@ -19,30 +19,22 @@ rule scaffolding_10X:
   output:
     scaffolded = "flye_filtlong.assembly.hypo2.purged.10X.scaffolds.fa"
   params:
-    env = "/scratch/project/devel/aateam/src/TIGMINT/tigmint_conda_env/",
     opts = "",
-    dir = os.getcwd()
-  log:
-    "logs/" + str(date) + ".10X_scaffolding.out",
-    "logs/" + str(date) + ".10X_scaffolding.err"
+    dir = os.getcwd(),
+    rmcmd = "",
+    scripts = "../scripts/"
   threads: 24
-  run:
-    shell(
-      "module purge; source ~jgomez/init_shell.sh; conda activate {params.env};"
+  conda:
+    "../envs/tigmint1.2.6_arcs1.2.4.yaml"
+  shell:
       "base_ass=$(basename {input.assembly} .fa);"
       "base_reads=$(basename {input.reads} .fastq.gz);"
-      "mkdir -p {params.dir}/tigmint_with_ARKS;"
+      "mkdir -p {params.dir}/tigmint_with_ARKS/tmp;"
       "cd {params.dir}/tigmint_with_ARKS;"
       "ln -s {input.assembly} $base_ass.fa;"
       "ln -s {input.reads} $base_reads.fq.gz;"
-      "arcs-make arks-with-tigmint draft=$base_ass reads=$base_reads {params.opts} t={threads};"
-      "sed \'s/,/ /\' {params.dir}/tigmint_with_ARKS/$base_ass_*.scaffolds.fa |FastaToTbl | TblToFasta > {output.scaffolded};"
-      "conda deactivate;"
-    )
-    if keepfiles == False:
-      shell(
-        "cd {params.dir}/tigmint_with_ARKS;"
-        "base_ass=$(basename {input.assembly} .fa);"
-        "base_reads=$(basename {input.reads} .fastq.gz);"
-        "rm $base_ass.$base_reads.sortbx.bam;"
-      )
+      "TMPDIR={params.dir}/tigmint_with_ARKS/tmp;"
+      "echo \"Tmpdir is $TMPDIR\";"
+      "tigmint-make arcs draft=$base_ass reads=$base_reads {params.opts} t={threads};"
+      "sed \'s/,/ /\' {params.dir}/tigmint_with_ARKS/$base_ass_*.scaffolds.fa | {params.scripts_dir}FastaToTbl | {params.scripts_dir}TblToFasta > {output.scaffolded};"
+      "{params.rmcmd}"

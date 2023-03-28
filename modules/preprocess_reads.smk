@@ -65,6 +65,29 @@ if config["Inputs"]["illumina_dir"] and config["Wildcards"]["illumina_wildcards"
     for file in illumina_list:
       fastqs["illumina." + i].append(illumina_processed + file + ".trimmed." + i)
 
+r10X_reads = config["Inputs"]["ILLUMINA_10X"]
+longranger_inputs = {}
+longranger_dir = {}
+if config["Inputs"]["processed_10X"] != None or len(config["Inputs"]["raw_10X"])>0:
+  r10X_list = config["Wildcards"]["10X_wildcards"].split(',')
+  r10X_dir = config["Inputs"]["processed_10X"]
+
+  if len(config["Inputs"]["raw_10X"]) >0:
+    for d in config["Inputs"]["raw_10X"]:
+      l = config["Inputs"]["raw_10X"][d].split(',')
+      for i in l:
+        #print (d, i)
+        longranger_inputs[i] = i
+        longranger_dir[i] = d
+  extensions = ["barcoded.fastq.gz"]
+  r10X_reads = r10X_dir + "reads.illumina10X.barcoded.fastq.gz"
+  if not os.path.exists(r10X_dir + "logs/"):
+    os.makedirs(r10X_dir + "logs/")
+  for i in extensions:
+    fastqs["illumina10X." + i] = []
+    for file in r10X_list:
+      fastqs["illumina10X." + i].append(r10X_dir + file + ".lr." + i)
+
 if config["Parameters"]["run_kraken2"] == True:
   dbname = os.path.basename(config["Kraken2"]["database"])
 
@@ -84,7 +107,15 @@ if config["Parameters"]["run_kraken2"] == True:
     logs= ill_out_dir + "Kraken/"+dbname+"/illumina_"+dbname+"_logs"
     if not os.path.exists(logs):
       os.makedirs(logs)
-    
+  
+  if r10X_reads != None:
+    kraken_ins[r10X_dir + "Kraken/"+dbname+"/10X_"+dbname] = []
+    kraken_ins[r10X_dir + "Kraken/"+dbname+"/10X_"+dbname].append(pe1_reads)
+    kraken_ins[r10X_dir + "Kraken/"+dbname+"/10X_"+dbname].append(pe2_reads)
+    logs= r10X_dir + "Kraken/"+dbname+"/10X_"+dbname+"_logs"
+    if not os.path.exists(logs):
+      os.makedirs(logs)
+
 genomescope_dir = ""
 if config["Finalize"]["Merqury db"]:
   genomescope_dir = os.path.dirname(config["Finalize"]["Merqury db"]) + "/genomescope2_k" + str(config["Finalize"]["Meryl K"])
@@ -102,6 +133,12 @@ if config["Finalize"]["Merqury db"]:
       for e in extensions:
         reads_loc[i + e] = illumina_processed + i + e
         meryl_dbs.append(i + e)
+  elif config["Inputs"]["processed_10X"] != None:
+    extensions = [".lr.barcoded.fastq.gz"]
+    for i in r10X_list:
+      for e in extensions:
+        reads_loc[i + e] = r10X_dir + i + e
+        meryl_dbs.append(i + e)
   else:
     if pe1_reads != None:
       reads_loc[os.path.basename(pe1_reads)] = pe1_reads
@@ -109,7 +146,10 @@ if config["Finalize"]["Merqury db"]:
     if pe2_reads != None:
       reads_loc[os.path.basename(pe2_reads)] = pe2_reads
       meryl_dbs.append(os.path.basename(pe2_reads))
-  
+    if r10X_reads != None:
+      reads_loc[os.path.basename(r10X_reads)] = r10X_reads
+      meryl_dbs.append(os.path.basename(r10X_reads))
+
 extra_filtlong_opts = config["Filtlong"]["options"]
 if extra_filtlong_opts == None:
   extra_filtlong_opts = ""
@@ -181,68 +221,91 @@ use rule filtlong from preprocess_workflow with:
     '../envs/filtlong0.2.1.yaml'
   threads: config["Parameters"]["concat_cores"]  
 
-#if config["Finalize"]["Merqury db"] and not os.path.exists(config["Finalize"]["Merqury db"]):
-use rule build_meryl_db from preprocess_workflow with:
-  input:
-    fastq = lambda wildcards: reads_loc[wildcards.db]
-  output:
-    out_dir = directory(meryl_loc + "{db}.meryl")  
-  params:
-    kmer = config["Finalize"]["Meryl K"],
-  log:
-    logs_dir + str(date) + ".j%j.build_meryl.{db}.out",
-    logs_dir + str(date) + ".j%j.build_meryl.{db}.err" 
-  benchmark:
-    logs_dir + str(date) + ".build_meryl.{db}.benchmark.txt"
-  conda:
-    "../envs/merqury1.3.yaml"
-  threads:
-    config["Finalize"]["Meryl threads"]
+if len(longranger_inputs) > 0:
 
-use rule concat_meryl from preprocess_workflow with:
-  input:
-    input_run = lambda wildcards: expand(rules.build_meryl_db.output.out_dir, db=meryl_dbs)
-  output:
-    meryl_all = directory(config["Finalize"]["Merqury db"]),
-    histogram = os.path.dirname(config["Finalize"]["Merqury db"]) + "/meryl.hist"
-  params:
-    kmer = config["Finalize"]["Meryl K"],
-  log:
-    logs_dir + str(date) + ".j%j.concat_meryl.out",
-    logs_dir + str(date) + ".j%j.concat_meryl.err" 
-  benchmark:
-    logs_dir + str(date) + ".concat_meryl.benchmark.txt" 
-  threads:
-    config["Finalize"]["Meryl threads"]
+  use rule long_ranger from preprocess_workflow with: 
+    input: 
+      mkfastq_dir =  lambda wildcards: longranger_dir[wildcards.bname]
+    output:
+      fastq_out = r10X_dir + "{bname}.lr.barcoded.fastq.gz",
+      sum_out = r10X_dir + "{bname}.lr.barcoded.summary.csv"
+    params:
+      path = config["Parameters"]["longranger_path"],
+      outdir = r10X_dir,
+      sample = lambda wildcards: longranger_inputs[wildcards.bname],
+      rmcmd =  lambda wildcards: "echo 'Removing longranger run dir: " + \
+               r10X_dir + longranger_inputs[wildcards.bname] + "'; rm -r " +\
+               r10X_dir + longranger_inputs[wildcards.bname] if keepfiles == False else "" 
+    log:
+      r10X_dir + "logs/" + str(date) + ".j%j.longranger.{bname}.out",
+      r10X_dir + "logs/" + str(date) + ".j%j.longranger.{bname}.err"
+    benchmark:
+      r10X_dir + "logs/" + str(date) + ".longranger.{bname}.benchmark.txt",
+    threads: config["Parameters"]["longranger_cores"] 
 
-use rule genomescope2 from preprocess_workflow with:
-  input:
-    histogram = os.path.dirname(config["Finalize"]["Merqury db"]) + "/meryl.hist"
-  output:
-    outdir = directory(genomescope_dir),
-    summary =  report(genomescope_dir + "/summary.txt",
-               caption = "../report/genomescope.rst",
-               category = "Process reads",
-               subcategory = "Illumina"),
-    log_plot =  report (genomescope_dir + "/log_plot.png",
-               caption = "../report/genomescope.rst",
-               category = "Process reads",
-               subcategory = "Illumina"),
-    transformed_linear = report (genomescope_dir + "/transformed_linear_plot.png",
-               caption = "../report/genomescope.rst",
-               category = "Process reads",
-               subcategory = "Illumina")
-  params:
-    ploidy = config["Parameters"]["ploidy"],
-    kmer =  config["Finalize"]["Meryl K"],
-    opts = extra_genomescope_opts
-  conda:
-    "../envs/genomescope2.0.yaml"
-  log:
-    logs_dir + str(date) + ".j%j.genomescope.out",
-    logs_dir + str(date) + ".j%j.genomescope.err" 
-  benchmark:
-    logs_dir + str(date) + ".genomescope.benchmark.txt" 
+if config["Finalize"]["Merqury db"] and not os.path.exists(config["Finalize"]["Merqury db"]):
+  use rule build_meryl_db from preprocess_workflow with:
+    input:
+      fastq = lambda wildcards: reads_loc[wildcards.db]
+    output:
+      out_dir = directory(meryl_loc + "{db}.meryl")  
+    params:
+      kmer = config["Finalize"]["Meryl K"],
+    log:
+      logs_dir + str(date) + ".j%j.build_meryl.{db}.out",
+      logs_dir + str(date) + ".j%j.build_meryl.{db}.err" 
+    benchmark:
+      logs_dir + str(date) + ".build_meryl.{db}.benchmark.txt"
+    conda:
+      "../envs/merqury1.3.yaml"
+    threads:
+      config["Finalize"]["Meryl threads"]
+
+  use rule concat_meryl from preprocess_workflow with:
+    input:
+      input_run = lambda wildcards: expand(rules.build_meryl_db.output.out_dir, db=meryl_dbs)
+    output:
+      meryl_all = directory(config["Finalize"]["Merqury db"]),
+      histogram = os.path.dirname(config["Finalize"]["Merqury db"]) + "/meryl.hist"
+    params:
+      kmer = config["Finalize"]["Meryl K"],
+    log:
+      logs_dir + str(date) + ".j%j.concat_meryl.out",
+      logs_dir + str(date) + ".j%j.concat_meryl.err" 
+    benchmark:
+      logs_dir + str(date) + ".concat_meryl.benchmark.txt" 
+    threads:
+      config["Finalize"]["Meryl threads"]
+
+if config["Finalize"]["Merqury db"]:
+  use rule genomescope2 from preprocess_workflow with:
+    input:
+      histogram = os.path.dirname(config["Finalize"]["Merqury db"]) + "/meryl.hist"
+    output:
+      outdir = directory(genomescope_dir),
+      summary =  report(genomescope_dir + "/summary.txt",
+                 caption = "../report/genomescope.rst",
+                 category = "Process reads",
+                 subcategory = "Illumina"),
+      log_plot =  report (genomescope_dir + "/log_plot.png",
+                 caption = "../report/genomescope.rst",
+                 category = "Process reads",
+                 subcategory = "Illumina"),
+      transformed_linear = report (genomescope_dir + "/transformed_linear_plot.png",
+                 caption = "../report/genomescope.rst",
+                 category = "Process reads",
+                 subcategory = "Illumina")
+    params:
+      ploidy = config["Parameters"]["ploidy"],
+      kmer =  config["Finalize"]["Meryl K"],
+      opts = extra_genomescope_opts
+    conda:
+      "../envs/genomescope2.0.yaml"
+    log:
+      logs_dir + str(date) + ".j%j.genomescope.out",
+      logs_dir + str(date) + ".j%j.genomescope.err" 
+    benchmark:
+      logs_dir + str(date) + ".genomescope.benchmark.txt" 
 
 
 #2. EVALUATE INPUT READS
