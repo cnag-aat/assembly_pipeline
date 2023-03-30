@@ -4,7 +4,7 @@ import re
 import subprocess
 
 module eval_workflow:
-  snakefile: "../modules/evaluate_assemblies.rules.smk"
+  snakefile: "../modules/evaluate_assemblies.rules.dev.smk"
 
 ##0. Define path for files and variables
 
@@ -27,6 +27,7 @@ StatsFiles = []
 MerqurySummaries = []
 MerquryQV = []
 MerquryDups = []
+lrtype = config["Parameters"]["lr_type"]
 
 for file in assemblies:
   ass_base = os.path.splitext(os.path.basename(file))[0]
@@ -88,7 +89,8 @@ if len(minimap2) > 0:
     output:
       mapping = "{directory}/mappings/{name}_{ext}"
     params:
-      align_opts = lambda wildcards:"ax map-ont" if wildcards.ext == "minimap2.bam" else "x map-ont",
+      align_opts = lambda wildcards:"ax" if wildcards.ext == "minimap2.bam" else "x",
+      type = lambda wildcards:"map-ont" if lrtype == "nano-raw" else "map-hifi",
       tmp = "{directory}/mappings/{name}_{ext}.tmp",
       compress_cmd = lambda wildcards : "samtools view -Sb " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext + ".tmp | " \
                      "samtools sort -@ " + str(config["Parameters"]["minimap2_cores"]) +" -o " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext +";" +\

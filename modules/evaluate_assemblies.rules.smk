@@ -119,7 +119,9 @@ rule align_ont:
   output:
     mapping = "minimap2.bam"
   params:
-    align_opts = "ax map-ont",
+   # align_opts = "ax map-ont",
+    align_opts = "ax",
+    type = "map-ont",
     tmp = "minimap2.sam",
     compress_cmd = lambda wildcards : "samtools view -Sb " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext + ".tmp | " \
                    "samtools sort -@ " + str(config["Parameters"]["minimap2_cores"]) +" -o " + wildcards.directory + "/mappings/" + wildcards.name + "_" + wildcards.ext +";" +\
@@ -128,7 +130,7 @@ rule align_ont:
     "../envs/minimap2.24.yaml"
   threads: 4
   shell:
-    "minimap2 -{params.align_opts} -t {threads} {input.genome} {input.reads} > {params.tmp};"
+    "minimap2 -{params.align_opts} {params.type} -t {threads} {input.genome} {input.reads} > {params.tmp};"
     "{params.compress_cmd};"
     "rm {params.tmp};"
 
