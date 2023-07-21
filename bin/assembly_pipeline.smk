@@ -5,18 +5,13 @@ import subprocess
 
 report: "../report/workflow.rst"
 
-
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
 
 working_dir = config["Outputs"]["base_dir"]
-#shell.prefix("TMPDIR=" + working_dir + "tmp/; echo tmpdir is set to $TMPDIR;")
 scripts_dir = config["Inputs"]["scripts_dir"]
 logs_dir = working_dir + "logs/"
 if not os.path.exists(logs_dir):
   os.makedirs(logs_dir)
-
-#if not os.path.exists(working_dir + "tmp/"):
-#  os.makedirs(working_dir + "tmp/")
 
 keepfiles = config["Parameters"]["keep_intermediate"]
 base = config["Parameters"]["base_name"]
@@ -35,7 +30,6 @@ krakendb = ""
 if config["Parameters"]["run_kraken2"] == True:
   krakendb = os.path.basename(config["Kraken2"]["database"])
 
-if config["Parameters"]["run_kraken2"] == True:
   if config["Inputs"]["processed_illumina"]:
     targets.append(os.path.dirname(os.path.dirname(config["Inputs"]["processed_illumina"]))+ "/Kraken/" + krakendb + "/illumina_" + krakendb+".kraken2.report.txt")
   if config["Inputs"]["processed_10X"]:
@@ -79,6 +73,7 @@ rule all:
     logs_dir + str(date) + ".j%j.rule_all.out",
     logs_dir + str(date) + ".j%j.rule_all.err"
 
+#2- Calls subworkflows
 include: "../modules/preprocess_reads.smk"
 include: "../modules/run_assemblies.smk"
 include: "../modules/polish_assemblies.v04.smk"

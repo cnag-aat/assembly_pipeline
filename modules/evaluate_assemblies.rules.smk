@@ -96,11 +96,6 @@ rule run_busco:
     buscobase = "assembly",
     rmcmd = "echo 'Removing BUSCO run dir: busco'; \
             rm -r busco;" if keepfiles == True else "" 
-  log:
-    "logs/" + str(date) + ".busco.out",
-    "logs/" + str(date) + ".busco.err",
-  benchmark:
-    "{dir}/logs/" + str(date) + ".busco.benchmark.txt",
   conda:
     '../envs/busco5.4.0.yaml'
   threads: 8

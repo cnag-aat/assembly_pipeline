@@ -14,6 +14,8 @@ scripts_dir = config["Inputs"]["scripts_dir"]
 keepfiles = config["Parameters"]["keep_intermediate"]
 base = config["Parameters"]["base_name"]
 
+assembled = []
+
 ##0. Define path for files and variables
 
 flye_dir = config["Outputs"]["flye_dir"]
@@ -21,10 +23,12 @@ nextdenovo_dir = config["Outputs"]["nextdenovo_dir"]
 flye_assembly = config["Outputs"]["flye_out"]
 nextdenovo_assembly = config["Outputs"]["nextdenovo_out"]
 
+
 ONT_filtered = config["Inputs"]["ONT_filtered"] 
 
 ##1. Run assemblers
 if config["Parameters"]["run_flye"] == True:
+  assembled.append(flye_assembly)
   use rule flye from assembly_workflow with:
     input:
       reads = ONT_filtered,
@@ -49,6 +53,7 @@ if config["Parameters"]["run_flye"] == True:
     threads: config["Flye"]["Flye cores"]
 
 if config["Parameters"]["run_nextdenovo"] == True:
+ assembled.append(nextdenovo_assembly)
  use rule nextdenovo from assembly_workflow with:
   input:
     reads = ONT_filtered

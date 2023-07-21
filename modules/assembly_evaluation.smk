@@ -4,7 +4,7 @@ import re
 import subprocess
 
 module eval_workflow:
-  snakefile: "../modules/evaluate_assemblies.rules.dev.smk"
+  snakefile: "../modules/evaluate_assemblies.rules.smk"
 
 ##0. Define path for files and variables
 
@@ -18,8 +18,9 @@ if config["Finalize"]["final Evaluations"] == True:
     assemblies.append(i)   
   for i in postpolish:
     assemblies.append(i)
+  for i in assembled:
+    assemblies.append(i)
 
-#print (assemblies)
 in_files = {}
 evals_dir = {}
 BuscoSummaries = []

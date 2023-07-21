@@ -71,6 +71,7 @@ class CreateConfigurationFile(object):
         self.longranger_qos = "normal"
         self.longranger_time = "12:00:00"
         self.longranger_queue = "genD"
+        self.longranger_mem = "50G"
 
         #TRIMGALORE PARAMETERS
         self.trim_galore_opts = "--gzip -q 20 --paired --retain_unpaired"
@@ -175,7 +176,7 @@ class CreateConfigurationFile(object):
         self.flye_qos = "vlong"
         self.flye_time = "48:00:00"
         self.flye_queue = "genD"
-        self.flye_mem = "1000G"
+        self.flye_mem = "900G"
 
         #NEXTDENOVO PARAMETERS
         self.nextdenovo_cores = 128	                                                          #Number of threads to run nextdenovo        
@@ -198,7 +199,7 @@ class CreateConfigurationFile(object):
         self.nextdenovo_qos = "vlong"
         self.nextdenovo_time = "48:00:00"
         self.nextdenovo_queue = "genD"
-        self.nextdenovo_mem = "1000G"
+        self.nextdenovo_mem = "900G"
 
         #MINIMAP2 SPEC PARAMETERS
         self.minimap_qos = "normal"
@@ -210,7 +211,7 @@ class CreateConfigurationFile(object):
         self.bwa_qos = "normal"
         self.bwa_time = "6:00:00"
         self.bwa_queue = "genD"
-        self.bwa_mem = "1000"
+        self.bwa_mem = "100G"
 
         #HYPO PARAMETERS
         self.ill_cov = 0                                                                          #Approximate short read coverage for hypo
@@ -297,7 +298,7 @@ class CreateConfigurationFile(object):
         self.tigmint_qos = "long"
         self.tigmint_time = "24:00:00"
         self.tigmint_queue = "genD"
-        self.tigmint_mem = 1024    
+        self.tigmint_mem = "100G"   
 
         #FINALIZE PARAMETERS
         self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
@@ -736,7 +737,8 @@ class CreateConfigurationFile(object):
 
         args.longranger_qos =  self.longranger_qos
         args.longranger_time = self.longranger_time 
-        args.longranger_queue = self.longranger_queue     
+        args.longranger_queue = self.longranger_queue   
+        args.longranger_mem = self.longranger_mem       
 
         args.trimgalore_qos = self.trimgalore_qos
         args.trimgalore_time = self.trimgalore_time
@@ -767,7 +769,6 @@ class CreateConfigurationFile(object):
         args.concat_meryl_time = self.concat_meryl_time 
         args.concat_meryl_queue = self.concat_meryl_queue
         args.concat_meryl_mem = self.concat_meryl_mem
-
 
         args.genomescope_qos =  self.genomescope_qos
         args.genomescope_time = self.genomescope_time 
@@ -886,7 +887,7 @@ class CreateConfigurationFile(object):
           args.fin_time = "0:30:00"
           args.nextdenovo_qos = "long"
           args.nextdenovo_time = "24:00:00"
-          args.nextdenovo_mem = 100
+          args.nextdenovo_mem = "100G"
           args.flye_cores = 20
 
         if args.run_flye == True or args.run_nextdenovo == True or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups != None:
@@ -923,8 +924,9 @@ class CreateConfigurationFile(object):
 
         if args.merqury_db:
           args.merqury_db = os.path.abspath(args.merqury_db)
+        
         args.r10X_reads = {}
-        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True:
+        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True or args.merqury_db:
           if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
@@ -1268,6 +1270,7 @@ class CreateConfigurationFile(object):
         self.longrangerSpecParameters["qos"] = args.longranger_qos
         self.longrangerSpecParameters["time"] = args.longranger_time
         self.longrangerSpecParameters["queue"] = args.longranger_queue
+        self.longrangerSpecParameters["mem"] = args.longranger_mem
         self.allParameters ["long_ranger"] = self.longrangerSpecParameters
 
     def storeTrimgaloreParameters(self,args):

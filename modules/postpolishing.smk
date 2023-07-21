@@ -94,11 +94,11 @@ if config["Parameters"]["run_tigmint"] == True:
       base = "{base_in}",
       dir = "{dir}",
       opts = tigmint_opts,
-      scripts_dir = scripts_dir,
+      scripts = scripts_dir,
       rmcmd =  lambda wildcards: "echo 'Removing bam file'; "  \
-             "rm $base_ass.$base_reads.sortbx.bam;" \
+            # "rm $base_ass.$base_reads.sortbx.bam;" \
              "echo 'Removing tmp dir'; " \
-             "rm -r {params.dir}/tigmint_with_ARKS/tmp;"
+             "rm -r $TMPDIR;"
              if keepfiles == False else "" 
     log:
       "{dir}/logs/" + str(date) + ".j%j.{base_in}.10X_scaffolding.out",

@@ -36,5 +36,5 @@ rule scaffolding_10X:
       "TMPDIR={params.dir}/tigmint_with_ARKS/tmp;"
       "echo \"Tmpdir is $TMPDIR\";"
       "tigmint-make arcs draft=$base_ass reads=$base_reads {params.opts} t={threads};"
-      "sed \'s/,/ /\' {params.dir}/tigmint_with_ARKS/$base_ass_*.scaffolds.fa | {params.scripts_dir}FastaToTbl | {params.scripts_dir}TblToFasta > {output.scaffolded};"
+      "sed \'s/,/ /\' {params.dir}/tigmint_with_ARKS/$base_ass_*.scaffolds.fa | {params.scripts}FastaToTbl | {params.scripts}TblToFasta > {output.scaffolded};"
       "{params.rmcmd}"

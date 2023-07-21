@@ -114,7 +114,6 @@ rule filtlong:
   output:
     outreads = "ont_reads.filtlong.fastq.gz"
   params:
-#    path = "/scratch/project/devel/aateam/bin",
     minlen = 1000,
     min_mean_q = 80,
     opts = ""
