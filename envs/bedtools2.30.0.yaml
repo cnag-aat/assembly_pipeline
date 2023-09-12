@@ -1,0 +1,23 @@
+name: /software/assembly/conda/bedtools2.30.0
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=conda_forge
+  - _openmp_mutex=4.5=2_gnu
+  - bedtools=2.30.0=h468198e_3
+  - bzip2=1.0.8=h7f98852_4
+  - ca-certificates=2022.12.7=ha878542_0
+  - libgcc-ng=12.2.0=h65d4601_19
+  - libgomp=12.2.0=h65d4601_19
+  - libpng=1.6.39=h753d276_0
+  - libstdcxx-ng=12.2.0=h46fd767_19
+  - libuuid=2.32.1=h7f98852_1000
+  - libzlib=1.2.13=h166bdaf_4
+  - mysql-connector-c=6.1.11=h6eb9d5d_1007
+  - openssl=1.1.1t=h0b41bf4_0
+  - ucsc-bedgraphtobigwig=377=ha8a8165_3
+  - xz=5.2.6=h166bdaf_0
+  - zlib=1.2.13=h166bdaf_4
+prefix: /software/assembly/conda/bedtools2.30.0

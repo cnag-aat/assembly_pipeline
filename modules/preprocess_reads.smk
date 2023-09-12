@@ -158,6 +158,26 @@ extra_genomescope_opts = config["Parameters"]["genomescope_additional_options"]
 if extra_genomescope_opts == None:
   extra_genomescope_opts = ""
 
+if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
+  hic_readsd = config["Inputs"]["HiC_dir"]
+  hic_list = config["Wildcards"]["HiC_wildcards"].split(',')
+
+  if len(hic_list) > 1:
+    hic_concatd = config['Outputs']['concat_HiC_dir']  
+    if not os.path.exists(hic_concatd + "logs/"):
+      os.makedirs(hic_concatd + "logs/")
+  
+    extensions = ["1.fastq.gz", "2.fastq.gz"]
+    for i in extensions:
+      fastqs["hic."+i] = []
+      for file in hic_list:
+        fastqs["hic."+i].append(hic_readsd + file + "." + i)  
+    hic_pe1 = hic_concatd + "reads.hic.1.fastq.gz"
+    hic_pe2 = hic_concatd + "reads.hic.2.fastq.gz"
+  else:
+    hic_pe1 = hic_readsd + hic_list[0] + ".1.fastq.gz"
+    hic_pe2 = hic_readsd + hic_list[0] + ".2.fastq.gz"
+
 #1. Preprocess reads
 
 if config["Inputs"]["processed_illumina"] != None and config["Inputs"]["illumina_dir"] != None:
@@ -203,23 +223,24 @@ if len(fastqs) > 0:
       '../envs/ass_base.yaml'
     threads: config["Parameters"]["concat_cores"]  
 
-use rule filtlong from preprocess_workflow with:
-  input:
-    reads = ont_reads
-  output:
-    outreads = ONT_filtered
-  params:
-    minlen = config["Filtlong"]["Filtlong minlen"],
-    min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
-    opts = extra_filtlong_opts
-  log:
-    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.out",
-    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.err"
-  benchmark:
-    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.benchmark.txt"
-  conda:
-    '../envs/filtlong0.2.1.yaml'
-  threads: config["Parameters"]["concat_cores"]  
+if ont_reads != "":
+  use rule filtlong from preprocess_workflow with:
+    input:
+      reads = ont_reads
+    output:
+      outreads = ONT_filtered
+    params:
+      minlen = config["Filtlong"]["Filtlong minlen"],
+      min_mean_q = config["Filtlong"]["Filtlong min_mean_q"],
+      opts = extra_filtlong_opts
+    log:
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.out",
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.filtlong.err"
+    benchmark:
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".filtlong.benchmark.txt"
+    conda:
+      '../envs/filtlong0.2.1.yaml'
+    threads: config["Parameters"]["concat_cores"]  
 
 if len(longranger_inputs) > 0:
 
@@ -278,6 +299,22 @@ if config["Finalize"]["Merqury db"] and not os.path.exists(config["Finalize"]["M
       config["Finalize"]["Meryl threads"]
 
 if config["Finalize"]["Merqury db"]:
+  use rule smudgeplot from preprocess_workflow with:
+    input:
+      histogram = os.path.dirname(config["Finalize"]["Merqury db"]) + "/meryl.hist",
+      meryl = config["Finalize"]["Merqury db"],
+    output:
+      plot = smudgeplot_dir + "/smudgeplot_smudgeplot.png"
+    params:
+      dir = smudgeplot_dir
+    conda:
+      "../envs/merqury1.3.yaml"
+    log:
+      logs_dir + str(date) + ".j%j.smudgeplot.out",
+      logs_dir + str(date) + ".j%j.smudgeplot.err" 
+    benchmark:
+      logs_dir + str(date) + ".smudgeplot.benchmark.txt"  
+
   use rule genomescope2 from preprocess_workflow with:
     input:
       histogram = os.path.dirname(config["Finalize"]["Merqury db"]) + "/meryl.hist"
@@ -307,35 +344,34 @@ if config["Finalize"]["Merqury db"]:
     benchmark:
       logs_dir + str(date) + ".genomescope.benchmark.txt" 
 
-
 #2. EVALUATE INPUT READS
-
-use rule nanoplot from preprocess_workflow with:
-  input:
-    fastq = lambda wildcards: ont_fastqs[wildcards.prefix]
-  output:
-    stats = report(config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/NanoStats.txt",
+if ont_reads != "":
+  use rule nanoplot from preprocess_workflow with:
+    input:
+      fastq = lambda wildcards: ont_fastqs[wildcards.prefix]
+    output:
+      stats = report(config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/NanoStats.txt",
             caption="../report/nanostats.rst",
             category = "Process reads",
             subcategory = "{prefix}"),
-    yield_len = report(config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/Yield_By_Length.png",
+      yield_len = report(config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/Yield_By_Length.png",
                 caption="../report/nanostats.rst",
                 category = "Process reads",
                 subcategory = "{prefix}"),
-    read_len = report(config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/WeightedHistogramReadlength.png",
+      read_len = report(config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/WeightedHistogramReadlength.png",
                caption= "../report/nanostats.rst",
                category = "Process reads",
                subcategory = "{prefix}"),
-  params:
-    outdir = config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/"
-  log:
-    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.NanoStats.{prefix}.out",
-    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.NanoStats.{prefix}.err"
-  benchmark:
-    config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".NanoStats.{prefix}.benchmark.txt"
-  conda:
-    '../envs/nanoplot1.40.0.yaml'
-  threads: config["Parameters"]["concat_cores"]
+    params:
+      outdir = config["Outputs"]["filtlong_dir"] + "nanostats/{prefix}/"
+    log:
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.NanoStats.{prefix}.out",
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".j%j.NanoStats.{prefix}.err"
+    benchmark:
+      config["Outputs"]["filtlong_dir"] + "logs/" + str(date) + ".NanoStats.{prefix}.benchmark.txt"
+    conda:
+      '../envs/nanoplot1.40.0.yaml'
+    threads: config["Parameters"]["concat_cores"]
 
 if config["Parameters"]["run_kraken2"] == True:
   use rule Kraken2 from preprocess_workflow with: 

@@ -20,6 +20,8 @@ if config["Finalize"]["final Evaluations"] == True:
     assemblies.append(i)
   for i in assembled:
     assemblies.append(i)
+  for i in pretext_in:
+    assemblies.append(i)
 
 in_files = {}
 evals_dir = {}
@@ -29,6 +31,7 @@ MerqurySummaries = []
 MerquryQV = []
 MerquryDups = []
 lrtype = config["Parameters"]["lr_type"]
+stats_loc = {}
 
 for file in assemblies:
   ass_base = os.path.splitext(os.path.basename(file))[0]
@@ -46,7 +49,6 @@ for file in assemblies:
   merqdir = evalassdir + "merqury/" + ass_base 
   if not os.path.exists(merqdir) and config["Finalize"]["Merqury db"]:
     os.makedirs(merqdir)
-  
   in_files[evalassdir + ass_base] = file
   evals_dir[evalassdir + ass_base] = evalassdir
 
@@ -59,6 +61,7 @@ for file in assemblies:
     MerquryDups.append(merqdir + "/" + ass_base + ".false_duplications.txt")
 
   StatsFiles.append(evalassdir + "stats/" + ass_base + ".stats.txt")
+  stats_loc[ass_base] = evalassdir + "stats/" + ass_base + ".gaps.txt"
 
 #1- Perform alignments
 
@@ -108,6 +111,138 @@ if len(minimap2) > 0:
     conda:
       "../envs/minimap2.24.yaml"
     threads: config["Parameters"]["minimap2_cores"]
+
+if len(hic_assemblies) > 0:
+
+  use rule align_hic from eval_workflow with:
+    input:
+        ass = lambda wildcards: hic_assemblies[wildcards.name],
+        bwt = lambda wildcards: hic_assemblies[wildcards.name] + ".bwt",
+        read1 = hic_pe1,
+        read2 = hic_pe2
+    output:
+        mapped = "{directory}/mappings/{name}.full_hic.bam",
+        unmapped = "{directory}/mappings/{name}.unmapped_hic.bam"
+    params:
+        name = '{name}',
+        outd = '{directory}/mappings/',
+        options = config['HiC']['align_opts']
+    log:
+        "{directory}/logs/" + str(date) + ".j%j.rule_mapping.{name}.out",
+        "{directory}/logs/" + str(date) + ".j%j.rule_mapping.{name}.err"
+    benchmark:
+        "{directory}/logs/" + str(date) + ".rule_mapping.benchmark.{name}.txt"
+    threads: config["Parameters"]["BWA_cores"]
+
+  use rule pairtools_processing from eval_workflow with:
+    input: 
+      mapped = lambda wildcards: hic_bams[wildcards.name],
+      alength = lambda wildcards: asslength[wildcards.name]
+    output:
+      stats = "{directory}/pairtools_out/stats.mq{mq}.{name}.txt",
+      mappedptsort = "{directory}/pairtools_out/mapped.PT.mq{mq}.{name}.name_sorted.bam",
+      mappedpt = "{directory}/pairtools_out/mapped.PT.mq{mq}.{name}.bam",
+    wildcard_constraints:
+      mq="\d+",
+    params:
+      scripts_dir = scripts_dir,
+      mq = '{mq}',
+      name = '{name}',
+      outd = '{directory}/pairtools_out',
+      tmpd = '{directory}/{name}_mq{mq}_tmp',
+      rmcmd = "rm -r {directory}/{name}_mq{mq}_tmp;" if keepfiles == False
+               else ""
+    log:
+        "{directory}/logs/" + str(date) + ".j%j.rule_pairtools.mq{mq}.{name}.out",
+        "{directory}/logs/" + str(date) + ".j%j.rule_pairtools.mq{mq}.{name}.err"
+    benchmark:
+        "{directory}/logs/" + str(date) + ".rule_pairtools.benchmark.mq{mq}.{name}.txt"
+    threads: config['Parameters']['pairtools_cores']
+
+  use rule qc_statistics from eval_workflow with: 
+    input:
+      statmq = "{directory}/pairtools_out/stats.mq{mq}.{name}.txt",
+      mapbam = "{directory}/pairtools_out/mapped.PT.mq{mq}.{name}.bam"
+    output:
+      libstats = "{directory}/pairtools_out/HiC_QC_LibraryStats_mq{mq}.{name}.txt",
+      pslibstats = "{directory}/pairtools_out/HiC_QC_LibraryStats_extrapolated_mq{mq}.{name}.txt" if not config['HiC']['deepseq'] else []
+    wildcard_constraints:
+      mq="\d+",
+    params:
+      scripts_dir = scripts_dir,
+      outd = '{directory}/out',
+      assemblylength = config['HiC']['qc_assemblylen'],
+      deepseq = config['HiC']['deepseq'],
+    log:
+        "{directory}/logs/" + str(date) + ".j%j.rule_qc_stats.mq{mq}.{name}.out",
+        "{directory}/logs/" + str(date) + ".j%j.rule_qc_stats.mq{mq}.{name}.err"
+    benchmark:
+        "{directory}/logs/" + str(date) + ".rule_qc_stats.benchmark.mq{mq}.{name}.txt"
+    threads: 2
+  if config['HiC']['get_pretext']:
+    use rule get_extension_gaps from eval_workflow with:
+      input:
+        sla = lambda wildcards: hic_assemblies[wildcards.name],
+        gaps_bed = lambda wildcards: stats_loc[wildcards.name]
+      output:
+        gaps = "{directory}/{name}.gaps.bg"
+      params:
+        scripts_dir = scripts_dir,
+      log:
+        "{directory}/logs/" + str(date) + ".j%j.rule_gaps.{name}.out",
+        "{directory}/logs/" + str(date) + ".j%j.rule_gaps.{name}.err"
+      benchmark:
+        "{directory}/logs/" + str(date) + ".rule_gaps.{name}.benchmark.txt"
+      threads:  1
+
+    use rule get_extension_telomeres from eval_workflow with:
+      input:
+        sla = lambda wildcards: hic_assemblies[wildcards.name]
+      output:
+        tel = "{directory}/{name}.telomeres.bg"
+      params:
+        outd = "{directory}"
+      log:
+        "{directory}/logs/" + str(date) + ".j%j.rule_telomeres.{name}.out",
+        "{directory}/logs/" + str(date) + ".j%j.rule_telomeres.{name}.err"
+      benchmark:
+        "{directory}/logs/" + str(date) + ".rule_telomeres.{name}.benchmark.txt"
+      threads:  2
+
+    if len(minimap2) > 0:
+      use rule get_extension_ont from eval_workflow with:
+        input:
+          sbam = lambda wildcards: pretext_lrmap[wildcards.name],
+        output: 
+          ontcov = "{directory}/{name}.ONTcoverage.bg"
+        log:
+          "{directory}/logs/" + str(date) + ".j%j.rule_ont_bed.{name}.out",
+          "{directory}/logs/" + str(date) + ".j%j.rule_ont_bed.{name}.err"
+        benchmark:
+          "{directory}/logs/" + str(date) + ".rule_ont_bed.{name}.benchmark.txt"
+        threads:  1
+
+  if not config['HiC']['deepseq']:  #run for qc as well
+    use rule read_screening from eval_workflow with:
+      input:
+        umapped = "{directory}/mappings/{name}.unmapped_hic.bam",
+      output:
+        ufasta = "{directory}/blast/unmapped_hic.{name}.{readsblast}.fasta",
+        subufasta = "{directory}/blast/unmapped_hic.{name}.{readsblast}_reads.fasta",
+        blastoutbscore = "{directory}/blast/unmapped_hic.{name}.{readsblast}_unmapped_reads_vs_nt_25cul1_1e25.megablast.sorted_by_bitscore.out",
+        blastoutbscorethits = "{directory}/blast/unmapped_hic.{name}.{readsblast}_unmapped_reads_vs_nt_25cul1_1e25.megablast.sorted_by_bitscore.tophits",
+        blastoutorganisms = "{directory}/blast/unmapped_hic.{name}.{readsblast}_unmapped_reads_vs_nt_25cul1_1e25.megablast.organisms.txt" 
+      params:
+        scripts_dir = scripts_dir,
+        outd = "{directory}/blast/",
+        readforblast = config['HiC']['reads_for_blast'],
+        blastdb = config['HiC']['blastdb']
+      log:
+        "{directory}/logs/" + str(date) + ".j%j.rule_screening.{name}.{readsblast}_reads.out",
+        "{directory}/logs/" + str(date) + ".j%j.rule_screening.{name}.{readsblast}_reads.err"
+      benchmark:
+        "{directory}/logs/" + str(date) + ".rule_screening.{name}.{readsblast}_reads.benchmark.txt"
+      threads:  config['HiC']['blast_cores']
 
 #2- Run evaluations
 
@@ -226,7 +361,8 @@ use rule finalize from eval_workflow with:
     assembly = assemblies,
     buscos = BuscoSummaries,
     stats= StatsFiles,
-    merqs=MerquryQV
+    merqs=MerquryQV,
+    pretext = pretext_files
   output:
     output = report(config["Outputs"]["stats_out"],
              caption="../report/final.rst",

@@ -1,4 +1,4 @@
-# assembly_pipeline
+# GLAWS (Genome Long-read Assembly Workflow in Snakemake)
  Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed for Snakemake v6.0.5.
 
 It accepts Oxford Nanopore Technologies (ONT) reads, illumina paired-end data and illumina 10X data. It does the preprocessing of the reads, assembly, polishing, purge_dups, 10X scaffodling and different evaluation steps. By default it will preprocess the reads, run Flye + Hypo + purge_dups and evaluate the resulting assemblies with BUSCO, MERQURY, Nseries and assembly_stats. 

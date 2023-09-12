@@ -7,9 +7,6 @@ module polish_workflow:
   snakefile: "../modules/polish.rules.smk"
 
 #0. Main  
-rr = config["Parameters"]["racon_rounds"]
-pr = config["Parameters"]["pilon_rounds"]
-mr = config["Parameters"]["medaka_rounds"]
 nor = config["Parameters"]["nextpolish_ont_rounds"]
 nir = config["Parameters"]["nextpolish_ill_rounds"]
 hr = config["Parameters"]["hypo_rounds"]

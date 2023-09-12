@@ -3,6 +3,10 @@ import os
 import re
 import subprocess
 
+##Author: Jessica Gomez-Garrido
+##CNAG
+##email: jessica.gomez@cnag.eu
+
 report: "../report/workflow.rst"
 
 date = datetime.now().strftime('%Y%m%d.%H%M%S')
@@ -39,6 +43,8 @@ if config["Finalize"]["Merqury db"]:
   merqury_db = config["Finalize"]["Merqury db"]
   genomescope_dir = os.path.dirname(merqury_db) + "/genomescope2_k" + str(config["Finalize"]["Meryl K"]),
   targets.append(genomescope_dir)
+  smudgeplot_dir = os.path.dirname(merqury_db) + "/smudgeplot_k" + str(config["Finalize"]["Meryl K"])
+  targets.append(os.path.dirname(merqury_db) + "/smudgeplot_k" + str(config["Finalize"]["Meryl K"]) + "/smudgeplot_smudgeplot.png")
 
 if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextdenovo"] == True:
   ONT_filtered = config["Inputs"]["ONT_filtered"]
@@ -60,10 +66,16 @@ if config["Parameters"]["run_flye"] == True or config["Parameters"]["run_nextden
     if not os.path.exists(nextdenovo_dir + "logs"):
       os.makedirs(nextdenovo_dir + "logs")
 
+if config['Inputs']['HiC_dir']:
+  if config['HiC']['deepseq'] == False and config['HiC']['assembly_qc']:
+    name = os.path.splitext(os.path.basename(config['HiC']['assembly_qc']))[0]
+    dir = config['Outputs']['hic_qc_dir']
+    for mq in config['HiC']['MQ']:
+      targets.append(dir + "pairtools_out/HiC_QC_LibraryStats_extrapolated_mq" + str(mq) + "." + name + ".txt")
+    targets.append(dir + "blast/unmapped_hic." + name + "." + str(config['HiC']['reads_for_blast']) + "_reads.fasta")
+
 if config["Finalize"]["final Evaluations"] == True:
   targets.append(config["Outputs"]["stats_out"])
-
- # targets.append(base + ".report.zip")
 
 #1- Define rule all
 rule all:
@@ -79,3 +91,4 @@ include: "../modules/run_assemblies.smk"
 include: "../modules/polish_assemblies.v04.smk"
 include: "../modules/postpolishing.smk"
 include: "../modules/assembly_evaluation.smk"
+
