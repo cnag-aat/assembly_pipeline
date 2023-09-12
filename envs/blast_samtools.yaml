@@ -1,0 +1,53 @@
+name: /software/assembly/conda/blast_samtools
+channels:
+  - bioconda
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1=main
+  - _openmp_mutex=5.1=1_gnu
+  - blast=2.12.0=pl5262h3289130_0
+  - bzip2=1.0.8=h7b6447c_0
+  - c-ares=1.19.0=h5eee18b_0
+  - ca-certificates=2023.01.10=h06a4308_0
+  - curl=7.87.0=h5eee18b_0
+  - entrez-direct=16.2=he881be0_1
+  - htslib=1.13=h9093b5e_0
+  - krb5=1.19.2=hac12032_0
+  - libcurl=7.87.0=h91b91d3_0
+  - libdeflate=1.17=h5eee18b_0
+  - libedit=3.1.20210714=h7f8727e_0
+  - libev=4.33=h7f8727e_1
+  - libgcc-ng=11.2.0=h1234567_1
+  - libgomp=11.2.0=h1234567_1
+  - libidn2=2.3.2=h7f8727e_0
+  - libnghttp2=1.46.0=hce63b2e_0
+  - libssh2=1.10.0=h8f2d780_0
+  - libstdcxx-ng=11.2.0=h1234567_1
+  - libunistring=0.9.10=h27cfd23_0
+  - ncurses=6.2=he6710b0_1
+  - openssl=1.1.1t=h7f8727e_0
+  - pcre=8.45=h295c915_0
+  - perl=5.26.2=h14c3975_0
+  - perl-archive-tar=2.32=pl526_0
+  - perl-carp=1.38=pl526_3
+  - perl-common-sense=3.74=pl526_2
+  - perl-compress-raw-bzip2=2.087=pl526he1b5a44_0
+  - perl-compress-raw-zlib=2.087=pl526hc9558a2_0
+  - perl-exporter=5.72=pl526_1
+  - perl-exporter-tiny=1.002001=pl526_0
+  - perl-extutils-makemaker=7.36=pl526_1
+  - perl-io-compress=2.087=pl526he1b5a44_0
+  - perl-io-zlib=1.10=pl526_2
+  - perl-json=4.02=pl526_0
+  - perl-json-xs=2.34=pl526h6bb024c_3
+  - perl-list-moreutils=0.428=pl526_1
+  - perl-list-moreutils-xs=0.428=pl526_0
+  - perl-pathtools=3.75=pl526h14c3975_1
+  - perl-scalar-list-utils=1.52=pl526h516909a_0
+  - perl-types-serialiser=1.0=pl526_2
+  - perl-xsloader=0.24=pl526_0
+  - samtools=1.13=h8c37831_0
+  - wget=1.21.3=h0b77cf5_0
+  - xz=5.2.10=h5eee18b_1
+  - zlib=1.2.13=h5eee18b_0
+prefix: /software/assembly/conda/blast_samtools

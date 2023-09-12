@@ -7,6 +7,10 @@ import re
 from configparser import ConfigParser
 nextdenovo_config = ConfigParser()
 
+##Author: Jessica Gomez-Garrido
+##CNAG
+##email: jessica.gomez@cnag.eu
+
 def get_wildcards(dir, wildcards, ext):
   for r, d, f in os.walk(dir):
     for file in f:
@@ -36,31 +40,28 @@ class CreateConfigurationFile(object):
         self.preprocess_ont_step = "02.1"                                                         #Step directory for preprocessing ont
         self.preprocess_10X_step = "02.2"
         self.preprocess_illumina_step = "02.2"
+        self.preprocess_hic_step = "02.3"
         self.flye_step = "03.1"                                                                   #Step direcotory for running flye
         self.nextdenovo_step = "03.2"                                                             #Step direcotory for running nextdenovo
         self.run_flye = True       
         self.run_nextdenovo = False   
-        self.racon_rounds = 0                                                                     #Number of rounds of racon to run
-        self.pilon_rounds = 0                                                                     #Number of rounds of pilon to run
-        self.medaka_rounds = 0                                                                    #Number of rounds of medaka to run  
         self.nextpolish_ont_rounds = 0                                                            #Number of rounds for running Nexpolish with ONT
         self.nextpolish_ill_rounds = 0                                                            #Number of rounds for running Nexpolish with illumina
         self.hypo_rounds = 1                                                                      #Number of rounds for running hypo
         self.run_purgedups = True 
         self.run_tigmint = False
-        self.minimap2_cores = 16                                                                  #Number of threads to run the alignment with minimap2
-        self.bwa_cores = 16                                                                       #Number of threads to run the alignment for the pilon step
-        self.racon_cores = 16                                                                     #Number of threads to run the racon step
-        self.nextpolish_cores = 14                                                                #Number of threads to run the nextpolish step
-        self.pilon_cores = 16                                                                     #Number of threads to run the pilon step
-        self.medaka_cores = 16                                                                    #Number of threads to tun the medaka step
+        self.minimap2_cores = 32                                                                  #Number of threads to run the alignment with minimap2
+        self.bwa_cores = 16                                                                       #Number of threads to run the alignment for the nextpolish step
+        self.nextpolish_cores = 24                                                                #Number of threads to run the nextpolish step
         self.hypo_cores = 24                                                                      #Number of threads to tun the hypo step
-        self.busco_cores = 16                                                                     #Number of threads to tun the BUSCO    
-        self.longranger_cores = 8                                                                 #Number of threads to run longranger   
+        self.pairtools_cores = 64
+        self.busco_cores = 32                                                                     #Number of threads to tun the BUSCO    
+        self.longranger_cores = 16                                                                 #Number of threads to run longranger   
         self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2" 
         self.genomescope_additional = ""  
         self.ploidy = 2
         self.run_kraken2 = False
+        self.run_yahs = True
 
         #ALL SPEC PARAMETERS
         self.all_qos = "test"
@@ -75,25 +76,25 @@ class CreateConfigurationFile(object):
 
         #TRIMGALORE PARAMETERS
         self.trim_galore_opts = "--gzip -q 20 --paired --retain_unpaired"
-        self.Trim_Illumina_cores = 4                                                              #Number of threads to run the trim Illumina step
+        self.Trim_Illumina_cores = 8                                                              #Number of threads to run the trim Illumina step
 
         #TRIMGALORE SPEC PARAMETERS
         self.trimgalore_qos = "normal"
         self.trimgalore_time = "3:00:00"
         self.trimgalore_queue = "genD"
-        self.trimgalore_mem = "50000"
+        self.trimgalore_mem = "50G"
 
         #CONCAT READS SPEC PARAMETERS
         self.concat_reads_qos = "normal"
         self.concat_reads_time = "10:00:00"
         self.concat_reads_queue = "genD"
-        self.concat_reads_mem = "5000"
+        self.concat_reads_mem = "5G"
 
         #NANOPLOT SPEC PARAMETERS
         self.nanoplot_qos = "normal"
         self.nanoplot_time = "6:00:00"
         self.nanoplot_queue = "genD"
-        self.nanoplot_mem = "10000"
+        self.nanoplot_mem = "10G"
 
         #KRAKEN PARAMETERS
         self.kraken2_db = None  
@@ -105,7 +106,7 @@ class CreateConfigurationFile(object):
         self.kraken2_qos = "vlong"
         self.kraken2_time = "48:00:00"
         self.kraken2_queue = "genD"
-        self.kraken2_mem = "1000"
+        self.kraken2_mem = "10G"
 
         #BUILD MERYL SPEC PARAMETERS
         self.build_meryl_qos = "normal"
@@ -117,8 +118,13 @@ class CreateConfigurationFile(object):
         self.concat_meryl_qos = "normal"
         self.concat_meryl_time = "6:00:00"
         self.concat_meryl_queue = "genD"
-        self.concat_meryl_mem = "10000"
+        self.concat_meryl_mem = "10G"
 
+        #SMUDGEPLOT SPEC PARAMETERS
+        self.smudgeplot_qos = "normal"
+        self.smudgeplot_time = "10:00:00"
+        self.smudgeplot_queue = "genD"
+        self.smudgeplot_mem = "500G"
 
         #GENOMESCOPE2 SPEC PARAMETERS
         self.genomescope_qos = "short"
@@ -143,10 +149,12 @@ class CreateConfigurationFile(object):
         self.postpolish_assemblies = {}                                                           #List of input assemblies for which postpolishing steps need to be run but are not produced by the pipeline
         self.assemblies_cur = {}
         self.r10X_reads = {}
+        self.hic_dir = None
 
         #OUTPUT PARAMETERS
         self.pipeline_workdir = os.getcwd() + "/"                                                 #Base directory for the pipeline run
         self.filtlong_dir = "s" + self.preprocess_ont_step + "_p01.1_Filtlong"                    #Directory to process the ONT reads
+        self.concat_hic_dir = "s" + self.preprocess_hic_step + "_p01.1_Concat_HiC"
         self.flye_dir = "s" + self.flye_step + "_p" + self.preprocess_ont_step + "_flye/"         #Directory to run flye 
         self.nextdenovo_dir =  "s" + self.nextdenovo_step + "_p" + self.preprocess_ont_step + "_nextdenovo/"         #Directory to run Nextdenovo 
         self.flye_out = self.flye_dir + "flye.assembly.fasta"
@@ -154,7 +162,8 @@ class CreateConfigurationFile(object):
         self.polish_flye_dir = "s04.1_p" + self.flye_step + "_polishing/"                          #Base directory to run polishing pipeline in flye assembly
         self.polish_nextdenovo_dir = "s04.2_p" + self.nextdenovo_step + "_polishing/"              #Base directory to run polishing pipeline in nextdenovo assembly  
         self.eval_dir = "evaluations/"                                                             #Base directory for the evaluations
-        self.stats_out = None                                                                      #Path to the file with the final pipeline statistics
+        self.stats_out = None   
+        self.hic_qc_dir = "hic_qc/"                                                                 #Directory to run the hic_qc                                                                   #Path to the file with the final pipeline statistics
 
         #FILTLONG PARAMETERS
         self.filtlong_minlen = "1000"
@@ -165,7 +174,7 @@ class CreateConfigurationFile(object):
         self.filtlong_qos = "normal"
         self.filtlong_time = "10:00:00"
         self.filtlong_queue = "genD"
-        self.filtlong_mem = "10000"
+        self.filtlong_mem = "10G"
 
         #FLYE PARAMETERS
         self.flye_cores = 128	                                                                  #Number of threads to run Flye
@@ -173,37 +182,38 @@ class CreateConfigurationFile(object):
         self.other_flye_opts = " --scaffold "                                                     #include here genome size in pipeline											
 
         #FLYE SPEC PARAMETERS
-        self.flye_qos = "vlong"
-        self.flye_time = "48:00:00"
+        self.flye_qos = "marathon"
+        self.flye_time = "100:00:00"
         self.flye_queue = "genD"
         self.flye_mem = "900G"
 
         #NEXTDENOVO PARAMETERS
-        self.nextdenovo_cores = 128	                                                          #Number of threads to run nextdenovo        
+        self.nextdenovo_cores = 2	                                                        #Number of threads to run nextdenovo        
+        self.nextdenovo_type = "slurm"
         self.nextdenovo_task = "all"
         self.nextdenovo_rewrite = "yes"
-        self.nextdenovo_parallel_jobs = 18
+        self.nextdenovo_parallel_jobs = 50
         self.nextdenovo_minreadlen = "1k"
         self.nextdenovo_seeddepth = 45
         self.nextdenovo_seedcutoff = 0
         self.nextdenovo_blocksize = "1g"
-        self.nextdenovo_pa_correction = 96
+        self.nextdenovo_pa_correction = 100
         self.nextdenovo_minimap_raw = "-t 30"
-        self.nextdenovo_sort = "-m 40g -t 20"
-        self.nextdenovo_correction_opts = "-p 18"                      
+        self.nextdenovo_sort = "-m 400g -t 20"
+        self.nextdenovo_correction_opts = "-p 30 -dbuf"                      
         self.nextdenovo_minimap_cns = "-t 30 "
-        self.nextdenovo_minimap_map = "-t 30 "              
+        self.nextdenovo_minimap_map = "-t 30 --no-kalloc"              
         self.nextdenovo_nextgraph_opt = "-a 1"
 
         #NEXTDENOVO SPEC PARAMETERS
-        self.nextdenovo_qos = "vlong"
-        self.nextdenovo_time = "48:00:00"
+        self.nextdenovo_qos = "eternal"
+        self.nextdenovo_time = "480:00:00"
         self.nextdenovo_queue = "genD"
-        self.nextdenovo_mem = "900G"
+        self.nextdenovo_mem = "10G"
 
         #MINIMAP2 SPEC PARAMETERS
         self.minimap_qos = "normal"
-        self.minimap_time = "6:00:00"
+        self.minimap_time = "12:00:00"
         self.minimap_queue = "genD"
         self.minimap_mem = "500G"
         
@@ -225,60 +235,17 @@ class CreateConfigurationFile(object):
         self.hypo_queue = "genD"
         self.hypo_mem = "250G"
 
-        #RACON PARAMETERS
-        self.racon_dir = "/scratch/project/devel/aateam/src/RACON/v1.4.21_github/"
-        self.racon_opts = None                                                                    #Extra options to run Racon_wrapper
-
-        #RACON SPEC PARAMETERS
-        self.racon_qos = "normal"
-        self.racon_time = "12:00:00"
-        self.racon_queue = "main"
-
-        #MEDAKA PARAMETERS
-        self.medaka_env = "/scratch/project/devel/aateam/src/MEDAKA/medaka-141" 
-        self.medaka_workdir = "$TMPDIR/"      
-        self.medaka_model = None                                                                  #User needs to specify the model that will be used to run medaka
-        self.medaka_consensus_opts = None                                                         #Specify any parameters to change when running medaka consensus
-
-        #MEDAKA SPEC PARAMETERS
-        self.medaka_qos = "normal"
-        self.medaka_time = "16:00:00"
-        self.medaka_queue = "main"
-
-        #PILON PARAMETERS
-        self.pilon_path = "/apps/PILON/1.21/pilon"                                                #Path to Pilon executable
-        self.pilon_opts = "--fix bases --changes "                                                #Options to run pilon with
-        self.java_opts = None                                                                     #Options for the java execution of pilon
-        self.pilon_subsampling = 0                                                                #Percentage of reads to randomly use when running pilon      
-        self.pilon_chunks = 25                                                                    #Number of chunks to split pilon polishing  
-
-        #SPLIT PILON SPEC PARAMETERS
-        self.split_pilon_qos = "normal"
-        self.split_pilon_time = "6:00:00"
-        self.split_pilon_queue = "genB,main"
-
-        #PILON SPEC PARAMETERS
-        self.pilon_qos = "normal"
-        self.pilon_time = "12:00:00"
-        self.pilon_queue = "main"
-        self.pilon_threads = self.pilon_cores
-
-        #JOIN PILON SPEC PARAMETERS
-        self.join_pilon_qos = "normal"
-        self.join_pilon_time = "6:00:00"
-        self.join_pilon_queue = "genB,main"
-
         #NEXTPOLISH LR SPEC PARAMETERS
         self.nextpolish_lr_qos = "normal"
         self.nextpolish_lr_time = "6:00:00"
         self.nextpolish_lr_queue = "genD"
-        self.nextpolish_lr_mem = "500"
+        self.nextpolish_lr_mem = "100G"
         
         #NEXTPOLISH SR SPEC PARAMETERS
         self.nextpolish_sr_qos = "normal"
         self.nextpolish_sr_time = "6:00:00"
         self.nextpolish_sr_queue = "genD"
-        self.nextpolish_sr_mem = "2000"
+        self.nextpolish_sr_mem = "200G"
         
         #PURGEDUPS PARAMETERS
         self.purgedups_cores = 8 
@@ -300,6 +267,68 @@ class CreateConfigurationFile(object):
         self.tigmint_queue = "genD"
         self.tigmint_mem = "100G"   
 
+        #HiC PARAMETERS
+        self.hic_deepseq = True     
+        self.get_pretext = True                                                            #Make it false if only QC of the HiC data needs to be done
+        self.yahs_cores = 48
+        self.yahs_mq = 40
+        self.yahs_opts = ""
+        self.assembly_qc = None   
+        self.hic_map_opts = " -5SP -T0 "                                                               #Path to the assembly to be used perfom the QC of the HiC reads
+        self.mq = [0,40]                                                                          #Mapping qualities to use for producing the outputs
+        self.hic_qc_assemblylen = ""                                                              #Length of the assembly to be used for hic_qc
+        self.hic_readsblast = 100                                                                     #Number of unmapped hic reads to blast
+        self.blast_cores = 8 
+        self.blastdb = "/scratch_isilon/groups/assembly/data/blastdbs"                          #Database to use for running blast against the unmapped hic reads 
+
+        #ASSEMBLY PREPARE SPEC PARAMETERS
+        self.ass_prepare_qos = "short"
+        self.ass_prepare_time = "2:00:00"
+        self.ass_prepare_queue = "genD"
+        self.ass_prepare_mem = "30G"        
+
+        #MAP HIC SPEC PARAMETERS
+        self.map_hic_qos = "normal"
+        self.map_hic_time = "12:00:00"
+        self.map_hic_queue = "genD"
+        self.map_hic_mem = "100G"  
+
+        #PAIRTOOLS SPEC PARAMETERS
+        self.pairtools_qos = "normal"
+        self.pairtools_time = "12:00:00"
+        self.pairtools_queue = "genD"
+        self.pairtools_mem = "200G"  
+
+        #QCSTATS SPEC PARAMETERS
+        self.qcstats_qos = "short"
+        self.qcstats_time = "3:00:00"
+        self.qcstats_queue = "genD"
+        self.qcstats_mem = "50G" 
+
+        #BLAST SPEC PARAMETERS
+        self.blast_qos = "short"
+        self.blast_time = "3:00:00"
+        self.blast_queue = "genD"
+        self.blast_mem = "50G" 
+
+        #YAHS SPEC PARAMETERS
+        self.yahs_qos = "normal"
+        self.yahs_time = "12:00:00"
+        self.yahs_queue = "genD"
+        self.yahs_mem = "50G" 
+
+        #PRETEXT SPEC PARAMETERS
+        self.pretext_qos = "normal"
+        self.pretext_time = "10:00:00"
+        self.pretext_queue = "genD"
+        self.pretext_mem = "100G" 
+
+        #TELOMERE_EXT SPEC PARAMETERS
+        self.telext_qos = "normal"
+        self.telext_time = "10:00:00"
+        self.telext_queue = "genD"
+        self.telext_mem = "100G" 
+
         #FINALIZE PARAMETERS
         self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
         self.busco_lineage = None                                                                 #Path to the lineage directory to run Busco with
@@ -311,7 +340,7 @@ class CreateConfigurationFile(object):
         self.stats_qos = "test"
         self.stats_time = "0:10:00"
         self.stats_queue = "genD"  
-        self.stats_mem = "1000"
+        self.stats_mem = "1G"
         
         #BUSCO SPEC PARAMETERS
         self.busco_qos = "short"
@@ -329,12 +358,13 @@ class CreateConfigurationFile(object):
         self.fin_qos = "short"
         self.fin_time = "2:00:00"
         self.fin_queue = "genD"
-        self.fin_mem = "1000" 
+        self.fin_mem = "1G" 
 
         #WILDCARDS
         self.ONT_wildcards = None
         self.illumina_wildcards = None
         self.r10X_wildcards = None                                                                #For raw 10X we need to give this argument, for processed 10X reads, the pipeline can obtain it
+        self.hic_wildcards = None
 
 ###
         #DICTIONARIES
@@ -353,6 +383,7 @@ class CreateConfigurationFile(object):
         self.buildmerylSpecParameters = {}
         self.concatmerylSpecParameters = {}
         self.genomescopeSpecParameters = {}
+        self.smudgeplotSpecParameters = {}
         self.filtlongParameters = {}
         self.filtlongSpecParameters = {}
         self.flyeParameters = {}
@@ -364,20 +395,24 @@ class CreateConfigurationFile(object):
         self.bwaSpecParameters= {}
         self.hypoParameters = {}
         self.hypoSpecParameters = {}
-        self.raconParameters = {}
-        self.raconSpecParameters = {}
-        self.medakaParameters = {}
-        self.medakaSpecParameters = {}
-        self.pilonParameters = {}
-        self.splitpilonSpecParameters = {}
-        self.pilonSpecParameters = {}
-        self.joinpilonSpecParameters = {}
         self.nextpolishlrSpecParameters = {}
         self.nextpolishsrSpecParameters = {}
         self.purgedupsParameters = {}
         self.purgedupsSpecParameters = {}
         self.scaffold10XParameters = {}
         self.scaffold10XSpecParameters = {}
+        self.hicParameters = {}
+        self.assprepSpecParameters = {}
+        self.mapHicSpecParameters = {}
+        self.pairtoolsSpecParameters = {}
+        self.blastSpecParameters = {}
+        self.yahsSpecParameters = {}
+        self.pretextSpecParameters = {}
+        self.epretextSpecParameters = {}
+        self.telextSpecParameters = {}
+        self.gapsSpecParameters = {}
+        self.ontbgSpecParameters = {}
+        self.qcstatsSpecParameters = {}
         self.finalizeParameters = {}
         self.statsSpecParameters = {}
         self.buscoSpecParameters = {}
@@ -400,11 +435,9 @@ class CreateConfigurationFile(object):
         self.register_flye(parser)
         self.register_nextdenovo(parser)
         self.register_hypo(parser)
-        self.register_racon(parser)
-        self.register_medaka(parser)
-        self.register_pilon(parser)
         self.register_purgedups(parser)
         self.register_scaffold10X(parser)
+        self.register_hic(parser)
         self.register_finalize(parser)
         self.register_wildcards(parser)
 
@@ -427,21 +460,17 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--preprocess-lr-step', dest="preprocess_ont_step", default=self.preprocess_ont_step, help='Step for preprocessing long-reads. Default %s' % self.preprocess_ont_step)
         general_group.add_argument('--preprocess-10X-step', dest="preprocess_10X_step", default=self.preprocess_10X_step, help='Step for preprocessing 10X reads. Default %s' % self.preprocess_10X_step)
         general_group.add_argument('--preprocess-illumina-step', dest="preprocess_illumina_step", default=self.preprocess_illumina_step, help='Step for preprocessing illumina reads. Default %s' % self.preprocess_illumina_step)
+        general_group.add_argument('--preprocess-hic-step', dest="preprocess_hic_step", default=self.preprocess_hic_step, help='Step for preprocessing hic reads. Default %s' % self.preprocess_hic_step)
         general_group.add_argument('--flye-step', dest="flye_step", default=self.flye_step, help='Step for running flye. Default %s' % self.flye_step)
         general_group.add_argument('--no-flye', dest="run_flye", action="store_false", help='Give this option if you do not want to run Flye.')
         general_group.add_argument('--nextdenovo-step', dest="nextdenovo_step", default=self.nextdenovo_step, help='Step for running nextdenovo. Default %s' % self.nextdenovo_step)
         general_group.add_argument('--run-nextdenovo', dest="run_nextdenovo", action="store_true", help='Give this option if you do want to run Nextdenovo.')
-        general_group.add_argument('--racon-cores', type = int, dest="racon_cores", metavar="racon_cores", default=self.racon_cores, help='Number of threads to run the racon step. Default %s' % self.racon_cores)
         general_group.add_argument('--nextpolish-cores', type = int, dest="nextpolish_cores", metavar="nextpolish_cores", default=self.nextpolish_cores, help='Number of threads to run the nextpolish step. Default %s' % self.nextpolish_cores)
         general_group.add_argument('--minimap2-cores', type = int, dest="minimap2_cores", metavar="minimap2_cores", default=self.minimap2_cores, help='Number of threads to run the alignment with minimap2. Default %s' % self.minimap2_cores)
         general_group.add_argument('--bwa-cores', type = int, dest="bwa_cores", metavar="bwa_cores", default=self.bwa_cores, help='Number of threads to run the alignments with BWA-Mem2. Default %s' % self.bwa_cores)
-        general_group.add_argument('--pilon-cores', type = int, dest="pilon_cores", metavar="pilon_cores", default=self.pilon_cores, help='Number of threads to run the pilon step. Default %s' % self.pilon_cores)
-        general_group.add_argument('--medaka-cores', type = int, dest="medaka_cores", metavar="medaka_cores", default=self.medaka_cores, help='Number of threads to run the medaka step. Default %s' % self.medaka_cores)
         general_group.add_argument('--hypo-cores', type = int, dest="hypo_cores", metavar="hypo_cores", default=self.hypo_cores, help='Number of threads to run the hypo step. Default %s' % self.hypo_cores)
+        general_group.add_argument('--pairtools-cores', type = int, dest="pairtools_cores", metavar="pairtools_cores", default=self.pairtools_cores, help='Number of threads to run the pairtools step. Default %s' % self.pairtools_cores)
         general_group.add_argument('--busco-cores', type = int, dest="busco_cores", metavar="busco_cores", default=self.busco_cores, help='Number of threads to run BUSCO. Default %s' % self.busco_cores)
-        general_group.add_argument('--racon-rounds', type = int, dest="racon_rounds", metavar="racon_rounds", default=self.racon_rounds, help='Number of rounds of racon to run. Default %s' % self.racon_rounds)
-        general_group.add_argument('--pilon-rounds', type = int, dest="pilon_rounds", metavar="pilon_rounds", default=self.pilon_rounds, help='Number of rounds of pilon to run. Default %s' % self.pilon_rounds)
-        general_group.add_argument('--medaka-rounds', type = int, dest="medaka_rounds", metavar="medaka_rounds", default=self.medaka_rounds, help='Number of rounds of medaka to run. Default %s' % self.medaka_rounds)
         general_group.add_argument('--nextpolish-ont-rounds', type = int, dest="nextpolish_ont_rounds", metavar="nextpolish_ont_rounds", default=self.nextpolish_ont_rounds, help='Number of rounds to run the Nextpolish with ONT step. Default %s' % self.nextpolish_ont_rounds)
         general_group.add_argument('--nextpolish-ill-rounds', type = int, dest="nextpolish_ill_rounds", metavar="nextpolish_ill_rounds", default=self.nextpolish_ill_rounds, help='Number of rounds to run the Nextpolish with illumina step. Default %s' % self.nextpolish_ill_rounds)
         general_group.add_argument('--hypo-rounds', type = int, dest="hypo_rounds", metavar="hypo_rounds", default=self.hypo_rounds, help='Number of rounds to run the Hypostep. Default %s' % self.hypo_rounds)
@@ -452,7 +481,8 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--ploidy', type = int, dest="ploidy", metavar="ploidy", default=self.ploidy, help='Expected ploidy. Default %s' % self.ploidy) 
         general_group.add_argument('--run-tigmint', dest="run_tigmint", action="store_true", help='Give this option if you want to run the scaffolding with 10X reads step.')
         general_group.add_argument('--run-kraken2', dest="run_kraken2", action="store_true", help='Give this option if you want to run Kraken2 on the input reads.')
-
+        general_group.add_argument('--no-yahs', dest="run_yahs", action="store_false", help='Give this option if you do not want to run yahs.')
+        
     def register_input(self, parser):
         """Register all input parameters with the given
         argparse parser
@@ -473,7 +503,8 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the raw illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
         input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\":\"s04.2_p03.2\"}\' ...')
-
+        input_group.add_argument('--hic-dir', dest="hic_dir", help='Directory where the HiC fastqs are stored. Default %s' % self.hic_dir)
+        
     def register_output(self, parser):
         """Register all output parameters with the given
         argparse parser
@@ -483,12 +514,14 @@ class CreateConfigurationFile(object):
         output_group = parser.add_argument_group('Outputs')
         output_group.add_argument('--pipeline-workdir', dest="pipeline_workdir", help='Base directory for the pipeline run. Default %s' % self.pipeline_workdir)
         output_group.add_argument('--filtlong-dir', dest="filtlong_dir",  help='Directory to process the ONT reads with filtlong. Default %s' % self.filtlong_dir)
+        output_group.add_argument('--concat-hic-dir', dest="concat_hic_dir",  help='Directory to concatenate the HiC reads. Default %s' % self.concat_hic_dir)
         output_group.add_argument('--flye-dir', dest="flye_dir",  help='Directory to run flye. Default %s' % self.flye_dir)
         output_group.add_argument('--nextdenovo-dir', dest="nextdenovo_dir",  help='Directory to run nextdenovo. Default %s' % self.nextdenovo_dir)
         output_group.add_argument('--flye-polishing-dir', dest="polish_flye_dir",  help='Directory to polish the flye assembly. Default %s' % self.polish_flye_dir)
         output_group.add_argument('--nextdenovo-polishing-dir', dest="polish_nextdenovo_dir",  help='Directory to run nextdenovo. Default %s' % self.polish_nextdenovo_dir)
         output_group.add_argument('--eval-dir', dest="eval_dir", metavar="eval_dir",  help='Base directory for the evaluations. Default %s' %self.eval_dir)
         output_group.add_argument('--stats-out', dest="stats_out", metavar="stats_out",  help='Path to the file with the final statistics.')
+        output_group.add_argument('--hic-qc-dir', dest="hic_qc_dir", metavar="hic_qc_dir",  help='Directory to run the hic_qc. Default %s' %self.hic_qc_dir)
 
     def register_filtlong(self, parser):
         """Register all filtlong parameters with the given
@@ -542,6 +575,7 @@ class CreateConfigurationFile(object):
         """
         nextdenovo_group = parser.add_argument_group('Nextdenovo')
         nextdenovo_group.add_argument('--nextdenovo-cores', dest="nextdenovo_cores", metavar="nextdenovo_cores", default=self.nextdenovo_cores, type = int, help='Number of threads to run nextdenovo. Default %s' % self.nextdenovo_cores)
+        nextdenovo_group.add_argument('--nextdenovo-jobtype', dest="nextdenovo_type", metavar="nextdenovo_type", choices=['local', 'slurm'], default=self.nextdenovo_type, help='Job_type for nextdenovo. Default %s' % self.nextdenovo_type)
         nextdenovo_group.add_argument('--nextdenovo-task', dest="nextdenovo_task", metavar="nextdenovo_task", choices=['all', 'correct', 'assemble'], default=self.nextdenovo_task, help='Task need to run. Default %s' % self.nextdenovo_task)
         nextdenovo_group.add_argument('--nextdenovo-rewrite', dest="nextdenovo_rewrite", metavar="nextdenovo_rewrite", choices=['yes', 'no'], default=self.nextdenovo_rewrite, help='Overwrite existing directory. Default %s' % self.nextdenovo_rewrite)
         nextdenovo_group.add_argument('--nextdenovo-parallel_jobs', dest="nextdenovo_parallel_jobs", metavar="nextdenovo_parallel_jobs", default=self.nextdenovo_parallel_jobs, type = int, help='Number of tasks used to run in parallel. Default %s' % self.nextdenovo_parallel_jobs)
@@ -570,41 +604,6 @@ class CreateConfigurationFile(object):
         hypo_group.add_argument('--hypo-no-lr', dest="hypo_lr", default=self.hypo_lr, action= "store_false", help='Set this to false if you don¡t want to run hypo with long reads. Default %s' % self.hypo_lr)
         hypo_group.add_argument('--hypo-opts', dest="hypo_opts", metavar="hypo_opts", default=self.hypo_opts, help='Additional options to run Hypo. Default %s' % self.hypo_opts)
 
-    def register_racon(self, parser):
-        """Register all racon parameters with the given
-        argparse parser
-
-        parser -- the argparse parser
-        """
-        racon_group = parser.add_argument_group('Racon')
-        racon_group.add_argument('--racon-dir', dest="racon_dir", metavar="racon_dir", help='Directory with Racon installation. Default %s' % self.racon_dir)
-        racon_group.add_argument('--racon-opts', dest="racon_opts", metavar="racon_opts", default=self.racon_opts, help='Extra options to run Racon_wrapper(eg. --split 100000000) to split the assembly in chunks of specified size and decrease memory requirements. Do racon_wrapper -h for more info.')
-
-    def register_medaka(self, parser):
-        """Register all medaka parameters with the given
-        argparse parser
-
-        parser -- the argparse parser
-        """
-        medaka_group = parser.add_argument_group('Medaka')
-        medaka_group.add_argument('--medaka-env', dest="medaka_env", metavar="medaka_env", help='Conda environment to run Medaka. Default %s' % self.medaka_env)
-        medaka_group.add_argument('--medaka-workdir', dest="medaka_workdir", metavar="medaka_workdir", help='Directory to run Medaka. Default %s' % self.medaka_workdir)
-        medaka_group.add_argument('--medaka-model', dest="medaka_model", metavar="medaka_model", help='User needs to specify the model that will be used to run Medaka')
-        medaka_group.add_argument('--medaka-consensus-opts', dest="medaka_consensus_opts", metavar="medaka_consensus_opts", help='Specify any parameters to change when running medaka consensus')
-
-    def register_pilon(self, parser):
-        """Register all pilon parameters with the given
-        argparse parser
-
-        parser -- the argparse parser
-        """
-        pilon_group = parser.add_argument_group('Pilon')
-        pilon_group.add_argument('--pilon-path', dest="pilon_path", metavar="pilon_path", help='Path to Pilon executable. Default %s' % self.pilon_path)
-        pilon_group.add_argument('--pilon-opts', dest="pilon_opts", metavar="pilon_opts", default=self.pilon_opts, help='Additional options to run Pilon. Default %s' % self.pilon_opts)
-        pilon_group.add_argument('--java-opts', dest="java_opts", metavar="java_opts", default=self.java_opts, help='Options for the java execution of Pilon. Default %s' % self.java_opts)
-        pilon_group.add_argument('--pilon-subs', dest="pilon_subsampling", metavar="pilon_subsampling", type = int, default=self.pilon_subsampling, help='Percentage of reads to randomly use when running pilon. Default %s' % self.pilon_subsampling)
-        pilon_group.add_argument('--pilon-chunks', dest="pilon_chunks", metavar="pilon_chunks", type = int, default=self.pilon_chunks, help='Number of chunks to split the pilon polishing jobs. Default %s' % self.pilon_chunks)
-
     def register_purgedups(self, parser):
         """Register all purgedups parameters with the given
         argparse parser
@@ -625,6 +624,26 @@ class CreateConfigurationFile(object):
         scaffold10X_group.add_argument('--tigmint-cores', type = int, dest="tigmint_cores", metavar="tigmint_cores", default=self.tigmint_cores, help='Number of threads to run the 10X scaffolding step. Default %s' % self.tigmint_cores)
         scaffold10X_group.add_argument('--tigmint-opts', dest="tigmint_opts", metavar="tigmint_opts", default = self.tigmint_opts, help='Adjusted values to run the scaffolding with 10X reads.  Default %s' % self.tigmint_opts)
 
+    def register_hic(self, parser):
+        """Register all the HiC related parameters with the given
+        argparse parser
+
+        parser -- the argparse parser
+        """
+        hic_group = parser.add_argument_group('HiC')
+        hic_group.add_argument('--hic-qc', dest="hic_deepseq", action="store_false", help='Give this option if only QC of the HiC data needs to be done.')        
+        hic_group.add_argument('--no-pretext', dest="get_pretext", action="store_false", help='Give this option if you do not want to generate the pretext file')        
+        hic_group.add_argument('--assembly-qc', dest="assembly_qc", metavar = 'assembly_qc', help='Path to the assembly to be used perfom the QC of the HiC reads.')   
+        hic_group.add_argument('--yahs-cores', dest="yahs_cores", metavar = 'yahs_cores', default = self.yahs_cores, help='Number of threads to run YAHS. Default %s' %self.yahs_cores)   
+        hic_group.add_argument('--yahs-mq', dest="yahs_mq", metavar = 'yahs_mq', default = self.yahs_mq, help='Mapping quality to use when running yahs.Default %s' %self.yahs_mq)   
+        hic_group.add_argument('--yahs-opts', dest="yahs_opts", metavar = 'yahs_opts', default = self.yahs_opts, help='Additional options to give to YAHS.Default %s' %self.yahs_opts)   
+        hic_group.add_argument('--hic-map-opts', dest="hic_map_opts", metavar = 'hic_map_opts', default = self.hic_map_opts, help='Options to use with bwa mem when aligning the HiC reads. Deafault %s' %self.hic_map_opts)   
+        hic_group.add_argument('--mq', dest="mq", metavar = 'mq', default = self.mq, nargs = "+", help='Mapping qualities to use for processing the hic mappings. Default %s' %self.mq)   
+        hic_group.add_argument('--hic-qc-assemblylen', dest="hic_qc_assemblylen", metavar = 'hic_qc_assemblylen', default = self.hic_qc_assemblylen, help='Lentgh of the assembly to be used for HiC QC')   
+        hic_group.add_argument('--blast-cores', dest="blast_cores", metavar = 'blast_cores', default = self.blast_cores, help='Number of threads to run blast with the HiC unmapped reads.Default %s' %self.blast_cores)   
+        hic_group.add_argument('--hic-blastdb', dest="blastdb", metavar = 'blastdb', default = self.blastdb, help='BLAST Database to use to classify the hic unmapped reads. Default %s' %self.blastdb)   
+        hic_group.add_argument('--hic-readsblast', dest="hic_readsblast", metavar = 'hic_readsblast', default = self.hic_readsblast, help='Number of unmapped hic reads to classify with blast. Default %s' %self.hic_readsblast)   
+        
     def register_finalize(self, parser):
         """Register all finalize parameters with the given
         argparse parser
@@ -648,6 +667,8 @@ class CreateConfigurationFile(object):
         wildcards_group.add_argument('--ont-list', dest="ONT_wildcards", metavar="ONT_wildcards", help='List with basename of the ONT fastqs that will be used. Default %s' % self.ONT_wildcards)
         wildcards_group.add_argument('--illumina-list', dest="illumina_wildcards", metavar="illumina_wildcards", help='List with basename of the illumina fastqs. Default %s' % self.illumina_wildcards)
         wildcards_group.add_argument('--r10X-list', dest="r10X_wildcards", metavar="r10X_wildcards", help='List with basename of the raw 10X fastqs. Default %s' % self.r10X_wildcards)
+        wildcards_group.add_argument('--hic-list', dest="hic_wildcards", metavar="hic_wildcards", help='List with basename of the raw hic fastqs. Default %s' % self.hic_wildcards)
+        
 ####
 
     def check_parameters(self,args):
@@ -687,6 +708,11 @@ class CreateConfigurationFile(object):
         else:
           args.eval_dir = args.pipeline_workdir  + self.eval_dir
 
+        if args.hic_qc_dir:
+          args.hic_qc_dir = os.path.abspath(args.hic_qc_dir) + "/"
+        else:
+          args.hic_qc_dir= args.pipeline_workdir  + self.hic_qc_dir
+
         if args.base_name == None:
           parser.print_help()
           print ("You need to provide a base name for the project")
@@ -724,11 +750,10 @@ class CreateConfigurationFile(object):
             sys.exit(-1)
           print ("Genome size is " + str(gsize) + " megabases")
 
-        if args.racon_opts == None:
-          if gsize > 1000:
-            args.racon_opts = " --split 100000000 "
-        elif not re.search("split", args.racon_opts):
-            args.racon_opts += " --split 100000000 "
+        if args.run_yahs == True and args.hic_deepseq == False:
+          parser.print_help()
+          print ("Running yahs is not compatible with hic-qc, please select the appropriate option")
+          sys.exit(-1)
 
         args.filtlong_qos =  self.filtlong_qos
         args.filtlong_time = self.filtlong_time 
@@ -775,6 +800,11 @@ class CreateConfigurationFile(object):
         args.genomescope_queue = self.genomescope_queue
         args.genomescope_mem = self.genomescope_mem
 
+        args.smudgeplot_qos =  self.smudgeplot_qos
+        args.smudgeplot_time = self.smudgeplot_time 
+        args.smudgeplot_queue = self.smudgeplot_queue
+        args.smudgeplot_mem = self.smudgeplot_mem
+
         args.flye_qos =  self.flye_qos
         args.flye_time = self.flye_time 
         args.flye_queue = self.flye_queue
@@ -800,27 +830,6 @@ class CreateConfigurationFile(object):
         args.hypo_queue = self.hypo_queue
         args.hypo_mem = self.hypo_mem
 
-        args.racon_qos =  self.racon_qos
-        args.racon_time = self.racon_time 
-        args.racon_queue = self.racon_queue
-
-        args.medaka_qos =  self.medaka_qos
-        args.medaka_time = self.medaka_time 
-        args.medaka_queue = self.medaka_queue
-
-        args.split_pilon_qos =  self.split_pilon_qos
-        args.split_pilon_time = self.split_pilon_time 
-        args.split_pilon_queue = self.split_pilon_queue
-
-        args.pilon_qos =  self.pilon_qos
-        args.pilon_time = self.pilon_time 
-        args.pilon_queue = self.pilon_queue
-        args.pilon_threads = self.pilon_threads
-
-        args.join_pilon_qos =  self.join_pilon_qos
-        args.join_pilon_time = self.join_pilon_time 
-        args.join_pilon_queue = self.join_pilon_queue
-
         args.nextpolish_lr_qos =  self.nextpolish_lr_qos
         args.nextpolish_lr_time = self.nextpolish_lr_time 
         args.nextpolish_lr_queue = self.nextpolish_lr_queue
@@ -841,6 +850,45 @@ class CreateConfigurationFile(object):
         args.tigmint_queue = self.tigmint_queue
         args.tigmint_mem = self.tigmint_mem
 
+        args.ass_prepare_qos =  self.ass_prepare_qos
+        args.ass_prepare_time = self.ass_prepare_time 
+        args.ass_prepare_queue = self.ass_prepare_queue
+        args.ass_prepare_mem = self.ass_prepare_mem
+
+        args.map_hic_qos =  self.map_hic_qos
+        args.map_hic_time = self.map_hic_time 
+        args.map_hic_queue = self.map_hic_queue
+        args.map_hic_mem = self.map_hic_mem
+
+        args.pairtools_qos =  self.pairtools_qos
+        args.pairtools_time = self.pairtools_time 
+        args.pairtools_queue = self.pairtools_queue
+        args.pairtools_mem = self.pairtools_mem
+
+        args.blast_qos =  self.blast_qos
+        args.blast_time = self.blast_time 
+        args.blast_queue = self.blast_queue
+        args.blast_mem = self.blast_mem
+
+        args.yahs_qos =  self.yahs_qos
+        args.yahs_time = self.yahs_time 
+        args.yahs_queue = self.yahs_queue
+        args.yahs_mem = self.yahs_mem
+
+        args.pretext_qos =  self.pretext_qos
+        args.pretext_time = self.pretext_time 
+        args.pretext_queue = self.pretext_queue
+        args.pretext_mem = self.pretext_mem
+
+        args.telext_qos =  self.telext_qos
+        args.telext_time = self.telext_time 
+        args.telext_queue = self.telext_queue
+        args.telext_mem = self.telext_mem
+
+        args.qcstats_qos =  self.qcstats_qos
+        args.qcstats_time = self.qcstats_time 
+        args.qcstats_queue = self.qcstats_queue
+        args.qcstats_mem = self.qcstats_mem
 
         args.stats_qos =  self.stats_qos
         args.stats_time = self.stats_time 
@@ -862,35 +910,81 @@ class CreateConfigurationFile(object):
         args.fin_queue = self.fin_queue
         args.fin_mem = self.fin_mem
 
+        if args.nextdenovo_type == "local":
+          args.nextdenovo_mem =  "900G"
+          args.nextdenovo_cores = 128
+          args.nextdenovo_qos = "marathon"
+          args.nextdenovo_time = "100:00:00"
+
         if gsize > 500:
           args.java_opts = "Xmx150g"
+          args.flye_cores = 100
+          args.flye_mem = "700G"
 
         if gsize > 1000:
           args.concat_cores = 16
           args.flye_qos = "marathon"
           args.flye_time = "150:00:00"
-          args.flye_cores = 128
-          args.nextdenovo_qos = "marathon"
-          args.nextdenovo_time = "150:00:00"
+          if args.nextdenovo_type == "local":
+            args.nextdenovo_time = "150:00:00"
           args.bwa_time = "24:00:00"
           args.bwa_qos = "long"
-          args.minimap_time = "12:00:00"
-          args.hypo_time = "10:00:00"
+          args.bwa_mem = "300G"
+          args.bwa_cores = 48
+          args.minimap_time = "24:00:00"
+          args.minimap_qos = "long"
+          args.minimap2_cores = 80
+          args.hypo_time = "12:00:00"
+          args.hypo_cores = 32
           args.busco_time = "24:00:00"
           args.busco_qos = "long"
+          args.busco_cores = 64
           args.merq_time = "6:00:00"
-          args.pilon_cores = 20
+          args.ass_prepare_time = "6:00:00"
+          args.map_hic_qos = 'long'
+          args.map_hic_time = "24:00:00"
+          args.map_hic_mem = "300G"
+          args.yahs_qos = 'long'
+          args.yahs_time = "24:00:00"
+          args.yahs_mem = "100G"
+          args.pairtools_qos = 'long'
+          args.pairtools_time = "24:00:00"
+          args.pairtools_mem = "500G"
+          args.pairtools_cores = 128
+          args.qcstats_qos = 'normal'
+          args.qcstats_time = "12:00:00"
+          args.qcstats_mem = "100G"
 
-        if gsize < 100:
+        if gsize > 3000:
+          args.flye_qos = "eternal"
+          args.flye_time = "500:00:00"
+          args.minimap_time = "48:00:00"
+          args.qos = "vlong"
+          args.hypo_processes = 2
+          args.hypo_mem = "500G"
+          args.hypo_qos = "long"
+          args.hypo_time = "24:00:00"
+          args.stats_time = "1:00:00"
+          args.stats_qos = "vshort"
+          args.busco_cores = 100
+          args.busco_time = "48:00:00"
+          args.busco_qos = "vlong"
+          if args.nextdenovo_type == "local":
+            args.nextdenovo_time = "500:00:00"
+
+        if gsize <= 100:
           args.busco_time = "2:00:00"
           args.merq_time = "2:00:00"
           args.fin_time = "0:30:00"
-          args.nextdenovo_qos = "long"
-          args.nextdenovo_time = "24:00:00"
-          args.nextdenovo_mem = "100G"
+          if args.nextdenovo_type == "local":
+            args.nextdenovo_qos = "long"
+            args.nextdenovo_time = "24:00:00"
+            args.nextdenovo_mem = "100G"
+            args.nextdenovo_cores = 50
           args.flye_cores = 20
+          args.flye_mem = "100G"
 
-        if args.run_flye == True or args.run_nextdenovo == True or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups != None:
+        if args.run_flye == True or args.run_nextdenovo == True or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups == True:
           if args.ONT_filtered:
             args.ONT_filtered = os.path.abspath(args.ONT_filtered)
             args.filtlong_dir = os.path.dirname(args.ONT_filtered) + "/"
@@ -926,7 +1020,7 @@ class CreateConfigurationFile(object):
           args.merqury_db = os.path.abspath(args.merqury_db)
         
         args.r10X_reads = {}
-        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True or args.merqury_db:
+        if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True or args.merqury_db:
           if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None:
             parser.print_help()
             print ("The illumina reads are needed")
@@ -1061,37 +1155,6 @@ class CreateConfigurationFile(object):
           args.nextdenovo_dir = os.path.abspath(args.nextdenovo_dir) + "/" 
         args.nextdenovo_out = args.nextdenovo_dir + "nextdenovo.assembly.fasta"
 
-        if args.racon_dir:
-          args.racon_dir = os.path.abspath(args.racon_dir) + "/"
-        else:
-          args.racon_dir =  os.path.abspath(self.racon_dir) + "/"
-        if not os.path.exists(args.racon_dir):
-          print (args.racon_dir + " not found")
-
-        if args.medaka_env:
-          args.medaka_env = os.path.abspath(args.medaka_env)
-        else:
-          args.medaka_env =  os.path.abspath(self.medaka_env)
-        if not os.path.exists(args.medaka_env):
-          print (args.medaka_env + " not found")
-         
-        if args.medaka_rounds > 0 and not args.medaka_model:
-          parser.print_help()
-          print ("You have chosen to run Medaka but no model for it has been specified")
-          sys.exit(-1)
-
-        if args.medaka_workdir:
-          args.medaka_workdir = os.path.abspath(args.medaka_workdir) + "/"
-        else:
-          args.medaka_workdir = self.medaka_workdir 
-
-        if args.pilon_path:
-          args.pilon_path = os.path.abspath(args.pilon_path)
-        else:
-          args.pilon_path =  os.path.abspath(self.pilon_path)
-        # if not os.path.exists(args.pilon_path):
-        #   print (args.pilon_path + " not found")
-
         if args.busco_lineage:
           args.busco_lineage = os.path.abspath(args.busco_lineage)
           if not os.path.exists(args.busco_lineage):
@@ -1111,7 +1174,7 @@ class CreateConfigurationFile(object):
             for key in my_dict:
               args.assemblies_cur[os.path.abspath(key)] = my_dict[key]
 
-        if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds:
+        if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.nextpolish_ont_rounds:
           if args.run_flye == True:
             if args.polish_flye_dir != None:
               args.polish_flye_dir = os.path.abspath(args.polish_flye_dir)
@@ -1133,19 +1196,6 @@ class CreateConfigurationFile(object):
               base_tmp = ""
               if  args.hypo_rounds >0:
                 pol_bases["hypo"] = "hypo" + str(args.hypo_rounds)
-              if args.racon_rounds > 0:
-                base_tmp+= "racon" + str(args.racon_rounds)
-              if base_tmp != "":
-                base_tmp += "."
-              if args.medaka_rounds > 0:
-                base_tmp += "medaka" + str(args.medaka_rounds)
-              if args.pilon_rounds > 0:
-                if base_tmp != "":
-                  base_tmp += "."
-                base_tmp += "pilon" + str(args.pilon_rounds)
-              if base_tmp != "":
-                pol_bases["rmp"] = base_tmp
-                base_tmp = ""
               if args.nextpolish_ont_rounds > 0:
                 base_tmp+= "nextpolish_ont" + str(args.nextpolish_ont_rounds)
               if args.nextpolish_ill_rounds > 0:
@@ -1162,12 +1212,50 @@ class CreateConfigurationFile(object):
                 
                 nstep = pstep.replace('s','')
                 #cstep = float(nstep) + 1 + paths
+                if paths != 0:
+                  paths -= 0.1
                 for p in pol_bases:
                   cstep = round(float(nstep) + 1 + paths,1)
                   args.assemblies_cur[args.assemblies[m] + p + "/" + bpol + "." +  pol_bases[p] + ".fasta"] = "s0" + str(cstep) + "_p" + nstep
                   paths += 0.1
+        
+        if args.blastdb:
+          args.blastdb = os.path.abspath(args.blastdb)
 
-  
+        if args.hic_dir:
+          args.hic_dir = os.path.abspath(args.hic_dir) + "/"          
+          args.hic_wildcards = get_wildcards(args.hic_dir, args.hic_wildcards, '.1.fastq.gz')
+          if args.concat_hic_dir:
+            args.concat_hic_dir = os.path.abspath(args.concat_hic_dir) + "/"      
+          elif args.hic_deepseq == True:
+            args.concat_hic_dir = args.pipeline_workdir + "s" + args.preprocess_hic_step + "_p01.1_Concat_HiC/"   
+          else:
+            args.concat_hic_dir = args.pipeline_workdir + "hic_qc/concatenated_fastq/"    
+          if not args.assembly_qc and args.hic_deepseq == False:
+            parser.print_help()
+            print ("Please, specify an assembly to use as input for the hic qc.")
+            sys.exit(-1)             
+          elif args.assembly_qc:
+            args.assembly_qc = os.path.abspath(args.assembly_qc)
+            args.map_hic_qos = 'vshort'
+            args.map_hic_time = '1:00:00'
+            args.map_hic_mem = '50G'
+            args.pairtools_qos = 'vshort'
+            args.pairtools_time = '1:00:00'
+            args.pairtools_mem = '50G'
+            args.qcstats_qos = 'vshort'
+            args.qcstats_time = '1:00:00'
+            args.qcstats_mem = '50G'
+            
+            if args.get_pretext == True:
+              print ("Warning. Turning get_pretext parameter to false, since it makes little sense to run this step with the hic QC data.")
+              args.get_pretext = False
+
+            if not args.hic_qc_assemblylen:
+              parser.print_help()
+              print ("Please, specify the total length of " + args.assembly_qc + " to perform the HiC QC step.")
+              sys.exit(-1)          
+               
 ###
 
     def storeGeneralParameters(self,args):
@@ -1187,23 +1275,19 @@ class CreateConfigurationFile(object):
         self.generalParameters["preprocess_ont_step"] = args.preprocess_ont_step
         self.generalParameters["preprocess_illumina_step"] = args.preprocess_illumina_step
         self.generalParameters["preprocess_10X_step"] = args.preprocess_10X_step
+        self.generalParameters["preprocess_hic_step"] = args.preprocess_hic_step
         self.generalParameters["flye_step"] = args.flye_step
         self.generalParameters["run_flye"] = args.run_flye
         self.generalParameters["nextdenovo_step"] = args.nextdenovo_step
         self.generalParameters["run_nextdenovo"] = args.run_nextdenovo
-        self.generalParameters["racon_rounds"] = args.racon_rounds
-        self.generalParameters["pilon_rounds"] = args.pilon_rounds
-        self.generalParameters["medaka_rounds"] = args.medaka_rounds
         self.generalParameters["nextpolish_ont_rounds"] = args.nextpolish_ont_rounds
         self.generalParameters["nextpolish_ill_rounds"] = args.nextpolish_ill_rounds
         self.generalParameters["hypo_rounds"] = args.hypo_rounds
-        self.generalParameters["racon_cores"] = args.racon_cores
         self.generalParameters["nextpolish_cores"] = args.nextpolish_cores
         self.generalParameters["minimap2_cores"] = args.minimap2_cores
         self.generalParameters["BWA_cores"] = args.bwa_cores
-        self.generalParameters["pilon_cores"] = args.pilon_cores
-        self.generalParameters["medaka_cores"] = args.medaka_cores
         self.generalParameters["hypo_cores"] = args.hypo_cores
+        self.generalParameters["pairtools_cores"] = args.pairtools_cores
         self.generalParameters["busco_cores"] = args.busco_cores
         self.generalParameters["longranger_cores"] = args.longranger_cores
         self.generalParameters["longranger_path"] = args.longranger_path
@@ -1212,6 +1296,7 @@ class CreateConfigurationFile(object):
         self.generalParameters["run_purgedups"] = args.run_purgedups
         self.generalParameters["run_tigmint"] = args.run_tigmint
         self.generalParameters["run_kraken2"] = args.run_kraken2
+        self.generalParameters["run_yahs"] = args.run_yahs
         self.allParameters["Parameters"] = self.generalParameters
 
     def storeallSpecParameters(self,args):
@@ -1219,7 +1304,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.allSpecParameters["name"] = "{rule}_{base}_assembly_pipeline"
+        self.allSpecParameters["name"] = "{rule}_" + args.base_name + "_assembly_pipeline"
         self.allSpecParameters["qos"] = self.all_qos
         self.allSpecParameters["time"] = self.all_time
         self.allSpecParameters["queue"] = self.all_queue
@@ -1242,6 +1327,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["processed_10X"] = args.processed_10X
         self.inputParameters["ILLUMINA_10X"] = args.r10X
         self.inputParameters["illumina_dir"] = args.illumina_dir
+        self.inputParameters["HiC_dir"] = args.hic_dir
         self.inputParameters["Assemblies for polishing"] = args.assemblies
         self.inputParameters["Assemblies for postpolishing"] = args.assemblies_cur
         self.allParameters ["Inputs"] = self.inputParameters
@@ -1253,12 +1339,14 @@ class CreateConfigurationFile(object):
         """
         self.outputParameters["base_dir"] = args.pipeline_workdir 
         self.outputParameters["filtlong_dir"] = args.filtlong_dir
+        self.outputParameters["concat_HiC_dir"] = args.concat_hic_dir
         self.outputParameters["flye_dir"] = args.flye_dir
         self.outputParameters["nextdenovo_dir"] = args.nextdenovo_dir
         self.outputParameters["flye_out"] = args.flye_out
         self.outputParameters["nextdenovo_out"] = args.nextdenovo_out
         self.outputParameters["eval_dir"] = args.eval_dir
         self.outputParameters["stats_out"] = args.stats_out
+        self.outputParameters["hic_qc_dir"] = args.hic_qc_dir
         self.allParameters ["Outputs"] = self.outputParameters
 
     def storelongrangerSpecParameters(self,args):
@@ -1287,7 +1375,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.trimgaloreSpecParameters["name"] = "{rule}_{base}_{wildcards.file}"
+        self.trimgaloreSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.file}"
         self.trimgaloreSpecParameters["qos"] = args.trimgalore_qos
         self.trimgaloreSpecParameters["time"] = args.trimgalore_time
         self.trimgaloreSpecParameters["queue"] = args.trimgalore_queue
@@ -1299,7 +1387,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.concatreadsSpecParameters["name"] = "{rule}_{base}_{wildcards.ext}"
+        self.concatreadsSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.ext}"
         self.concatreadsSpecParameters["qos"] = args.concat_reads_qos
         self.concatreadsSpecParameters["time"] = args.concat_reads_time
         self.concatreadsSpecParameters["queue"] = args.concat_reads_queue
@@ -1311,7 +1399,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.nanoplotSpecParameters["name"] = "{rule}_{base}_{wildcards.prefix}"
+        self.nanoplotSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.prefix}"
         self.nanoplotSpecParameters["qos"] = args.nanoplot_qos
         self.nanoplotSpecParameters["time"] = args.nanoplot_time
         self.nanoplotSpecParameters["queue"] = args.nanoplot_queue
@@ -1334,7 +1422,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.kraken2SpecParameters["name"] = "{rule}_{base}_{params.prefix}"
+        self.kraken2SpecParameters["name"] = "{rule}_" + args.basename + "_{params.prefix}"
         self.kraken2SpecParameters["qos"] = args.kraken2_qos
         self.kraken2SpecParameters["time"] = args.kraken2_time
         self.kraken2SpecParameters["queue"] = args.kraken2_queue
@@ -1365,6 +1453,18 @@ class CreateConfigurationFile(object):
         self.concatmerylSpecParameters["mem"] = args.concat_meryl_mem
         self.allParameters ["concat_meryl"] = self.concatmerylSpecParameters
 
+    def storesmudgeplotSpecParameters(self,args):
+        """Updates smudgeplot cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.smudgeplotSpecParameters["name"] = "{rule}_" + args.base_name + "_{base}"
+        self.smudgeplotSpecParameters["qos"] = args.smudgeplot_qos
+        self.smudgeplotSpecParameters["time"] = args.smudgeplot_time
+        self.smudgeplotSpecParameters["queue"] = args.smudgeplot_queue
+        self.smudgeplotSpecParameters["mem"] = args.smudgeplot_mem
+        self.allParameters ["smudgeplot"] = self.smudgeplotSpecParameters
+
     def storegenomescopeSpecParameters(self,args):
         """Updates genomescope cluster spec parameters to the map of parameters to be store in a JSON file
 
@@ -1393,7 +1493,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.filtlongSpecParameters["name"] = "{rule}_{base}_s" + args.preprocess_ont_step 
+        self.filtlongSpecParameters["name"] = "{rule}_" + args.base_name + "_s" + args.preprocess_ont_step 
         self.filtlongSpecParameters["qos"] = args.filtlong_qos
         self.filtlongSpecParameters["time"] = args.filtlong_time
         self.filtlongSpecParameters["mem"] = args.filtlong_mem
@@ -1415,7 +1515,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.flyeSpecParameters["name"] = "{rule}_{base}_s" + args.flye_step 
+        self.flyeSpecParameters["name"] = "{rule}_" + args.base_name + "_s" + args.flye_step 
         self.flyeSpecParameters["qos"] = args.flye_qos
         self.flyeSpecParameters["time"] = args.flye_time
         self.flyeSpecParameters["queue"] = args.flye_queue
@@ -1435,7 +1535,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.nextdenovoSpecParameters["name"] = "{rule}_{base}_s" + args.nextdenovo_step 
+        self.nextdenovoSpecParameters["name"] = "{rule}_" + args.base_name + "_s" + args.nextdenovo_step 
         self.nextdenovoSpecParameters["qos"] = args.nextdenovo_qos
         self.nextdenovoSpecParameters["time"] = args.nextdenovo_time
         self.nextdenovoSpecParameters["queue"] = args.nextdenovo_queue
@@ -1488,94 +1588,6 @@ class CreateConfigurationFile(object):
         self.hypoSpecParameters["queue"] = args.hypo_queue
         self.hypoSpecParameters["mem"] = args.hypo_mem
         self.allParameters ["hypo"] = self.hypoSpecParameters
-
-    def storeRaconParameters(self,args):
-        """Updates racon parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.raconParameters["Racon dir"] = args.racon_dir
-        self.raconParameters["options"] = args.racon_opts
-        self.allParameters ["Racon"] = self.raconParameters
-
-    def storeraconSpecParameters(self,args):
-        """Updates racon cluster spec parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.raconSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base}.{wildcards.param}"
-        self.raconSpecParameters["qos"] = args.racon_qos
-        self.raconSpecParameters["time"] = args.racon_time
-        self.raconSpecParameters["queue"] = args.racon_queue
-        self.allParameters ["racon"] = self.raconSpecParameters
-
-    def storeMedakaParameters(self,args):
-        """Updates medaka parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.medakaParameters["environment"] = args.medaka_env
-        self.medakaParameters["Model"] = args.medaka_model
-        self.medakaParameters["Working_dir"] = args.medaka_workdir
-        self.medakaParameters["consensus options"] = args.medaka_consensus_opts
-        self.allParameters ["Medaka"] = self.medakaParameters
-
-    def storemedakaSpecParameters(self,args):
-        """Updates medaka cluster spec parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.medakaSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base}.{wildcards.param}"
-        self.medakaSpecParameters["qos"] = args.medaka_qos
-        self.medakaSpecParameters["time"] = args.medaka_time
-        self.medakaSpecParameters["queue"] = args.medaka_queue
-        self.allParameters ["medaka"] = self.medakaSpecParameters
-
-    def storePilonParameters(self,args):
-        """Updates pilon parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.pilonParameters["path"] = args.pilon_path
-        self.pilonParameters["options"] = args.pilon_opts
-        self.pilonParameters["JAVA options"] = args.java_opts
-        self.pilonParameters["subsampling"] = args.pilon_subsampling
-        self.pilonParameters["chunks"] = args.pilon_chunks
-        self.allParameters ["Pilon"] = self.pilonParameters
-
-    def storesplitpilonSpecParameters(self,args):
-        """Updates split pilon cluster spec parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.splitpilonSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base}.{wildcards.param}"
-        self.splitpilonSpecParameters["qos"] = args.split_pilon_qos
-        self.splitpilonSpecParameters["time"] = args.split_pilon_time
-        self.splitpilonSpecParameters["queue"] = args.split_pilon_queue
-        self.allParameters ["split_pilon"] = self.splitpilonSpecParameters
-
-    def storepilonSpecParameters(self,args):
-        """Updates pilon cluster spec parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.pilonSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base}.{wildcards.param}"
-        self.pilonSpecParameters["qos"] = args.pilon_qos
-        self.pilonSpecParameters["time"] = args.pilon_time
-        self.pilonSpecParameters["queue"] = args.pilon_queue
-        self.pilonSpecParameters["threads"] = args.pilon_threads
-        self.allParameters ["pilon"] = self.pilonSpecParameters
-
-    def storejoinpilonSpecParameters(self,args):
-        """Updates join pilon cluster spec parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.joinpilonSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.base}.{wildcards.param}"
-        self.joinpilonSpecParameters["qos"] = args.join_pilon_qos
-        self.joinpilonSpecParameters["time"] = args.join_pilon_time
-        self.joinpilonSpecParameters["queue"] = args.join_pilon_queue
-        self.allParameters ["join_pilon"] = self.joinpilonSpecParameters
 
     def storenextpolishlrSpecParameters(self,args):
         """Updates nextpolish lr cluster spec parameters to the map of parameters to be store in a JSON file
@@ -1644,6 +1656,25 @@ class CreateConfigurationFile(object):
         self.scaffold10XSpecParameters["mem"] = args.tigmint_mem
         self.allParameters ["scaffolding_10X"] = self.scaffold10XSpecParameters
 
+    def storehicParameters(self,args):
+        """Updates HiC related parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.hicParameters["deepseq"] = args.hic_deepseq
+        self.hicParameters["get_pretext"] = args.get_pretext
+        self.hicParameters["yahs_cores"] = args.yahs_cores
+        self.hicParameters["yahs_mq"] = args.yahs_mq
+        self.hicParameters["yahs_opts"] = args.yahs_opts
+        self.hicParameters["assembly_qc"] = args.assembly_qc
+        self.hicParameters["qc_assemblylen"] = args.hic_qc_assemblylen
+        self.hicParameters["align_opts"] = args.hic_map_opts
+        self.hicParameters["MQ"] = args.mq
+        self.hicParameters["reads_for_blast"] = args.hic_readsblast
+        self.hicParameters["blastdb"] = args.blastdb
+        self.hicParameters["blast_cores"] = args.blast_cores
+        self.allParameters ["HiC"] = self.hicParameters  
+
     def storeFinalizeParameters(self,args):
         """Updates finalize parameters to the map of parameters to be store in a JSON file
 
@@ -1656,24 +1687,156 @@ class CreateConfigurationFile(object):
         self.finalizeParameters["Meryl threads"] = args.meryl_threads
         self.allParameters ["Finalize"] = self.finalizeParameters
 
+    def storeassprepSpecParameters(self,args):
+        """Updates assembly prepare cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.assprepSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}"
+        self.assprepSpecParameters["qos"] = args.ass_prepare_qos
+        self.assprepSpecParameters["time"] = args.ass_prepare_time
+        self.assprepSpecParameters["queue"] = args.ass_prepare_queue
+        self.assprepSpecParameters["mem"] = args.ass_prepare_mem
+        self.allParameters ["assembly_prepare"] = self.assprepSpecParameters
+
+    def storemapHicSpecParameters(self,args):
+        """Updates map HiC cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.mapHicSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}"
+        self.mapHicSpecParameters["qos"] = args.map_hic_qos
+        self.mapHicSpecParameters["time"] = args.map_hic_time
+        self.mapHicSpecParameters["queue"] = args.map_hic_queue
+        self.mapHicSpecParameters["mem"] = args.map_hic_mem
+        self.allParameters ["align_hic"] = self.mapHicSpecParameters
+
+    def storepairtoolsSpecParameters(self,args):
+        """Updates pairtools cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.pairtoolsSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_mq{wildcards.mq}"
+        self.pairtoolsSpecParameters["qos"] = args.pairtools_qos
+        self.pairtoolsSpecParameters["time"] = args.pairtools_time
+        self.pairtoolsSpecParameters["queue"] = args.pairtools_queue
+        self.pairtoolsSpecParameters["mem"] = args.pairtools_mem
+        self.allParameters ["pairtools_processing"] = self.pairtoolsSpecParameters
+
+    def storeblastSpecParameters(self,args):
+        """Updates blast cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.blastSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}"
+        self.blastSpecParameters["qos"] = args.blast_qos
+        self.blastSpecParameters["time"] = args.blast_time
+        self.blastSpecParameters["queue"] = args.blast_queue
+        self.blastSpecParameters["mem"] = args.blast_mem
+        self.allParameters ["read_screening"] = self.blastSpecParameters
+
+    def storeyahsSpecParameters(self,args):
+        """Updates yahs cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.yahsSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}"
+        self.yahsSpecParameters["qos"] = args.yahs_qos
+        self.yahsSpecParameters["time"] = args.yahs_time
+        self.yahsSpecParameters["queue"] = args.yahs_queue
+        self.yahsSpecParameters["mem"] = args.yahs_mem
+        self.allParameters ["run_yahs"] = self.yahsSpecParameters
+
+    def storepretextSpecParameters(self,args):
+        """Updates pretext cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.pretextSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_{wildcards.mq}"
+        self.pretextSpecParameters["qos"] = args.pretext_qos
+        self.pretextSpecParameters["time"] = args.pretext_time
+        self.pretextSpecParameters["queue"] = args.pretext_queue
+        self.pretextSpecParameters["mem"] = args.pretext_mem
+        self.allParameters ["generate_pretext"] = self.pretextSpecParameters
+
+    def storeepretextSpecParameters(self,args):
+        """Updates pretext cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.epretextSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_{wildcards.mq}"
+        self.epretextSpecParameters["qos"] = args.pretext_qos
+        self.epretextSpecParameters["time"] = args.pretext_time
+        self.epretextSpecParameters["queue"] = args.pretext_queue
+        self.epretextSpecParameters["mem"] = args.pretext_mem
+        self.allParameters ["add_extensions_pretext"] = self.epretextSpecParameters
+
+    def storeqcstatsSpecParameters(self,args):
+        """Updates qcstats cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.qcstatsSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_{wildcards.mq}"
+        self.qcstatsSpecParameters["qos"] = args.qcstats_qos
+        self.qcstatsSpecParameters["time"] = args.qcstats_time
+        self.qcstatsSpecParameters["queue"] = args.qcstats_queue
+        self.qcstatsSpecParameters["mem"] = args.qcstats_mem
+        self.allParameters ["qc_statistics"] = self.qcstatsSpecParameters
+
     def storestatsSpecParameters(self,args):
         """Updates stats cluster spec parameters to the map of parameters to be store in a JSON file
 
         args -- set of parsed arguments
         """
-        self.statsSpecParameters["name"] = "{rule}_{base}.{params.outbase}"
+        self.statsSpecParameters["name"] = "{rule}_" + args.base_name + ".{params.outbase}"
         self.statsSpecParameters["qos"] = args.stats_qos
         self.statsSpecParameters["time"] = args.stats_time
         self.statsSpecParameters["queue"] = args.stats_queue
         self.statsSpecParameters["mem"] = args.stats_mem
         self.allParameters ["get_stats"] = self.statsSpecParameters
 
+    def storegapsSpecParameters(self,args):
+        """Updates the get gaps extension cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.gapsSpecParameters["name"] = "{rule}_" + args.base_name
+        self.gapsSpecParameters["qos"] = args.stats_qos
+        self.gapsSpecParameters["time"] = args.stats_time
+        self.gapsSpecParameters["queue"] = args.stats_queue
+        self.gapsSpecParameters["mem"] = args.stats_mem
+        self.allParameters ["get_extension_gaps"] = self.gapsSpecParameters
+
+    def storeontbgSpecParameters(self,args):
+        """Updates the get ONT extension cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.ontbgSpecParameters["name"] = "{rule}_" + args.base_name
+        self.ontbgSpecParameters["qos"] = args.stats_qos
+        self.ontbgSpecParameters["time"] = args.stats_time
+        self.ontbgSpecParameters["queue"] = args.stats_queue
+        self.ontbgSpecParameters["mem"] = args.stats_mem
+        self.allParameters ["get_extension_ont"] = self.ontbgSpecParameters
+
+    def storetelextSpecParameters(self,args):
+        """Updates the get telomere extension cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.telextSpecParameters["name"] = "{rule}_" + args.base_name
+        self.telextSpecParameters["qos"] = args.telext_qos
+        self.telextSpecParameters["time"] = args.telext_time
+        self.telextSpecParameters["queue"] = args.telext_queue
+        self.telextSpecParameters["mem"] = args.telext_mem
+        self.allParameters ["get_extension_telomeres"] = self.telextSpecParameters
+
     def storebuscoSpecParameters(self,args):
         """Updates busco cluster spec parameters to the map of parameters to be store in a JSON file
 
         args -- set of parsed arguments
         """
-        self.buscoSpecParameters["name"] = "{rule}_{base}.{params.buscobase}"
+        self.buscoSpecParameters["name"] = "{rule}_" + args.base_name + ".{params.buscobase}"
         self.buscoSpecParameters["qos"] = args.busco_qos
         self.buscoSpecParameters["time"] = args.busco_time
         self.buscoSpecParameters["queue"] = args.busco_queue
@@ -1685,7 +1848,7 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.merqSpecParameters["name"] = "{rule}_{base}.{wildcards.merqbase}"
+        self.merqSpecParameters["name"] = "{rule}_" + args.base_name + ".{wildcards.merqbase}"
         self.merqSpecParameters["qos"] = args.merq_qos
         self.merqSpecParameters["time"] = args.merq_time
         self.merqSpecParameters["queue"] = args.merq_queue
@@ -1697,23 +1860,12 @@ class CreateConfigurationFile(object):
 
         args -- set of parsed arguments
         """
-        self.finSpecParameters["name"] = "{rule}_{base}"
+        self.finSpecParameters["name"] = "{rule}_" + args.base_name
         self.finSpecParameters["qos"] = args.fin_qos
         self.finSpecParameters["time"] = args.fin_time
         self.finSpecParameters["queue"] = args.fin_queue
         self.finSpecParameters["mem"] = args.fin_mem
         self.allParameters ["finalize"] = self.finSpecParameters
-
-    def storeget_reportSpecParameters(self,args):
-        """Updates finalize cluster spec parameters to the map of parameters to be store in a JSON file
-
-        args -- set of parsed arguments
-        """
-        self.repSpecParameters["name"] = "{rule}_{base}"
-        self.repSpecParameters["qos"] = args.fin_qos
-        self.repSpecParameters["time"] = args.fin_time
-        self.repSpecParameters["queue"] = args.fin_queue
-        self.allParameters ["get_report"] = self.repSpecParameters
        
     def storeWildcardParameters(self,args):
         """Updates wildcard parameters to the map of parameters to be store in a JSON file
@@ -1723,11 +1875,12 @@ class CreateConfigurationFile(object):
         self.wildcardParameters["ONT_wildcards"] = args.ONT_wildcards
         self.wildcardParameters["illumina_wildcards"] = args.illumina_wildcards
         self.wildcardParameters["10X_wildcards"] = args.r10X_wildcards
+        self.wildcardParameters["HiC_wildcards"] = args.hic_wildcards
         self.allParameters ["Wildcards"] = self.wildcardParameters
 
     def create_nextdenovo_config(self, args):
         nextdenovo_config.add_section('General')
-        nextdenovo_config.set('General', 'job_type', 'local')
+        nextdenovo_config.set('General', 'job_type', args.nextdenovo_type)
         nextdenovo_config.set('General', 'task', args.nextdenovo_task)
         nextdenovo_config.set('General', 'rewrite', args.nextdenovo_rewrite)
         nextdenovo_config.set('General', 'parallel_jobs', str(args.nextdenovo_parallel_jobs))
@@ -1794,10 +1947,8 @@ configManager.storeFiltlongParameters(args)
 configManager.storeFlyeParameters(args)
 configManager.storeNextdenovoParameters(args)
 configManager.storeHypoParameters(args)
-configManager.storeRaconParameters(args)
-configManager.storeMedakaParameters(args)
-configManager.storePilonParameters(args)
 configManager.storePurgedupsParameters(args)
+configManager.storehicParameters(args)
 configManager.storescaffold10XParameters(args)
 configManager.storeFinalizeParameters(args)
 configManager.storeWildcardParameters(args)
@@ -1807,7 +1958,7 @@ if args.r10X_wildcards != None:
   specManager.storelongrangerSpecParameters(args)
 if args.illumina_dir != None:
   specManager.storetrimgaloreSpecParameters(args)
-if args.illumina_wildcards != None or args.ONT_wildcards != None or args.r10X_wildcards:
+if args.illumina_wildcards != None or args.ONT_wildcards != None or args.r10X_wildcards or args.hic_wildcards:
   specManager.storeconcatreadsSpecParameters(args)
 if args.ONT_wildcards != None or args.ONT_reads != None:
   if not os.path.exists(args.ONT_filtered):
@@ -1822,20 +1973,12 @@ if args.run_nextdenovo == True:
   with open(args.ndconfFile, 'w') as ndconf:
     configManager.create_nextdenovo_config(args)
     nextdenovo_config.write(ndconf)
-if args.pilon_rounds > 0 or args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0:
+if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0:
   specManager.storebwaSpecParameters(args)
-if args.racon_rounds > 0 or args.medaka_rounds > 0 or args.nextpolish_ont_rounds > 0 or args.hypo_rounds >0 or args.run_purgedups == True:
+if args.nextpolish_ont_rounds > 0 or args.hypo_rounds >0 or args.run_purgedups == True or args.get_pretext:
   specManager.storeminimapSpecParameters(args)
 if args.hypo_rounds > 0:
   specManager.storehypoSpecParameters(args)
-if args.racon_rounds > 0:
-  specManager.storeraconSpecParameters(args)
-if args.medaka_rounds > 0:
-  specManager.storemedakaSpecParameters(args)
-if args.pilon_rounds > 0:
-  specManager.storesplitpilonSpecParameters(args)
-  specManager.storepilonSpecParameters(args)
-  specManager.storejoinpilonSpecParameters(args)
 if args.nextpolish_ont_rounds > 0:
   specManager.storenextpolishlrSpecParameters(args)
 if args.nextpolish_ill_rounds > 0:
@@ -1844,17 +1987,33 @@ if args.run_purgedups == True:
   specManager.storepurgedupsSpecParameters(args)
 if args.run_tigmint == True:
   specManager.storescaffold10XSpecParameters(args)
+if args.hic_dir:
+  specManager.storeassprepSpecParameters(args)
+  specManager.storemapHicSpecParameters(args)
+  specManager.storepairtoolsSpecParameters(args)
+  specManager.storeqcstatsSpecParameters(args)
+  specManager.storeblastSpecParameters(args)
+  if args.run_yahs == True:
+    specManager.storeyahsSpecParameters(args)
+  if args.get_pretext == True:
+    specManager.storepretextSpecParameters(args)
+    specManager.storegapsSpecParameters(args)
+    specManager.storeontbgSpecParameters(args)
+    specManager.storetelextSpecParameters(args)
+    specManager.storeepretextSpecParameters(args)
+
 if args.merqury_db:
   if not os.path.exists(args.merqury_db):
     specManager.storebuildmerylSpecParameters(args)
     specManager.storeconcatmerylSpecParameters(args)
-    specManager.storegenomescopeSpecParameters(args)
+  specManager.storesmudgeplotSpecParameters(args)
+  specManager.storegenomescopeSpecParameters(args)
   specManager.storemerqurySpecParameters(args)
 if args.final_evals:
   specManager.storestatsSpecParameters(args)
   specManager.storebuscoSpecParameters(args)
 specManager.storefinalizeSpecParameters(args)
-specManager.storeget_reportSpecParameters(args)
+
 #4. Store JSON file
 with open(args.configFile, 'w') as of:
     json.dump(configManager.allParameters, of, indent=2)

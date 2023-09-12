@@ -87,6 +87,27 @@ rule genomescope2:
   shell:
     "genomescope2 -i {input.histogram} -o {output.outdir} -p {params.ploidy} -k {params.kmer} {params.opts};"
 
+rule smudgeplot:
+  input:
+    histogram = "meryl.hist",
+    meryl = "meryl_db",
+  output:
+    plot = "smudgeplot_smudgeplot.png"
+  params:
+    dir = "smudgeplot_k21"
+  conda:
+    "../envs/merqury1.3.yaml"
+  threads: 2
+  shell:
+    "mkdir -p {params.dir}; cd {params.dir}; "
+    "smudgeplot.py cutoff {input.histogram} U > upper.cutoff;"
+    "smudgeplot.py cutoff {input.histogram} L > lower.cutoff;"
+    "up=$(cat upper.cutoff);"
+    "low=$(cat lower.cutoff);"
+    "meryl print less-than $up greater-than $low {input.meryl} > meryl.U$up.L$low.dump;"
+    "smudgeplot.py hetkmers -o meryl.U$up.L$low < meryl.U$up.L$low.dump;"
+    "smudgeplot.py plot meryl.U$up.L$low_coverages.tsv;"
+
 rule long_ranger:
   input: 
     mkfastq_dir = "input_dir/"
