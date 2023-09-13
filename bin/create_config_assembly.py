@@ -323,6 +323,12 @@ class CreateConfigurationFile(object):
         self.pretext_queue = "genD"
         self.pretext_mem = "100G" 
 
+        #TPF SPEC PARAMETERS
+        self.tpf_qos = "short"
+        self.tpf_time = "1:00:00"
+        self.tpf_queue = "genD"
+        self.tpf_mem = "50G" 
+
         #TELOMERE_EXT SPEC PARAMETERS
         self.telext_qos = "normal"
         self.telext_time = "10:00:00"
@@ -408,6 +414,7 @@ class CreateConfigurationFile(object):
         self.blastSpecParameters = {}
         self.yahsSpecParameters = {}
         self.pretextSpecParameters = {}
+        self.tpfSpecParameters = {}
         self.epretextSpecParameters = {}
         self.telextSpecParameters = {}
         self.gapsSpecParameters = {}
@@ -879,6 +886,11 @@ class CreateConfigurationFile(object):
         args.pretext_time = self.pretext_time 
         args.pretext_queue = self.pretext_queue
         args.pretext_mem = self.pretext_mem
+
+        args.tpf_qos =  self.tpf_qos
+        args.tpf_time = self.tpf_time 
+        args.tpf_queue = self.tpf_queue
+        args.tpf_mem = self.tpf_mem
 
         args.telext_qos =  self.telext_qos
         args.telext_time = self.telext_time 
@@ -1759,6 +1771,19 @@ class CreateConfigurationFile(object):
         self.pretextSpecParameters["mem"] = args.pretext_mem
         self.allParameters ["generate_pretext"] = self.pretextSpecParameters
 
+    def storetpfSpecParameters(self,args):
+        """Updates tpf cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.tpfSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}"
+        self.tpfSpecParameters["qos"] = args.tpf_qos
+        self.tpfSpecParameters["time"] = args.tpf_time
+        self.tpfSpecParameters["queue"] = args.tpf_queue
+        self.tpfSpecParameters["mem"] = args.tpf_mem
+        self.allParameters ["get_tpf"] = self.tpfSpecParameters
+
+
     def storeepretextSpecParameters(self,args):
         """Updates pretext cluster spec parameters to the map of parameters to be store in a JSON file
 
@@ -1997,6 +2022,7 @@ if args.hic_dir:
     specManager.storeyahsSpecParameters(args)
   if args.get_pretext == True:
     specManager.storepretextSpecParameters(args)
+    specManager.storetpfSpecParameters(args)
     specManager.storegapsSpecParameters(args)
     specManager.storeontbgSpecParameters(args)
     specManager.storetelextSpecParameters(args)

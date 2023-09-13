@@ -111,7 +111,16 @@ rule add_extensions_pretext:
     fi
     """
 
-
+rule get_tpf:
+  input:
+    fasta = "genome.yahs_scaffolded.fa"
+  output:
+    tpf = "genome.yahs_scaffolded.fa.tpf"
+  params:
+  conda:
+    "../envs/rapidcuration.yaml"
+  shell:
+    "rapid_split.pl --fa {input.fasta};"
 
 
 

@@ -304,6 +304,7 @@ rule get_extension_gaps:
     """
     export PATH="{params.scripts_dir}:$PATH;"
     cat {input.gaps_bed} | gap_bed2bedgraph.sh > {output.gaps} ;
+    sleep 4m
     """
 
 rule get_extension_ont:
@@ -340,5 +341,5 @@ rule get_extension_telomeres:
 
     #format to a proper bedgraph for pretext
     egrep -v ^id telomeres/out_telomeric_locations.bedgraph | cut -f 1-4 > {output.tel}
-
+    sleep 3m
     """

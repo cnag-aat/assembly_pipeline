@@ -254,6 +254,7 @@ if config['HiC']['get_pretext']:
       gaps = "{directory}/{name}.gaps.bg",
       ontcov = lambda wildcards: "{directory}/{name}.ONTcoverage.bg" if len(minimap2) > 0 else "",
       pret = "{directory}/{name}_mq{mq}.pretext",  
+      tpf = "{directory}/../{name}.yahs_scaffolds_final.fa.tpf"
     output:
       pretext = "{directory}/{name}_mq{mq}.extensions.pretext", 
     wildcard_constraints:
@@ -268,5 +269,17 @@ if config['HiC']['get_pretext']:
     benchmark:
       "{directory}/logs/" + str(date) + ".rule_add_ext.{mq}.{name}.benchmark.txt"
     threads:  config['Parameters']['pairtools_cores']
+
+  use rule get_tpf from hic_workflow with:
+    input:
+      fasta = "{directory}/{name}.yahs_scaffolds_final.fa",
+    output:
+      tpf = "{directory}/{name}.yahs_scaffolds_final.fa.tpf",
+    log:
+      "{directory}/logs/" + str(date) + ".j%j.get_tpf.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.get_tpf.{name}.err"
+    benchmark:
+      "{directory}/logs/" + str(date) + ".get_tpf.{name}.benchmark.txt"
+    threads:  2
 
 
