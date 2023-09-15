@@ -302,8 +302,7 @@ rule get_extension_gaps:
     scripts_dir = "../scripts"
   shell:
     """
-    export PATH="{params.scripts_dir}:$PATH;"
-    cat {input.gaps_bed} | gap_bed2bedgraph.sh > {output.gaps} ;
+    cat {input.gaps_bed} | {params.scripts_dir}/gap_bed2bedgraph.sh > {output.gaps} ;
     sleep 4m
     """
 

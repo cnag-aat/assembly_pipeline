@@ -1059,7 +1059,7 @@ class CreateConfigurationFile(object):
           elif args.r10X:
             args.r10X = os.path.abspath(args.r10X) 
             if not os.path.exists(args.r10X):
-              if len(raw_10X) == 0 and args.processed_10X == None:
+              if len(args.raw_10X) == 0 and args.processed_10X == None:
                 parser.print_help()
                 print ("Illumina reads are not found and are needed")
                 sys.exit(-1)
@@ -1838,10 +1838,10 @@ class CreateConfigurationFile(object):
         args -- set of parsed arguments
         """
         self.ontbgSpecParameters["name"] = "{rule}_" + args.base_name
-        self.ontbgSpecParameters["qos"] = args.stats_qos
-        self.ontbgSpecParameters["time"] = args.stats_time
-        self.ontbgSpecParameters["queue"] = args.stats_queue
-        self.ontbgSpecParameters["mem"] = args.stats_mem
+        self.ontbgSpecParameters["qos"] = args.telext_qos
+        self.ontbgSpecParameters["time"] = args.telext_time
+        self.ontbgSpecParameters["queue"] = args.telext_queue
+        self.ontbgSpecParameters["mem"] = args.telext_mem
         self.allParameters ["get_extension_ont"] = self.ontbgSpecParameters
 
     def storetelextSpecParameters(self,args):

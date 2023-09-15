@@ -179,11 +179,12 @@ if len(hic_assemblies) > 0:
     benchmark:
         "{directory}/logs/" + str(date) + ".rule_qc_stats.benchmark.mq{mq}.{name}.txt"
     threads: 2
+    
   if config['HiC']['get_pretext']:
     use rule get_extension_gaps from eval_workflow with:
       input:
         sla = lambda wildcards: hic_assemblies[wildcards.name],
-        gaps_bed = lambda wildcards: stats_loc[wildcards.name]
+        gaps_bed = lambda wildcards: stats_loc[wildcards.name],
       output:
         gaps = "{directory}/{name}.gaps.bg"
       params:
@@ -362,7 +363,8 @@ use rule finalize from eval_workflow with:
     buscos = BuscoSummaries,
     stats= StatsFiles,
     merqs=MerquryQV,
-    pretext = pretext_files
+    pretext = pretext_files, 
+    tpf = tpf_files
   output:
     output = report(config["Outputs"]["stats_out"],
              caption="../report/final.rst",

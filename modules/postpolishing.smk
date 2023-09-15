@@ -50,6 +50,7 @@ hic_assemblies = {}
 asslength = {}
 pretext_files = []
 pretext_in = []
+tpf_files = []
 
 if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
   hic_out_dir = {}
@@ -72,7 +73,7 @@ if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
       for i in postpolish:
         if "purgedups" in i:
           name = os.path.splitext(os.path.basename(i))[0]
-          hic_assemblies[name] = i    
+          hic_assemblies[name] = i 
 
     for i in config["Inputs"]["Assemblies for postpolishing"]:
       step = config["Inputs"]["Assemblies for postpolishing"][i]
@@ -95,6 +96,7 @@ if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
       name = os.path.splitext(os.path.basename(assembly))[0]
       hic_out_dir[name] = working_dir + step + "_HiC_scaffolding/"
       postpolish.append(hic_out_dir[name] + name + ".yahs_scaffolds_final.fa")
+      tpf_files.append(hic_out_dir[name] + name + ".yahs_scaffolds_final.fa.tpf")
 
   hic_bams = {}
   pretext_lrmap = {}
@@ -254,7 +256,6 @@ if config['HiC']['get_pretext']:
       gaps = "{directory}/{name}.gaps.bg",
       ontcov = lambda wildcards: "{directory}/{name}.ONTcoverage.bg" if len(minimap2) > 0 else "",
       pret = "{directory}/{name}_mq{mq}.pretext",  
-      tpf = "{directory}/../{name}.yahs_scaffolds_final.fa.tpf"
     output:
       pretext = "{directory}/{name}_mq{mq}.extensions.pretext", 
     wildcard_constraints:

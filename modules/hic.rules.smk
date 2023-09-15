@@ -83,7 +83,7 @@ rule add_extensions_pretext:
     tel = "telomeres.bg",
     gaps = "gaps.bg",
     pret = "assembly_mq.pretext",
-    ontcov = "ONTcoverage.bg" 
+    ontcov = "ONTcoverage.bg"
   output:
     pretext = "assembly_mq.extensions.pretext"
   params:
