@@ -1,4 +1,4 @@
-# GLAWS (Genome Long-read Assembly Workflow in Snakemake)
+# CLAWS (CNAG's Long-read Assembly Workflow in Snakemake)
  Snakemake Pipeline used for de novo genome assembly @CNAG. It has been developed for Snakemake v6.0.5.
 
 It accepts Oxford Nanopore Technologies (ONT) reads, PacBio HFi reads, illumina paired-end data, illumina 10X data and Hi-C reads. It does the preprocessing of the reads, assembly, polishing, purge_dups, scaffodling and different evaluation steps. By default it will preprocess the reads, run Flye + Hypo + purge_dups + yahs and evaluate the resulting assemblies with BUSCO, MERQURY, Nseries and assembly_stats. It needs a config file and a spec file (json file with instructions on which resources should slurm use for each of the jobs). Both files are created by the script "create_config_assembly.py" that is located in the bin directory. To check all the options accepted by the script, do:
