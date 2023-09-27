@@ -1033,7 +1033,7 @@ class CreateConfigurationFile(object):
         
         args.r10X_reads = {}
         if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True or args.merqury_db:
-          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None:
+          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None and not os.path.exists(args.merqury_db):
             parser.print_help()
             print ("The illumina reads are needed")
             sys.exit(-1)

@@ -105,7 +105,7 @@ rule smudgeplot:
     "up=$(cat upper.cutoff);"
     "low=$(cat lower.cutoff);"
     "meryl print less-than $up greater-than $low {input.meryl} > meryl.U$up.L$low.dump;"
-   # "smudgeplot.py hetkmers -o meryl.U$up.L$low < meryl.U$up.L$low.dump;"
+    "smudgeplot.py hetkmers -o meryl.U$up.L$low < meryl.U$up.L$low.dump;"
     "smudgeplot.py plot meryl.U$up.L$low""_coverages.tsv;"
 
 rule long_ranger:

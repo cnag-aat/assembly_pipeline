@@ -299,7 +299,7 @@ rule get_extension_gaps:
   output:
     gaps = "gaps.bg"
   params:
-    scripts_dir = "../scripts"
+    scripts_dir = "../scripts/"
   shell:
     """
     cat {input.gaps_bed} | {params.scripts_dir}/gap_bed2bedgraph.sh > {output.gaps} ;

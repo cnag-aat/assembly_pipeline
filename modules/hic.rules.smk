@@ -117,6 +117,7 @@ rule get_tpf:
   output:
     tpf = "genome.yahs_scaffolded.fa.tpf"
   params:
+    scripts_dir = "../scripts/"
   conda:
     "../envs/rapidcuration.yaml"
   shell:

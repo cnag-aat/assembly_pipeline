@@ -276,6 +276,8 @@ if config['HiC']['get_pretext']:
       fasta = "{directory}/{name}.yahs_scaffolds_final.fa",
     output:
       tpf = "{directory}/{name}.yahs_scaffolds_final.fa.tpf",
+    params:
+      scripts_dir = scripts_dir
     log:
       "{directory}/logs/" + str(date) + ".j%j.get_tpf.{name}.out",
       "{directory}/logs/" + str(date) + ".j%j.get_tpf.{name}.err"

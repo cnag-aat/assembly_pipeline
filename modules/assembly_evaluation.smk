@@ -170,7 +170,7 @@ if len(hic_assemblies) > 0:
       mq="\d+",
     params:
       scripts_dir = scripts_dir,
-      outd = '{directory}/out',
+      outd = '{directory}/pairtools_out',
       assemblylength = config['HiC']['qc_assemblylen'],
       deepseq = config['HiC']['deepseq'],
     log:
@@ -363,8 +363,8 @@ use rule finalize from eval_workflow with:
     buscos = BuscoSummaries,
     stats= StatsFiles,
     merqs=MerquryQV,
-    pretext = pretext_files, 
-    tpf = tpf_files
+    pretext = lambda wildcards: pretext_files if config["HiC"]["deepseq"] == True else [],
+    tpf = lambda wildcards: tpf_files if config["HiC"]["deepseq"] == True else []
   output:
     output = report(config["Outputs"]["stats_out"],
              caption="../report/final.rst",
