@@ -465,3 +465,36 @@ Wildcards:
   --hic-list hic_wildcards
                         List with basename of the raw hic fastqs. Default None
 ```
+# Changes made to v2.2: 
+
+1. General: 
+
+	Now default read_type is nano-hq 
+
+2. Rule trim_galore: 
+
+	"--max_n 0" has been added to the default behaviour of "--trim-galore-opts" 
+
+3. Meryl: 
+
+	New option "--meryl-reads" has been added to the config. Default is "Illumina ont" to build the meryl database using both type of reads, it can be changed to one or the other 
+
+4. Merqury: 
+
+	Option "--merqury-plot-opts" has been added to config file. It can be used to modify the x and y axis maximum values (eg. --merqury-plot-opts " -m 200 -n 6000") 
+
+5. Genomescope: 
+
+	"-m 10000" is now part of the default behavior of "--genomescope-opts" 
+
+6. Hic_statistics: 
+
+	This is now running for each assembly and mq for which a pretext file is generated 
+
+7. Assembly inputs for different steps: 
+
+	a. "--assembly-in" to start after assembly step (eg. Evaluation, polishing, purging and scaffolding) 
+
+	b. "--postpolish-assemblies" to start after polishing step (eg. Evaluation, purging and scaffolding) 
+
+	c. "--curated-assemblies" to start after scaffolding step (eg. Evaluation and pretext generation) 
