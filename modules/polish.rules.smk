@@ -61,6 +61,6 @@ rule nextpolish_sr:
     "NextPolish/1.4.1-GCC-11.2.0"
   threads: 12
   shell:
-    "cd {wildcards.directory}nextpolish;"
+    "cd {wildcards.directory}/nextpolish;"
     "samtools faidx {input.genome};"
     "python {params.path}/lib/nextpolish1.py -g {input.genome}  -p {threads} -s {input.bam} -t {params.task} > {output.polished};"

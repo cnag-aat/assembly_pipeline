@@ -72,6 +72,7 @@ rule run_merqury:
   params:
     out_pref = "assembly",
     directory = os.getcwd() + "/merqury_run",
+    additional_plot_opts = " "
   log:
     "logs/" + date + ".merqury.out",
     "logs/" + date + ".merqury.err",
@@ -81,7 +82,7 @@ rule run_merqury:
   shell:
     "mkdir -p {params.directory}; cd {params.directory};"
     "merqury.sh {input.meryl_db} {input.assembly} {params.out_pref};"
-    "$CONDA_PREFIX/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist;"
+    "$CONDA_PREFIX/share/merqury/plot/plot_spectra_cn.R -f {output.hist} -o {params.out_pref}.spectra-cn -z {params.out_pref}.{params.out_pref}.only.hist {params.additional_plot_opts};"
     "$CONDA_PREFIX/share/merqury/eval/false_duplications.sh {output.hist} > {output.false_dups};"
 
 rule run_busco:
@@ -220,40 +221,137 @@ rule pairtools_processing:
     {params.rmcmd}
     """
 
+rule pairtools_processing_parse:
+  input: 
+    mapped = "full_hic.bam",
+    alength = "assembly.genome"
+  output:
+    psamo = "mq.pairsam.gz",
+  params:
+    scripts_dir = "../scripts/", 
+    mq = 40,
+    outd = "pairtools_out",
+    tmpd = "tmp",
+    name = 'assembly',
+  conda:
+    "../envs/dovetail_tools.yaml"
+  shell:
+    """
+    export PATH="{params.scripts_dir}:$PATH";
+    mkdir -p {params.tmpd};
+    mkdir -p {params.outd};
+
+    samtools view -h -@ {threads} {input.mapped} | \
+    pairtools parse --min-mapq {params.mq} --walks-policy 5unique --max-inter-align-gap 30 --nproc-in {threads} --nproc-out {threads} \
+    --chroms-path {input.alength} -o {output.psamo};
+
+    """
+
+rule pairtools_processing_sort:
+  input: 
+    psamo = "mq.pairsam.gz"
+  output:
+    spsamo = "mq.sorted.pairsam.gz"
+  params:
+    scripts_dir = "../scripts/", 
+    mq = 40,
+    outd = "pairtools_out",
+    tmpd = "tmp",  
+    name = 'assembly',
+  conda:
+    "../envs/dovetail_tools.yaml"
+  shell:
+    """
+    export PATH="{params.scripts_dir}:$PATH";
+
+    pairtools sort --tmpdir={params.tmpd} --nproc {threads} \
+    -o {output.spsamo} {input.psamo}
+    """
+
+rule pairtools_processing_dedup:
+  input: 
+    spsamo = "mq.sorted.pairsam.gz"
+  output:
+    spsamdedup = "mq.pairsam.dedupped.gz",
+    stats = "stats.mq40.txt",
+  params:
+    scripts_dir = "../scripts/", 
+    mq = 40,
+    outd = "pairtools_out",
+    tmpd = "tmp", 
+    name = 'assembly',
+  conda:
+    "../envs/dovetail_tools.yaml"
+  shell:
+    """
+    export PATH="{params.scripts_dir}:$PATH";
+
+    pairtools dedup --nproc-in {threads} --nproc-out {threads} --mark-dups \
+    --output-stats {output.stats} \
+    --output {output.spsamdedup} {input.spsamo}
+ 
+    """
+
+rule pairtools_processing_split:
+  input: 
+    spsamdedup = "mq.pairsam.dedupped.gz"
+  output:
+    mappedptsort = "mapped.PT.mq40.name_sorted.bam",
+    mappedpt = "mapped.PT.mq40.bam"
+  params:
+    scripts_dir = "../scripts/", 
+    mq = 40,
+    outd = "pairtools_out",
+    tmpd = "tmp",   
+    name = 'assembly',
+  conda:
+    "../envs/dovetail_tools.yaml"
+  shell:
+    """
+    export PATH="{params.scripts_dir}:$PATH";
+
+    pairtools split --nproc-in {threads} --nproc-out {threads} {input.spsamdedup} \
+    --output-pairs {params.outd}/mapped.mq{params.mq}.{params.name}.pairs \
+    --output-sam {params.tmpd}/mapped.PT.mq{params.mq}.{params.name}.sam 
+    
+    samtools view -bS -@ {threads} {params.tmpd}/mapped.PT.mq{params.mq}.{params.name}.sam | samtools sort -@ {threads} \
+    -o {output.mappedpt}; 
+
+    samtools index -@ {threads} {output.mappedpt};
+
+    samtools sort -n -@ {threads} {output.mappedpt} -o {output.mappedptsort}
+
+    echo pairtools done, now running {params.rmcmd}
+    {params.rmcmd}
+
+    """
+
 rule qc_statistics:
   input:
     statmq = "stats.mq40.txt",
     mapbam = "mapped.PT.mq40.bam",
   output:
     libstats = "HiC_QC_LibraryStats_mq40.txt",
-    pslibstats = "HiC_QC_LibraryStats_extrapolated_mq40.txt"
   params:
     scripts_dir = "../scripts/",
     assemblylength = "",
     deepseq = False,
     outd = "pairtools_out",
+    pslibstats = "HiC_QC_LibraryStats_extrapolated_mq40.txt"
   conda:
     "../envs/dovetail_tools.yaml"
   shell:
     """
     export PATH="{params.scripts_dir}:$PATH"; 
-    
     # QC Library statistics
-
     get_qc.py -p {input.statmq} > {output.libstats};
-
+ 
+  # preseq extrapolation and QC Library statistics
     if [ {params.deepseq} == "False" ]; then  
-    
-    # preseq extrapolation and QC Library statistics
-    
     preseq lc_extrap -B -P -e 2.1e9 -s 1e8 -seg_len {params.assemblylength} \
     -o {params.outd}/mapped.PT.mq{wildcards.mq}.preseq {input.mapbam};
-
-    # QC Library statistics with extrapolation
-
     get_qc_preseq.py -p {input.statmq} -d {params.outd}/mapped.PT.mq{wildcards.mq}.preseq \
-    > {output.pslibstats};
-
+    > {params.pslibstats};
     fi
     """
 

@@ -13,6 +13,9 @@ module hic_workflow:
 ##0. Define path for files and variables
 input_assemblies = {}
 postpolish = []
+for i in config["Inputs"]["Assemblies for postpolishing"]:
+  postpolish.append(i)
+
 scripts_dir = config["Inputs"]["scripts_dir"]
 if config["Parameters"]["run_purgedups"] == True:
   for i in config["Inputs"]["Assemblies for postpolishing"]:
@@ -23,7 +26,6 @@ if config["Parameters"]["run_purgedups"] == True:
     mappings_dir = working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/mappings"
     if not os.path.exists(mappings_dir):
       os.makedirs(mappings_dir)    
-    postpolish.append(i)
     postpolish.append( working_dir + config["Inputs"]["Assemblies for postpolishing"][i] + "_run_purgedups/" + base_postpolish + ".purged.fa")
     minimap2[base_postpolish] = i
 
@@ -59,7 +61,7 @@ if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
     name = os.path.splitext(os.path.basename(i))[0]
     hic_assemblies[name] = i
     hic_out_dir[name] = config['Outputs']['hic_qc_dir']
-  else:
+  elif config["Parameters"]["run_yahs"]:
     if config["Parameters"]["run_tigmint"] == False and config["Parameters"]["run_purgedups"] == False:
       for i in config["Inputs"]["Assemblies for postpolishing"]:
         name = os.path.splitext(os.path.basename(i))[0]
@@ -96,7 +98,16 @@ if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
       name = os.path.splitext(os.path.basename(assembly))[0]
       hic_out_dir[name] = working_dir + step + "_HiC_scaffolding/"
       postpolish.append(hic_out_dir[name] + name + ".yahs_scaffolds_final.fa")
-      tpf_files.append(hic_out_dir[name] + name + ".yahs_scaffolds_final.fa.tpf")
+      tpf_files.append(hic_out_dir[name] + name + ".yahs_scaffolds_final.fa.tpf")  
+    
+  curated_assemblies = {}
+  for i in config["Inputs"]["Curated Assemblies"]:
+    assembly = i     
+    name = os.path.splitext(os.path.basename(assembly))[0]
+    curated_assemblies[name] = config["Inputs"]["Curated Assemblies"][i]
+    hic_out_dir[name] = config["Inputs"]["Curated Assemblies"][i] + "/"
+    tpf_files.append(hic_out_dir[name] + name + ".fa.tpf")
+
 
   hic_bams = {}
   pretext_lrmap = {}
@@ -106,11 +117,13 @@ if config['Inputs']['HiC_dir'] and config["Wildcards"]["HiC_wildcards"]:
     pretext_lrmap[name] = hic_out_dir[i] + "mappings/" + name + "_minimap2.bam"
     if not os.path.exists(hic_out_dir[i] + "/logs"):
       os.makedirs(hic_out_dir[i] + "/logs")
-    if config['Parameters']['run_yahs']:
+    if config['Parameters']['run_yahs'] and i not in curated_assemblies:
       name = i + ".yahs_scaffolds_final"
-      hic_assemblies[name] = hic_out_dir[i] + name + ".fa"
-      hic_bams[name] = hic_out_dir[i] + "mappings/" + name + ".full_hic.bam"
-      pretext_lrmap[name] = hic_out_dir[i] + "mappings/" + name + "_minimap2.bam"
+    elif i in curated_assemblies:
+      name = i
+    hic_assemblies[name] = hic_out_dir[i] + name + ".fa"
+    hic_bams[name] = hic_out_dir[i] + "mappings/" + name + ".full_hic.bam"
+    pretext_lrmap[name] = hic_out_dir[i] + "mappings/" + name + "_minimap2.bam"
 
   for i in hic_assemblies:
     asslength[i] = os.path.dirname(hic_assemblies[i]) + "/"+ i + ".genome"
@@ -256,6 +269,7 @@ if config['HiC']['get_pretext']:
       gaps = "{directory}/{name}.gaps.bg",
       ontcov = lambda wildcards: "{directory}/{name}.ONTcoverage.bg" if len(minimap2) > 0 else "",
       pret = "{directory}/{name}_mq{mq}.pretext",  
+      stats = "{directory}/pairtools_out/HiC_Final_LibraryStats_mq{mq}.{name}.txt"
     output:
       pretext = "{directory}/{name}_mq{mq}.extensions.pretext", 
     wildcard_constraints:
@@ -273,11 +287,12 @@ if config['HiC']['get_pretext']:
 
   use rule get_tpf from hic_workflow with:
     input:
-      fasta = "{directory}/{name}.yahs_scaffolds_final.fa",
+      fasta = "{directory}/{name}.fa"
     output:
-      tpf = "{directory}/{name}.yahs_scaffolds_final.fa.tpf",
+      tpf = "{directory}/{name}.fa.tpf",
     params:
-      scripts_dir = scripts_dir
+      scripts_dir = scripts_dir,
+      dir = lambda wildcards: wildcards.directory
     log:
       "{directory}/logs/" + str(date) + ".j%j.get_tpf.{name}.out",
       "{directory}/logs/" + str(date) + ".j%j.get_tpf.{name}.err"

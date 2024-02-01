@@ -14,13 +14,130 @@ nextdenovo_config = ConfigParser()
 def get_wildcards(dir, wildcards, ext):
   for r, d, f in os.walk(dir):
     for file in f:
-      if re.search(ext, file):
+      if file.endswith(ext):
+      #if re.search(ext, file):
         a = file.replace(ext,'')
         if wildcards == None:
           wildcards = a
         else:
           wildcards += "," + a
   return wildcards
+
+def require_ont():
+  if args.ONT_filtered:
+    args.ONT_filtered = os.path.abspath(args.ONT_filtered)
+    args.filtlong_dir = os.path.dirname(args.ONT_filtered) + "/"
+  else:
+    if args.filtlong_dir == None:
+      args.filtlong_dir = args.pipeline_workdir + "s" + args.preprocess_ont_step + "_p01.1_Filtlong/"
+    else:
+      args.filtlong_dir = os.path.abspath(args.filtlong_dir) + "/" 
+    args.ONT_filtered = args.filtlong_dir + "ont.filtlong.fastq.gz"
+
+  if args.ONT_dir == None and args.ONT_reads == None and not os.path.exists(args.ONT_filtered):
+    parser.print_help()
+    print ("The long reads are needed")
+    sys.exit(-1)
+  if args.ONT_dir:
+    args.ONT_dir = os.path.abspath(args.ONT_dir) + "/" 
+    if not os.path.exists(args.ONT_dir):
+      parser.print_help()
+      print (args.ONT_dir + " not found")
+      sys.exit(-1)
+    elif args.ONT_wildcards == None:
+      args.ONT_wildcards = get_wildcards(args.ONT_dir, args.ONT_wildcards, '.fastq.gz')
+
+  if args.ONT_reads:
+    args.ONT_reads = os.path.abspath(args.ONT_reads) 
+    if not os.path.exists(args.ONT_reads):
+      if args.ONT_dir == None:
+        parser.print_help()
+        print (args.ONT_reads + " not found")
+        sys.exit(-1)
+
+def require_illumina():
+  args.r10X_reads = {}
+  if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None:
+    parser.print_help()
+    print ("The illumina reads are needed")
+    sys.exit(-1)
+  elif args.pe1 or args.pe2:
+    if args.pe1:
+      args.pe1 = os.path.abspath(args.pe1) 
+    else: 
+      parser.print_help()
+      print ("Both illumina pairs are needed, missing pe1")
+      sys.exit(-1)
+    if args.pe2:
+      args.pe2 = os.path.abspath(args.pe2)      
+    else: 
+      parser.print_help()
+      print ("Both illumina pairs are needed, missing pe2")
+      sys.exit(-1)
+    
+    if not os.path.exists(args.pe1) or not os.path.exists(args.pe2):
+      if args.illumina_dir == None and args.processed_illumina == None:
+        parser.print_help()
+        print ("Illumina reads are not found and are needed")
+        sys.exit(-1)
+
+  elif args.r10X:
+    args.r10X = os.path.abspath(args.r10X) 
+    if not os.path.exists(args.r10X):
+      if len(args.raw_10X) == 0 and args.processed_10X == None:
+        parser.print_help()
+        print ("Illumina reads are not found and are needed")
+        sys.exit(-1)
+  
+  elif args.illumina_dir != None:
+    args.illumina_dir = os.path.abspath(args.illumina_dir) + "/" 
+    if args.processed_illumina == None:
+      args.processed_illumina =  args.pipeline_workdir + "s" + args.preprocess_illumina_step + "_p01.1_preprocess_illumina_reads/trim/"
+    else: 
+      args.processed_illumina = os.path.abspath(args.processed_illumina) + "/"
+    if not os.path.exists(args.illumina_dir):
+      parser.print_help()
+      print (args.illumina_dir + " not found")
+      sys.exit(-1)
+    elif args.illumina_wildcards == None:
+      args.illumina_wildcards = get_wildcards(args.illumina_dir, args.illumina_wildcards, '.1.fastq.gz')
+  
+  elif args.processed_illumina != None:
+    args.processed_illumina = os.path.abspath(args.processed_illumina) + "/"
+    if not os.path.exists(args.processed_illumina):
+      parser.print_help()
+      print (args.processed_illumina + " not found and missing raw illumina directory")
+      sys.exit(-1) 
+    elif args.illumina_wildcards == None:
+      args.illumina_wildcards = get_wildcards(args.processed_illumina, args.illumina_wildcards, '.1.fastq.gz')
+  else:
+    if len(args.raw_10X):
+      for my_dict in args.raw_10X:
+        for key in my_dict:
+          args.r10X_reads[os.path.abspath(key)] = my_dict[key]
+          if args.r10X_wildcards:
+            args.r10X_wildcards += ","
+            args.r10X_wildcards += my_dict[key]
+          if not os.path.exists(os.path.abspath(key)):
+            parser.print_help()
+            print (os.path.abspath(key) + " not found")
+            sys.exit(-1)
+          elif key == None:
+            parser.print_help()
+            print ('If you want to process the 10X reads with longranger, you need to provide the 10X basenames together with the directory')
+            sys.exit(-1)    
+      if args.processed_10X == None:
+                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads"
+    
+    if args.processed_10X != None:
+      args.processed_10X = os.path.abspath(args.processed_10X) + "/"
+      if args.r10X_wildcards == None:
+        if not os.path.exists(args.processed_10X):
+          parser.print_help()
+          print (args.processed_10X + " not found")
+          sys.exit(-1)
+        else:
+          args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz') 
 
 class CreateConfigurationFile(object):
     """Class which manages Configuration file Manager"""
@@ -33,7 +150,7 @@ class CreateConfigurationFile(object):
         self.ndconfFile = "nextdenovo.config"                                                     #Name of the nextdenovo config file to be created
         self.concat_cores = 4                                                                     #Number of threads to concatenate the reads and to run filtlong
         self.keepintermediate = False                                                             #Set this to True if you do not want intermediate files to be removed
-        self.lr_type  = "nano-raw"                                                                #Type of long reads (options are flye read-type options)
+        self.lr_type  = "nano-hq"                                                                #Type of long reads (options are flye read-type options)
         self.base_name = None                                                                     #Base name for the project
         self.species = None                                                                       #Name of the species to be assembled
         self.genome_size = None							                                                      #Estimated genome size
@@ -54,11 +171,11 @@ class CreateConfigurationFile(object):
         self.bwa_cores = 16                                                                       #Number of threads to run the alignment for the nextpolish step
         self.nextpolish_cores = 24                                                                #Number of threads to run the nextpolish step
         self.hypo_cores = 24                                                                      #Number of threads to tun the hypo step
-        self.pairtools_cores = 64
+        self.pairtools_cores = 100
         self.busco_cores = 32                                                                     #Number of threads to tun the BUSCO    
         self.longranger_cores = 16                                                                 #Number of threads to run longranger   
         self.longranger_path = "/scratch/project/devel/aateam/src/10X/longranger-2.2.2" 
-        self.genomescope_additional = ""  
+        self.genomescope_additional = " -m 10000 "  
         self.ploidy = 2
         self.run_kraken2 = False
         self.run_yahs = True
@@ -75,7 +192,7 @@ class CreateConfigurationFile(object):
         self.longranger_mem = "50G"
 
         #TRIMGALORE PARAMETERS
-        self.trim_galore_opts = "--gzip -q 20 --paired --retain_unpaired"
+        self.trim_galore_opts = "--max_n 0 --gzip -q 20 --paired --retain_unpaired"
         self.Trim_Illumina_cores = 8                                                              #Number of threads to run the trim Illumina step
 
         #TRIMGALORE SPEC PARAMETERS
@@ -148,6 +265,8 @@ class CreateConfigurationFile(object):
         self.assemblies = {}
         self.postpolish_assemblies = {}                                                           #List of input assemblies for which postpolishing steps need to be run but are not produced by the pipeline
         self.assemblies_cur = {}
+        self.final_assemblies = {}
+        self.curated_assemblies = {}
         self.r10X_reads = {}
         self.hic_dir = None
 
@@ -339,8 +458,10 @@ class CreateConfigurationFile(object):
         self.final_evals = True                                                                  #Set this to true if you want evaluations to be run on each of the final assemblies     
         self.busco_lineage = None                                                                 #Path to the lineage directory to run Busco with
         self.merqury_db = None
+        self.merqury_plot_opts = None
         self.meryl_k = None
         self.meryl_threads = 4
+        self.meryl_reads = "ont illumina"
 
         #STATS SPEC PARAMETERS
         self.stats_qos = "test"
@@ -410,7 +531,10 @@ class CreateConfigurationFile(object):
         self.hicParameters = {}
         self.assprepSpecParameters = {}
         self.mapHicSpecParameters = {}
-        self.pairtoolsSpecParameters = {}
+        self.pairtoolsParseSpecParameters = {}
+        self.pairtoolsSortSpecParameters = {}
+        self.pairtoolsDedupSpecParameters = {}
+        self.pairtoolsSplitSpecParameters = {}
         self.blastSpecParameters = {}
         self.yahsSpecParameters = {}
         self.pretextSpecParameters = {}
@@ -483,7 +607,7 @@ class CreateConfigurationFile(object):
         general_group.add_argument('--hypo-rounds', type = int, dest="hypo_rounds", metavar="hypo_rounds", default=self.hypo_rounds, help='Number of rounds to run the Hypostep. Default %s' % self.hypo_rounds)
         general_group.add_argument('--longranger-cores', type = int, dest="longranger_cores", metavar="longranger_cores", default=self.longranger_cores, help='Number of threads to run longranger. Default %s' % self.longranger_cores)
         general_group.add_argument('--longranger-path', dest="longranger_path", metavar="longranger_path", help='Path to longranger executable. Default %s' % self.longranger_path)
-        general_group.add_argument('--genomescope-opts', dest="genomescope_additional", metavar="genomescope_additional", help='Additional options to run Genomescope2 with. Default %s' % self.genomescope_additional)
+        general_group.add_argument('--genomescope-opts', dest="genomescope_additional", metavar="genomescope_additional", default=self.genomescope_additional, help='Additional options to run Genomescope2 with. Default %s' % self.genomescope_additional)
         general_group.add_argument('--no-purgedups', dest="run_purgedups", action="store_false", help='Give this option if you do not want to run Purgedups.')
         general_group.add_argument('--ploidy', type = int, dest="ploidy", metavar="ploidy", default=self.ploidy, help='Expected ploidy. Default %s' % self.ploidy) 
         general_group.add_argument('--run-tigmint', dest="run_tigmint", action="store_true", help='Give this option if you want to run the scaffolding with 10X reads step.')
@@ -510,6 +634,7 @@ class CreateConfigurationFile(object):
         input_group.add_argument('--illumina-dir', dest="illumina_dir", help='Directory where the raw illumina fastqs are stored. Default %s' % self.illumina_dir)
         input_group.add_argument('--assembly-in', dest="assembly_in", nargs="+", type=json.loads, default=self.assembly_in, help='Dictionary with assemblies that need to be polished but not assembled and directory where they should be polished. Example: \'{\"assembly1\":\"polishing_dir1\"}\' \'{\"assembly2\"=\"polishing_dir2\"}\' ...')
         input_group.add_argument('--postpolish-assemblies', dest="postpolish_assemblies", nargs="+", type=json.loads, default=self.postpolish_assemblies, help='Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and base step for the directory where the first postpolishing step should be run. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\":\"s04.2_p03.2\"}\' ...')
+        input_group.add_argument('--curated-assemblies', dest="curated_assemblies", nargs="+", type=json.loads, default=self.curated_assemblies, help='Dictionary with assemblies that have already been curated. Evaluations and read alignment will be perforder. Example: \'{\"assembly1\":\"s04.1_p03.1\"}\' \'{\"assembly2\":\"s04.2_p03.2\"}\' ...')
         input_group.add_argument('--hic-dir', dest="hic_dir", help='Directory where the HiC fastqs are stored. Default %s' % self.hic_dir)
         
     def register_output(self, parser):
@@ -661,8 +786,10 @@ class CreateConfigurationFile(object):
         finalize_group.add_argument('--no-final-evals', dest="final_evals", action="store_false", help='If specified, do not run evaluations on final assemblies. Default %s' % self.final_evals)
         finalize_group.add_argument('--busco-lin', dest="busco_lineage", metavar="busco_lineage", help='Path to the lineage directory to run Busco with. Default %s' % self.busco_lineage)
         finalize_group.add_argument('--merqury-db', dest="merqury_db", metavar="merqury_db", help='Meryl database. Default %s' % self.merqury_db)
-        finalize_group.add_argument('--meryl-k', dest="meryl_k", metavar="meryl_k", type = int, help='Kmer length to build the meryl database. Default %s' % self.meryl_k)
+        finalize_group.add_argument('--merqury-plot-opts', dest="merqury_plot_opts", metavar="merqury_plot_opts", help='Meryl database. Default %s' % self.merqury_plot_opts)
+        finalize_group.add_argument('--meryl-k', dest="meryl_k", metavar="meryl_k", type = int, help='Merqury plot additional options, for example \" -m 200 -n 6000|". Default %s' % self.merqury_plot_opts)
         finalize_group.add_argument('--meryl-threads', dest="meryl_threads", metavar="meryl_threads", type = int, default = self.meryl_threads, help='Number of threads to run meryl and merqury. Default %s' % self.meryl_threads)
+        finalize_group.add_argument('--meryl-reads', dest="meryl_reads", metavar="meryl_reads", choices = ["illumina", "ont"], nargs = "+", default = self.meryl_reads, help='Type of reads to be used to build the meryldb. Default %s' % self.meryl_reads)
 
     def register_wildcards(self, parser):
         """Register all wildcards parameters with the given
@@ -959,8 +1086,8 @@ class CreateConfigurationFile(object):
           args.yahs_qos = 'long'
           args.yahs_time = "24:00:00"
           args.yahs_mem = "100G"
-          args.pairtools_qos = 'long'
-          args.pairtools_time = "24:00:00"
+          #args.pairtools_qos = 'long'
+          #args.pairtools_time = "24:00:00"
           args.pairtools_mem = "500G"
           args.pairtools_cores = 128
           args.qcstats_qos = 'normal'
@@ -997,137 +1124,30 @@ class CreateConfigurationFile(object):
           args.flye_mem = "100G"
 
         if args.run_flye == True or args.run_nextdenovo == True or args.nextpolish_ont_rounds > 0 or args.hypo_rounds > 0 or args.run_purgedups == True:
-          if args.ONT_filtered:
-            args.ONT_filtered = os.path.abspath(args.ONT_filtered)
-            args.filtlong_dir = os.path.dirname(args.ONT_filtered) + "/"
-          else:
-            if args.filtlong_dir == None:
-              args.filtlong_dir = args.pipeline_workdir + "s" + args.preprocess_ont_step + "_p01.1_Filtlong/"
-            else:
-              args.filtlong_dir = os.path.abspath(args.filtlong_dir) + "/" 
-            args.ONT_filtered = args.filtlong_dir + "ont.filtlong.fastq.gz"
-
-          if args.ONT_dir == None and args.ONT_reads == None and not os.path.exists(args.ONT_filtered):
-            parser.print_help()
-            print ("The long reads are needed")
-            sys.exit(-1)
-          if args.ONT_dir:
-            args.ONT_dir = os.path.abspath(args.ONT_dir) + "/" 
-            if not os.path.exists(args.ONT_dir):
-              parser.print_help()
-              print (args.ONT_dir + " not found")
-              sys.exit(-1)
-            elif args.ONT_wildcards == None:
-              args.ONT_wildcards = get_wildcards(args.ONT_dir, args.ONT_wildcards, '.fastq.gz')
-
-          if args.ONT_reads:
-            args.ONT_reads = os.path.abspath(args.ONT_reads) 
-            if not os.path.exists(args.ONT_reads):
-              if args.ONT_dir == None:
-                parser.print_help()
-                print (args.ONT_reads + " not found")
-                sys.exit(-1)
+          require_ont()
+        
+        args.r10X_reads = {}
+        if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True:
+          require_illumina()
 
         if args.merqury_db:
           args.merqury_db = os.path.abspath(args.merqury_db)
-        
-        args.r10X_reads = {}
-        if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0  or args.run_tigmint == True or args.merqury_db:
-          if args.illumina_dir == None and args.pe1 == None and args.pe2==None and args.r10X==None and args.processed_illumina == None and len(args.raw_10X) == 0 and args.processed_10X == None and not os.path.exists(args.merqury_db):
-            parser.print_help()
-            print ("The illumina reads are needed")
-            sys.exit(-1)
-          elif args.pe1 or args.pe2:
-            if args.pe1:
-              args.pe1 = os.path.abspath(args.pe1) 
-            else: 
-              parser.print_help()
-              print ("Both illumina pairs are needed, missing pe1")
-              sys.exit(-1)
-            if args.pe2:
-              args.pe2 = os.path.abspath(args.pe2) 
-            else: 
-              parser.print_help()
-              print ("Both illumina pairs are needed, missing pe2")
-              sys.exit(-1)
+          if not os.path.exists(args.merqury_db):
+            if "ont" in args.meryl_reads:
+              require_ont()
+            if "illumina" in args.meryl_reads:
+              require_illumina()
 
-            if not os.path.exists(args.pe1) or not os.path.exists(args.pe2):
-              if args.illumina_dir == None and args.processed_illumina == None:
-                parser.print_help()
-                print ("Illumina reads are not found and are needed")
-                sys.exit(-1)
-          elif args.r10X:
-            args.r10X = os.path.abspath(args.r10X) 
-            if not os.path.exists(args.r10X):
-              if len(args.raw_10X) == 0 and args.processed_10X == None:
-                parser.print_help()
-                print ("Illumina reads are not found and are needed")
-                sys.exit(-1)
-          elif args.illumina_dir != None:
-            args.illumina_dir = os.path.abspath(args.illumina_dir) + "/" 
-            if args.processed_illumina == None:
-              args.processed_illumina =  args.pipeline_workdir + "s" + self.preprocess_illumina_step + "_p01.1_preprocess_illumina_reads/trim/"
-            if not os.path.exists(args.illumina_dir):
+            if args.meryl_k == None:
               parser.print_help()
-              print (args.illumina_dir + " not found")
-              sys.exit(-1)
-            elif args.illumina_wildcards == None:
-              args.illumina_wildcards = get_wildcards(args.illumina_dir, args.illumina_wildcards, '.1.fastq.gz')
-          elif args.processed_illumina != None:
-            args.processed_illumina = os.path.abspath(args.processed_illumina) + "/"
-            if not os.path.exists(args.processed_illumina):
-              parser.print_help()
-              print (args.processed_illumina + " not found and missing raw illumina directory")
-              sys.exit(-1) 
-            elif args.illumina_wildcards == None:
-              args.illumina_wildcards = get_wildcards(args.processed_illumina, args.illumina_wildcards, '.1.fastq.gz')
-          else:
-            if len(args.raw_10X):
-             # print (args.raw_10X)
+              print (args.merqury_db + " not found, the pipeline will create it but you need to provide the kmer value")
+              sys.exit(-1)             
+            else:
+              print (args.merqury_db + " not found, the pipeline will create it")  
+        elif args.final_evals == True:
+          print ("WARNING: If you want to run merqury, please provide a merqury_db path, if it does not exist, the pipeline will create it")
 
-              args.r10X_wildcards = ""
-
-              for my_dict in args.raw_10X:
-                for key in my_dict:
-              #    print (key)
-                  args.r10X_reads[os.path.abspath(key)] = my_dict[key]
-                  if args.r10X_wildcards:
-                    args.r10X_wildcards += ","
-                  args.r10X_wildcards += my_dict[key]
-                  if not os.path.exists(os.path.abspath(key)):
-                    parser.print_help()
-                    print (os.path.abspath(key) + " not found")
-                    sys.exit(-1)
-                  elif key == None:
-                    parser.print_help()
-                    print ('If you want to process the 10X reads with longranger, you need to provide the 10X basenames together with the directory')
-                    sys.exit(-1)    
-              if args.processed_10X == None:
-                args.processed_10X = args.pipeline_workdir + "s" + self.preprocess_10X_step + "_p01.1_preprocess_10X_linkedreads"
-            if args.processed_10X != None:
-              args.processed_10X = os.path.abspath(args.processed_10X) + "/"
-              if args.r10X_wildcards == None:
-                if not os.path.exists(args.processed_10X):
-                  parser.print_help()
-                  print (args.processed_10X + " not found")
-                  sys.exit(-1)
-                else:
-                  args.r10X_wildcards = get_wildcards(args.processed_10X, args.r10X_wildcards, '.barcoded.fastq.gz') 
-          if args.merqury_db:
-            if not os.path.exists(args.merqury_db):
-              if args.meryl_k == None:
-                parser.print_help()
-                print (args.merqury_db + " not found, the pipeline will create it but you need to provide the kmer value")
-                sys.exit(-1)             
-              elif args.pe1 != None or args.r10X != None or args.r10X_wildcards != None or args.illumina_wildcards != None:
-                print (args.merqury_db + " not found, the pipeline will create it")   
-              else:
-                print ('We cannot create ' + args.merqury_db + ' without illumina reads')
-
-        if args.run_tigmint == True and args.r10X == None:
-         # if args.processed_10X != None:   
-         #   args.r10X = args.processed_10X + "reads.illumina10X.barcoded.fastq.gz" 
-         # else:   
+        if args.run_tigmint == True and args.r10X == None:  
           if args.processed_10X == None:
             parser.print_help()
             print ("10X reads are required to run the 10X scaffolding step")
@@ -1155,6 +1175,9 @@ class CreateConfigurationFile(object):
         elif not re.match("-g ",args.other_flye_opts) and not re.match("--genome-size ", args.other_flye_opts):
           args.other_flye_opts += " -g " + args.genome_size + " "
 
+        if args.merqury_plot_opts == None:
+          args.merqury_plot_opts = ""
+
         if args.flye_dir == None:
           args.flye_dir = args.pipeline_workdir + "s" + args.flye_step + "_p" + args.preprocess_ont_step + "_flye/"
         else:
@@ -1172,7 +1195,7 @@ class CreateConfigurationFile(object):
           if not os.path.exists(args.busco_lineage):
             print (args.busco_lineage + " not found")
         elif args.final_evals == True:
-          print ("busco lineage is needed if you want to run Busco")
+          print ("WARNING: busco lineage is needed if you want to run Busco")
 
         args.assemblies={}
         if len(args.assembly_in):
@@ -1185,6 +1208,12 @@ class CreateConfigurationFile(object):
           for my_dict in args.postpolish_assemblies:
             for key in my_dict:
               args.assemblies_cur[os.path.abspath(key)] = my_dict[key]
+
+        args.final_assemblies = {}
+        if len(args.curated_assemblies):
+          for my_dict in args.curated_assemblies:
+            for key in my_dict:
+              args.final_assemblies[os.path.abspath(key)] = os.path.abspath(my_dict[key])
 
         if args.nextpolish_ill_rounds > 0 or args.hypo_rounds >0 or args.nextpolish_ont_rounds:
           if args.run_flye == True:
@@ -1342,6 +1371,7 @@ class CreateConfigurationFile(object):
         self.inputParameters["HiC_dir"] = args.hic_dir
         self.inputParameters["Assemblies for polishing"] = args.assemblies
         self.inputParameters["Assemblies for postpolishing"] = args.assemblies_cur
+        self.inputParameters["Curated Assemblies"] = args.final_assemblies
         self.allParameters ["Inputs"] = self.inputParameters
 
     def storeOutputParameters(self,args):
@@ -1695,8 +1725,10 @@ class CreateConfigurationFile(object):
         self.finalizeParameters["final Evaluations"] = args.final_evals
         self.finalizeParameters["BUSCO lineage"] = args.busco_lineage
         self.finalizeParameters["Merqury db"] = args.merqury_db
+        self.finalizeParameters["Merqury plot opts"] = args.merqury_plot_opts
         self.finalizeParameters["Meryl K"] = args.meryl_k
         self.finalizeParameters["Meryl threads"] = args.meryl_threads
+        self.finalizeParameters["Meryl reads"] = args.meryl_reads
         self.allParameters ["Finalize"] = self.finalizeParameters
 
     def storeassprepSpecParameters(self,args):
@@ -1723,17 +1755,54 @@ class CreateConfigurationFile(object):
         self.mapHicSpecParameters["mem"] = args.map_hic_mem
         self.allParameters ["align_hic"] = self.mapHicSpecParameters
 
-    def storepairtoolsSpecParameters(self,args):
+    def storepairtoolsParseSpecParameters(self,args):
         """Updates pairtools cluster spec parameters to the map of parameters to be store in a JSON file
 
         args -- set of parsed arguments
         """
-        self.pairtoolsSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_mq{wildcards.mq}"
-        self.pairtoolsSpecParameters["qos"] = args.pairtools_qos
-        self.pairtoolsSpecParameters["time"] = args.pairtools_time
-        self.pairtoolsSpecParameters["queue"] = args.pairtools_queue
-        self.pairtoolsSpecParameters["mem"] = args.pairtools_mem
-        self.allParameters ["pairtools_processing"] = self.pairtoolsSpecParameters
+        self.pairtoolsParseSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_mq{wildcards.mq}"
+        self.pairtoolsParseSpecParameters["qos"] = args.pairtools_qos
+        self.pairtoolsParseSpecParameters["time"] = args.pairtools_time
+        self.pairtoolsParseSpecParameters["queue"] = args.pairtools_queue
+        self.pairtoolsParseSpecParameters["mem"] = args.pairtools_mem
+        self.allParameters ["pairtools_processing_parse"] = self.pairtoolsParseSpecParameters
+
+    def storepairtoolsSortSpecParameters(self,args):
+        """Updates pairtools cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.pairtoolsSortSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_mq{wildcards.mq}"
+        self.pairtoolsSortSpecParameters["qos"] = args.pairtools_qos
+        self.pairtoolsSortSpecParameters["time"] = args.pairtools_time
+        self.pairtoolsSortSpecParameters["queue"] = args.pairtools_queue
+        self.pairtoolsSortSpecParameters["mem"] = args.pairtools_mem
+        self.allParameters ["pairtools_processing_sort"] = self.pairtoolsSortSpecParameters
+
+    def storepairtoolsDedupSpecParameters(self,args):
+        """Updates pairtools cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.pairtoolsDedupSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_mq{wildcards.mq}"
+        self.pairtoolsDedupSpecParameters["qos"] = args.pairtools_qos
+        self.pairtoolsDedupSpecParameters["time"] = args.pairtools_time
+        self.pairtoolsDedupSpecParameters["queue"] = args.pairtools_queue
+        self.pairtoolsDedupSpecParameters["mem"] = args.pairtools_mem
+        self.allParameters ["pairtools_processing_dedup"] = self.pairtoolsDedupSpecParameters
+
+    def storepairtoolsSplitSpecParameters(self,args):
+        """Updates pairtools cluster spec parameters to the map of parameters to be store in a JSON file
+
+        args -- set of parsed arguments
+        """
+        self.pairtoolsSplitSpecParameters["name"] = "{rule}_" + args.base_name + "_{wildcards.name}_mq{wildcards.mq}"
+        self.pairtoolsSplitSpecParameters["qos"] = args.pairtools_qos
+        self.pairtoolsSplitSpecParameters["time"] = args.pairtools_time
+        self.pairtoolsSplitSpecParameters["queue"] = args.pairtools_queue
+        self.pairtoolsSplitSpecParameters["mem"] = args.pairtools_mem
+        self.allParameters ["pairtools_processing_split"] = self.pairtoolsSplitSpecParameters
+
 
     def storeblastSpecParameters(self,args):
         """Updates blast cluster spec parameters to the map of parameters to be store in a JSON file
@@ -2015,7 +2084,10 @@ if args.run_tigmint == True:
 if args.hic_dir:
   specManager.storeassprepSpecParameters(args)
   specManager.storemapHicSpecParameters(args)
-  specManager.storepairtoolsSpecParameters(args)
+  specManager.storepairtoolsParseSpecParameters(args)
+  specManager.storepairtoolsSortSpecParameters(args)
+  specManager.storepairtoolsDedupSpecParameters(args)
+  specManager.storepairtoolsSplitSpecParameters(args)
   specManager.storeqcstatsSpecParameters(args)
   specManager.storeblastSpecParameters(args)
   if args.run_yahs == True:

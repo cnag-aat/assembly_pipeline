@@ -1,3 +1,4 @@
+
 from datetime import datetime
 import re
 import os
@@ -83,7 +84,7 @@ rule add_extensions_pretext:
     tel = "telomeres.bg",
     gaps = "gaps.bg",
     pret = "assembly_mq.pretext",
-    ontcov = "ONTcoverage.bg"
+    ontcov = "ONTcoverage.bg",
   output:
     pretext = "assembly_mq.extensions.pretext"
   params:
@@ -113,15 +114,18 @@ rule add_extensions_pretext:
 
 rule get_tpf:
   input:
-    fasta = "genome.yahs_scaffolded.fa"
+    fasta = "yahs.out_scaffolds_final.fa"
   output:
     tpf = "genome.yahs_scaffolded.fa.tpf"
   params:
-    scripts_dir = "../scripts/"
+    scripts_dir = "../scripts/",
+    dir = "s06.1_p05.1_HiC_scaffolding"
   conda:
     "../envs/rapidcuration.yaml"
   shell:
-    "rapid_split.pl --fa {input.fasta};"
+    "mkdir -p {params.dir}/run_yahs; cd {params.dir}/run_yahs;"
+    "{params.scripts_dir}rapid_split.pl -fa yahs.out_scaffolds_final.fa;"
+    "ln -s run_yahs/yahs.out_scaffolds_final.fa.tpf {output.tpf};"
 
 
 

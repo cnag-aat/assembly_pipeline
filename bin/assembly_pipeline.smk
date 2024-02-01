@@ -71,8 +71,8 @@ if config['Inputs']['HiC_dir']:
     name = os.path.splitext(os.path.basename(config['HiC']['assembly_qc']))[0]
     dir = config['Outputs']['hic_qc_dir']
     for mq in config['HiC']['MQ']:
-      targets.append(dir + "pairtools_out/HiC_QC_LibraryStats_extrapolated_mq" + str(mq) + "." + name + ".txt")
-    targets.append(dir + "blast/unmapped_hic." + name + "." + str(config['HiC']['reads_for_blast']) + "_reads.fasta")
+      targets.append(dir + "pairtools_out/HiC_QC_LibraryStats_mq" + str(mq) + "." + name + ".txt")
+    targets.append(dir + "blast/unmapped_hic." + name + "." + str(config['HiC']['reads_for_blast']) + "_reads.fasta")    
 
 if config["Finalize"]["final Evaluations"] == True:
   targets.append(config["Outputs"]["stats_out"])

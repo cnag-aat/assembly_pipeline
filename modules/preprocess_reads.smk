@@ -132,23 +132,33 @@ if config["Finalize"]["Merqury db"]:
     for i in illumina_list:
       for e in extensions:
         reads_loc[i + e] = illumina_processed + i + e
-        meryl_dbs.append(i + e)
+        if "illumina" in config["Finalize"]["Meryl reads"]:
+            meryl_dbs.append(i + e)
   elif config["Inputs"]["processed_10X"] != None:
     extensions = [".lr.barcoded.fastq.gz"]
     for i in r10X_list:
       for e in extensions:
         reads_loc[i + e] = r10X_dir + i + e
-        meryl_dbs.append(i + e)
+        if "illumina" in config["Finalize"]["Meryl reads"]:
+            meryl_dbs.append(i + e)
   else:
     if pe1_reads != None:
       reads_loc[os.path.basename(pe1_reads)] = pe1_reads
-      meryl_dbs.append(os.path.basename(pe1_reads))
+      if "illumina" in config["Finalize"]["Meryl reads"]:
+          meryl_dbs.append(os.path.basename(pe1_reads))
     if pe2_reads != None:
       reads_loc[os.path.basename(pe2_reads)] = pe2_reads
-      meryl_dbs.append(os.path.basename(pe2_reads))
+      if "illumina" in config["Finalize"]["Meryl reads"]:
+          meryl_dbs.append(os.path.basename(pe2_reads))
     if r10X_reads != None:
       reads_loc[os.path.basename(r10X_reads)] = r10X_reads
-      meryl_dbs.append(os.path.basename(r10X_reads))
+      if "illumina" in config["Finalize"]["Meryl reads"]:
+          meryl_dbs.append(os.path.basename(r10X_reads))
+
+  if ONT_filtered:
+    if "ont" in config["Finalize"]["Meryl reads"]:
+        meryl_dbs.append(os.path.basename(ONT_filtered))
+    reads_loc[os.path.basename(ONT_filtered)] = ONT_filtered
 
 extra_filtlong_opts = config["Filtlong"]["options"]
 if extra_filtlong_opts == None:

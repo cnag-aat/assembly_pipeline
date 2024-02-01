@@ -171,16 +171,16 @@ if nor > 0:
 
 use rule nextpolish_sr from polish_workflow with:
   input: 
-    genome = lambda wildcards: nir_in[wildcards.directory + "nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param ],
-    bam =   lambda wildcards: nir_map[wildcards.directory + "nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param ]
+    genome = lambda wildcards: nir_in[wildcards.directory + "/nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param ],
+    bam =   lambda wildcards: nir_map[wildcards.directory + "/nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param ]
   output:
-    polished = "{directory}nextpolish/{base}.nextpolish_ill{param}"
+    polished = "{directory}/nextpolish/{base}.nextpolish_ill{param}"
   params:
-    task = lambda wildcards: tasks[wildcards.directory + "nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param],
+    task = lambda wildcards: tasks[wildcards.directory + "/nextpolish/" + wildcards.base + ".nextpolish_ill" + wildcards.param],
     path = "/software/assembly/easybuild/software/NextPolish/1.4.1-GCC-11.2.0"
   log:
-    "{directory}nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_sr{param}.out",
-    "{directory}nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_sr{param}.err",
+    "{directory}/nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_sr{param}.out",
+    "{directory}/nextpolish/logs/" + str(date) + ".j%j.{base}.nextpolish_sr{param}.err",
   benchmark:
-    "{directory}nextpolish/logs/" + str(date) + ".{base}.nextpolish_sr{param}.benchmark.txt",
+    "{directory}/nextpolish/logs/" + str(date) + ".{base}.nextpolish_sr{param}.benchmark.txt",
   threads:  config["Parameters"]["nextpolish_cores"]

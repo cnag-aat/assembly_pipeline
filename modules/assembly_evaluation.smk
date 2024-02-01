@@ -134,12 +134,72 @@ if len(hic_assemblies) > 0:
         "{directory}/logs/" + str(date) + ".rule_mapping.benchmark.{name}.txt"
     threads: config["Parameters"]["BWA_cores"]
 
-  use rule pairtools_processing from eval_workflow with:
+  use rule pairtools_processing_parse from eval_workflow with:
     input: 
       mapped = lambda wildcards: hic_bams[wildcards.name],
       alength = lambda wildcards: asslength[wildcards.name]
     output:
+      psamo = "{directory}/{name}_mq{mq}_tmp/full_hic.{mq}.{name}.pairsam.gz"
+    wildcard_constraints:
+      mq="\d+",
+    params:
+      scripts_dir = scripts_dir,
+      mq = '{mq}',
+      name = '{name}',
+      outd = '{directory}/pairtools_out',
+      tmpd = '{directory}/{name}_mq{mq}_tmp',
+    log:
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_parse.mq{mq}.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_parse.mq{mq}.{name}.err"
+    benchmark:
+      "{directory}/logs/" + str(date) + ".rule_pairtools_parse.benchmark.mq{mq}.{name}.txt"
+    threads: config['Parameters']['pairtools_cores']
+
+  use rule pairtools_processing_sort from eval_workflow with:
+    input: 
+      psamo = "{directory}/{name}_mq{mq}_tmp/full_hic.{mq}.{name}.pairsam.gz"
+    output:
+      spsamo = "{directory}/{name}_mq{mq}_tmp/full_hic.{mq}.{name}.sorted.pairsam.gz"
+    wildcard_constraints:
+      mq="\d+",
+    params:
+      scripts_dir = scripts_dir,
+      mq = '{mq}',
+      name = '{name}',
+      outd = '{directory}/pairtools_out',
+      tmpd = '{directory}/{name}_mq{mq}_tmp',
+    log:
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_sort.mq{mq}.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_sort.mq{mq}.{name}.err"
+    benchmark:
+      "{directory}/logs/" + str(date) + ".rule_pairtools_sort.benchmark.mq{mq}.{name}.txt"
+    threads: config['Parameters']['pairtools_cores']
+
+  use rule pairtools_processing_dedup from eval_workflow with:
+    input: 
+      spsamo = "{directory}/{name}_mq{mq}_tmp/full_hic.{mq}.{name}.sorted.pairsam.gz"
+    output:
+      spsamdedup = "{directory}/pairtools_out/full_hic.{mq}.{name}.pairsam.dedupped.gz",
       stats = "{directory}/pairtools_out/stats.mq{mq}.{name}.txt",
+    wildcard_constraints:
+      mq="\d+",
+    params:
+      scripts_dir = scripts_dir,
+      mq = '{mq}',
+      name = '{name}',
+      outd = '{directory}/pairtools_out',
+      tmpd = '{directory}/{name}_mq{mq}_tmp',
+    log:
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_dedup.mq{mq}.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_dedup.mq{mq}.{name}.err"
+    benchmark:
+      "{directory}/logs/" + str(date) + ".rule_pairtools_dedup.benchmark.mq{mq}.{name}.txt"
+    threads: config['Parameters']['pairtools_cores']
+
+  use rule pairtools_processing_split from eval_workflow with:
+    input: 
+      spsamdedup = "{directory}/pairtools_out/full_hic.{mq}.{name}.pairsam.dedupped.gz",
+    output:
       mappedptsort = "{directory}/pairtools_out/mapped.PT.mq{mq}.{name}.name_sorted.bam",
       mappedpt = "{directory}/pairtools_out/mapped.PT.mq{mq}.{name}.bam",
     wildcard_constraints:
@@ -153,10 +213,10 @@ if len(hic_assemblies) > 0:
       rmcmd = "rm -r {directory}/{name}_mq{mq}_tmp;" if keepfiles == False
                else ""
     log:
-        "{directory}/logs/" + str(date) + ".j%j.rule_pairtools.mq{mq}.{name}.out",
-        "{directory}/logs/" + str(date) + ".j%j.rule_pairtools.mq{mq}.{name}.err"
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_split.mq{mq}.{name}.out",
+      "{directory}/logs/" + str(date) + ".j%j.rule_pairtools_split.mq{mq}.{name}.err"
     benchmark:
-        "{directory}/logs/" + str(date) + ".rule_pairtools.benchmark.mq{mq}.{name}.txt"
+      "{directory}/logs/" + str(date) + ".rule_pairtools_split.benchmark.mq{mq}.{name}.txt"
     threads: config['Parameters']['pairtools_cores']
 
   use rule qc_statistics from eval_workflow with: 
@@ -164,8 +224,8 @@ if len(hic_assemblies) > 0:
       statmq = "{directory}/pairtools_out/stats.mq{mq}.{name}.txt",
       mapbam = "{directory}/pairtools_out/mapped.PT.mq{mq}.{name}.bam"
     output:
-      libstats = "{directory}/pairtools_out/HiC_QC_LibraryStats_mq{mq}.{name}.txt",
-      pslibstats = "{directory}/pairtools_out/HiC_QC_LibraryStats_extrapolated_mq{mq}.{name}.txt" if not config['HiC']['deepseq'] else []
+      libstats = "{directory}/pairtools_out/HiC_Final_LibraryStats_mq{mq}.{name}.txt" if config['HiC']['deepseq'] 
+                 else "{directory}/pairtools_out/HiC_QC_LibraryStats_mq{mq}.{name}.txt",
     wildcard_constraints:
       mq="\d+",
     params:
@@ -173,6 +233,7 @@ if len(hic_assemblies) > 0:
       outd = '{directory}/pairtools_out',
       assemblylength = config['HiC']['qc_assemblylen'],
       deepseq = config['HiC']['deepseq'],
+      pslibstats = "{directory}/pairtools_out/HiC_QC_LibraryStats_extrapolated_mq{mq}.{name}.txt" 
     log:
         "{directory}/logs/" + str(date) + ".j%j.rule_qc_stats.mq{mq}.{name}.out",
         "{directory}/logs/" + str(date) + ".j%j.rule_qc_stats.mq{mq}.{name}.err"
@@ -328,6 +389,7 @@ if  config["Finalize"]["Merqury db"] != None:
     params:
       out_pref = "{merqbase}",
       directory= eval_dir + "{dir}/merqury/{merqbase}",
+      additional_plot_opts = config["Finalize"]["Merqury plot opts"]
     log:
       eval_dir + "{dir}/logs/" + str(date) + ".j%j.merqury.{merqbase}.out",
       eval_dir + "{dir}/logs/" + str(date) + ".j%j.merqury.{merqbase}.err"
