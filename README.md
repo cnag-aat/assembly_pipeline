@@ -88,10 +88,14 @@ If you want to polish an already assembled assembly, you can give it to the pipe
                         Dictionary with assemblies that need to be polished but not assembled and directory where they should
                         be polished. Example: '{"assembly1":"polishing_dir1"}' '{"assembly2"="polishing_dir2"}' ...``
 			
-If you want to improve an already polished assembly, you can give it to the pipeline by using the option ``--postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]
-                        Dictionary with assemblies for whic postpolishing steps need to be run but that are not assembled and
+If you want to start the pipeline after polishing on an already existing assembly, you can give it to the pipeline by using the option ``--postpolish-assemblies POSTPOLISH_ASSEMBLIES [POSTPOLISH_ASSEMBLIES ...]
+                        Dictionary with assemblies for which postpolishing steps need to be run but that are not assembled and
                         base step for the directory where the first postpolishing step should be run. Example:
                         '{"assembly1":"s04.1_p03.1"}' '{"assembly2"="s04.2_p03.2"}' ...``
+
+To evaluate and produce the final pretext file on a curated assembly, use ``--curated-assemblies CURATED_ASSEMBLIES [CURATED_ASSEMBLIES ...]
+                        Dictionary with assemblies that have already been curated. Evaluations and read alignment will be perforder. Example:
+                        '{"assembly1":"s04.1_p03.1"}' '{"assembly2":"s04.2_p03.2"}' ...``
 
 
 
@@ -107,7 +111,7 @@ If you want to improve an already polished assembly, you can give it to the pipe
 
 ``longranger basic --id={params.sample} --sample={params.sample} --fastqs={input.mkfastq_dir} --localcores={threads}``
 
-- **Trimgalore:** By default it gives the ``--gzip -q 20 --paired --retain_unpaired`` options, but it can be changed with the ``--trim-galore-opts `` argument. 
+- **Trimgalore:** By default it gives the ``--max_n 0 --gzip -q 20 --paired --retain_unpaired`` options, but it can be changed with the ``--trim-galore-opts `` argument. 
 
 ``trim_galore -j {threads} {params.opts} {input.read1} {input.read2}``
 
@@ -115,7 +119,7 @@ If you want to improve an already polished assembly, you can give it to the pipe
 
 ``filtlong --min_length {params.minlen} --min_mean_q {params.min_mean_q} {params.opts} {input.reads} | pigz -p {threads} -c > {output.outreads}``
 	
-- **Build meryldb** (with processed 10X reads or illumina reads): it uses the merqury conda environment specified in the configfile. It takes as argument the `--mery-k` value that needs to be estimated first for the genime size. 
+- **Build meryldb**: it uses the merqury conda environment specified in the configfile. It takes as argument the `--mery-k` value that needs to be estimated first for the genome size. It can run either on the illumina reads, the ont reads or both, default behaviour is both. 
 
 ``meryl k={params.kmer} count output {output.out_dir} {input.fastq}``
 	
@@ -146,22 +150,6 @@ If you want to improve an already polished assembly, you can give it to the pipe
 - **Hypo (default):** It is the polisher that the pipeline uses by default, it can be turned off specifying ``--no-hypo`` when creating the config. If selected, the reads will be aligned in previous rules and then hypo will be run, it requires illumina data. It uses the conda environment specified in the config. 
 
 ``hypo -r @short_reads.list.txt -d {input.genome} -b {input.sr_bam} -c {coverage} -s {params.genome_size} -B {input.lr_bam} -t {threads} -o {output.polished} -p {params.proc} {params.opts} ``
-	
-- **Racon (if turned on):** to run racon, specify ``--racon-rounds `` and the number of rounds of it you want to run. It uses the conda environment specified in the config file. 
-
-``{params.racon_env}/scripts/racon_wrapper.py -u {params.opts} -t {threads} reads4racon.fastq.gz {input.mapping} {input.assembly} > {output.polished} ``
-	
-- **Medaka (if turned on):** to run medaka, specify ``--medaka-rounds`` and the nummber of rounds of it you want to run. It uses the conda environment specified in the config file. It'll run after racon and before pilon, if they are also selected. 
-
-`` medaka consensus {input.mapping} {wildcards.directory}/rmp/{wildcards.base}.medaka{wildcards.param}.hdf --threads {medaka_threads} --model {params.model} {params.consensus_opts};
-medaka stitch --threads {threads} {wildcards.directory}/rmp/{wildcards.base}.medaka{wildcards.param}.hdf {input.assembly} {output.polished}``
-	
-- **Pilon (if turned on):** to run Pilon, specify ``--pilon-rounds`` and the number of rounds of it you want to run. If it's a big genome, the pipeline will split the consensus step in several jobs, each of them running on certain scaffolds. It uses the version installed in the path specified in the config. 
-
-``{scripts_dir}split_bam.py assembly.len {input.mapping} {params.chunks} {threads};
-java {params.java_opts} -jar {params.path} --genome {input.assembly} --frags {input.alignment} {params.opts} --threads {threads} --output {basename}; 
-{scripts_dir}/concat_pilon.py {params.splitdir} {params.chunks} > {output.polished}``
-
 	
 - **Nextpolish ont (if turned on):** to run nextpolish with ONT reads, specify ``--nextpolish-ont-rounds`` and the number of rounds you want to run of it. 
 
