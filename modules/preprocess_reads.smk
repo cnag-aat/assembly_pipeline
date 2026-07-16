@@ -66,6 +66,8 @@ if ont_reads != "":
     ont_base = os.path.basename(ont_reads).replace(".bam", "")
     bams[ont_base + "_bam"] = ont_reads
     lr_reads["raw_ont"] = config["Outputs"]["preprocess_lr"] + ont_base + "_bam.fastq"
+  elif re.search(".fastq", ont_reads):
+    lr_type["raw_ont"] = "fastq"
   elif re.search(".fa", ont_reads):
     lr_type["raw_ont"] = "fasta"
   else:
