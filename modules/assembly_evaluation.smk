@@ -76,8 +76,11 @@ for file in assemblies:
   evals_dir[evalassdir + ass_base] = evalassdir
   StatsFiles.append(evalassdir + "stats/" + ass_base + ".stats.txt")
   if config["Parameters"]["telo_repeat"]:
-    telo_bgs[ass_base] = evalassdir + "telomeres/" + ass_base + "." + config["Parameters"]["telo_repeat"] + "_telo.bg"
-    telomeres.append(evalassdir + "telomeres/" + ass_base + "." + config["Parameters"]["telo_repeat"] + "_telo.bg")
+    telo_bgs[ass_base + "_3p"] = evalassdir + "telomeres/" + ass_base + "." + config["Parameters"]["telo_repeat"] + ".3p_telomere.bg"
+    telomeres.append(evalassdir + "telomeres/" + ass_base + "." + config["Parameters"]["telo_repeat"] + ".3p_telomere.bg")
+    telo_bgs[ass_base + "_5p"] = evalassdir + "telomeres/" + ass_base + "." + config["Parameters"]["telo_repeat"]  + ".5p_telomere.bg"
+    telomeres.append(evalassdir + "telomeres/" + ass_base + "." + config["Parameters"]["telo_repeat"] + ".5p_telomere.bg")
+    
   if config["Finalize"]["BUSCO lineage"]:
     BuscoSummaries.append(buscodir + ass_base + "." + buscodb + ".short_summary.txt")
 
@@ -130,8 +133,11 @@ for file in assemblies:
             os.makedirs(ev_dir + "diploid/logs")
           diploid_fasta = ev_dir + "diploid/" + fullbase + ".diploid.fa"
           if config["Parameters"]["telo_repeat"]:
-            telo_bgs[fullbase + ".diploid"] = ev_dir + "diploid/telomeres/" + fullbase + ".diploid." + config["Parameters"]["telo_repeat"] + "_telo.bg"
-            telomeres.append(ev_dir + "diploid/telomeres/" + fullbase + ".diploid." + config["Parameters"]["telo_repeat"] + "_telo.bg")
+            telo_bgs[fullbase + ".diploid" + "_3p"] = ev_dir + "diploid/telomeres/" + fullbase + ".diploid." + config["Parameters"]["telo_repeat"] + ".3p_telomere.bg"
+            telomeres.append(ev_dir + "diploid/telomeres/" + fullbase + ".diploid." + config["Parameters"]["telo_repeat"]  + ".3p_telomere.bg")
+            telo_bgs[fullbase + ".diploid" + "_5p"] = ev_dir + "diploid/telomeres/" + fullbase + ".diploid." + config["Parameters"]["telo_repeat"] + ".5p_telomere.bg"
+            telomeres.append(ev_dir + "diploid/telomeres/" + fullbase + ".diploid." + config["Parameters"]["telo_repeat"] +  ".5p_telomere.bg")
+            
           in_files[ev_dir + "diploid/" + fullbase + ".diploid" ] = diploid_fasta
           hic_assemblies[fullbase + ".diploid"] = diploid_fasta
           pretext_lrmap[fullbase + ".diploid"] = ev_dir + "diploid/mappings/" + fullbase + ".diploid_minimap2.bam"
@@ -443,20 +449,22 @@ if len(hic_assemblies) > 0:
 
 #2- Run evaluations
 
-use rule tidk_search from eval_workflow with:
+use rule telo_scan from eval_workflow with:
   input:
     sla = lambda wildcards: in_files[wildcards.directory + "/" + wildcards.name],
   output:
-    tel = "{directory}/telomeres/{name}." + config["Parameters"]["telo_repeat"] + "_telo.bg"
+    tel3 = "{directory}/telomeres/{name}." + config["Parameters"]["telo_repeat"] + ".3p_telomere.bg",
+    tel5 = "{directory}/telomeres/{name}." + config["Parameters"]["telo_repeat"] + ".5p_telomere.bg",
   params:
+    scripts_dir = scripts_dir,
     outd = "{directory}/telomeres/",
     teloseq = config["Parameters"]["telo_repeat"],
-    outname = "{name}." + config["Parameters"]["telo_repeat"]
+    outname = "{name}"
   log:
-    "{directory}/logs/" + str(date) + ".j%j.rule_telo_search.{name}.out",
-    "{directory}/logs/" + str(date) + ".j%j.rule_telo_search.{name}.err"
+    "{directory}/logs/" + str(date) + ".j%j.rule_telo_scan.{name}.out",
+    "{directory}/logs/" + str(date) + ".j%j.rule_telo_scan.{name}.err"
   benchmark:
-    "{directory}/logs/" + str(date) + ".rule_telo_search.{name}.benchmark.txt"
+    "{directory}/logs/" + str(date) + ".rule_telo_scan.{name}.benchmark.txt"
   threads:  2
 
 use rule get_stats_gfa from eval_workflow with:

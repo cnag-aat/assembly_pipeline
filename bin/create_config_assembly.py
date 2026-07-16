@@ -2168,7 +2168,7 @@ class CreateConfigurationFile(object):
         self.tidkSpecParameters["time"] = args.telext_time
         self.tidkSpecParameters["queue"] = args.telext_queue
         self.tidkSpecParameters["mem"] = args.telext_mem
-        self.allParameters ["tidk_search"] = self.tidkSpecParameters
+        self.allParameters ["telo_scan"] = self.tidkSpecParameters
 
     def storetelextSpecParameters(self,args):
         """Updates the get telomere extension cluster spec parameters to the map of parameters to be store in a JSON file

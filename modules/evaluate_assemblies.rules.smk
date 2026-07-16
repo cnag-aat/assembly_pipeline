@@ -513,6 +513,30 @@ rule tidk_search:
     sleep 5m
     """
 
+rule telo_scan:
+  input:
+    sla = "assembly.fa" 
+  output:
+    tel3 = "TTAGGG.3p_telomere.bg",
+    tel5 = "TTAGGG.5p_telomere.bg",
+  params:
+    scripts_dir = "../scripts/",
+    outd = "out",
+    teloseq = "TTAGGG",
+    outname = "assembly"
+  conda:
+    "../envs/tidk-0.2.65.yaml"
+  shell:
+    """
+    cd {params.outd}
+
+    export PATH="{params.scripts_dir}:$PATH;" 
+    
+    telo_scan.py -i {input.sla} -m {params.teloseq} -o {params.outname}  --threads {threads}
+    
+    sleep 5m
+    """
+
 rule tidk_explore:
   input:
     sla = "assembly.fa" 

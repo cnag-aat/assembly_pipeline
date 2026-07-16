@@ -298,7 +298,8 @@ if config['HiC']['get_pretext']:
 
   use rule add_extensions_pretext from hic_workflow with:
     input:
-      tel = lambda wildcards: telo_bgs[wildcards.name],
+      tel3 = lambda wildcards: telo_bgs[wildcards.name + "_3p"],
+      tel5 = lambda wildcards: telo_bgs[wildcards.name + "_5p"],
       gaps = "{directory}/{name}.gaps.bg",
       ontcov = lambda wildcards: "{directory}/{name}.LRcoverage.bg" if len(minimap2) > 0 else "",
       pret = "{directory}/{name}_mq{mq}.pretext",  

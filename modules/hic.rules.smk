@@ -87,7 +87,8 @@ rule generate_pretext:
 
 rule add_extensions_pretext:
   input:
-    tel = "telomeres.bg",
+    tel3 = "3p_telomeres.bg",
+    tel5 = "5p_telomeres.bg",
     gaps = "gaps.bg",
     pret = "assembly_mq.pretext",
     hr_pret = "assembly_mq.HR.pretext",
@@ -115,9 +116,15 @@ rule add_extensions_pretext:
     cat {input.gaps} | PretextGraph -i {output.hr_pretext} -n "gap"
     fi
 
-    if [[ -s "{input.tel}" ]]; then 
-    cat {input.tel} | PretextGraph -i {output.pretext} -n "telomere"
-    cat {input.tel} | PretextGraph -i {output.hr_pretext} -n "telomere"
+    if [[ -s "{input.tel3}" ]]; then 
+    cat {input.tel3} | PretextGraph -i {output.pretext} -n "3p_telomere"
+    cat {input.tel3} | PretextGraph -i {output.hr_pretext} -n "3p_telomere"
+    fi
+
+
+    if [[ -s "{input.tel5}" ]]; then 
+    cat {input.tel5} | PretextGraph -i {output.pretext} -n "5p_telomere"
+    cat {input.tel5} | PretextGraph -i {output.hr_pretext} -n "5p_telomere"
     fi
 
     if [[ -s "{input.ontcov}" ]]; then
